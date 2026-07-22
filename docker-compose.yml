@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql_server
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_PID=Developer
+      - SA_PASSWORD=YourStrong@Passw0rd123
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+      - ./backup:/var/opt/mssql/backup
+    restart: unless-stopped
+
+  exporter:
+    profiles: ["tools"]
+    build: ./exporter
+    container_name: mssql_exporter
+    volumes:
+      - ./backup:/backup
+    depends_on:
+      - mssql
+    restart: "no"
+    command: >
+      /bin/sh -c "python ./export_to_sql.py"
+
+  gin:
+    build:
+      context: ./gin
+      dockerfile: Dockerfile
+    container_name: gin_app
+    environment:
+      - PORT=8080
+      - GIN_MODE=debug
+      - BASE_URL=http://localhost:8080
+      - JWT_SECRET=/app/certs/dev-private-key.pem
+      - REFRESH_SECRET=/app/certs/dev-private-key.pem
+      - DATABASE_DSN=sqlserver://sa:YourStrong@Passw0rd123@mssql:1433?database=master
+    volumes:
+      - ./gin/certs:/app/certs:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mssql
+    restart: unless-stopped
+
+  gin-build:
+    profiles: ["build"]
+    image: golang:1.25-alpine
+    container_name: gin_build
+    working_dir: /src
+    environment:
+      - GOCACHE=/go-cache  
+      - GOMODCACHE=/go-mod-cache
+    volumes:
+      - ./gin:/src
+      - ./gin/dist:/out
+      - go-compiler-cache:/go-cache 
+      - go-modules-cache:/go-mod-cache
+    command: >
+      /bin/sh -c "
+      mkdir -p /out && 
+      GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -v -o /out/server.exe ./cmd/server
+      "
+    restart: "no"
+
+volumes:
+  go-compiler-cache:
+  go-modules-cache:
+  mssql_data:

@@ -1,0 +1,42 @@
+# Binaries and executables
+*.exe
+*.dll
+*.so
+*.dylib
+dist/
+build/
+bin/
+
+# Go specific
+go.work.sum
+vendor/
+*.test
+*.out
+
+# Node/Vue specific
+node_modules/
+dist/
+.nuxt/
+.output/
+.vite/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+certs/dev-*
+
+# Database and backups
+*.sql
+*.db
+*.sqlite
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml

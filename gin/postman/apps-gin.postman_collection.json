@@ -1,0 +1,1593 @@
+{
+  "info": {
+    "name": "Apps Gin API",
+    "description": "Postman collection for the Apps Gin backend endpoints covering auth, admin management, master data, and transaction modules.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "authToken",
+      "value": ""
+    },
+    {
+      "key": "resourceId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ping",
+              "host": ["{{baseUrl}}"],
+              "path": ["ping"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"root\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["login"]
+            }
+          }
+        },
+        {
+          "name": "Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile"]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",  
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"root\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"sample-token\",\n  \"password\": \"new-password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["reset-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Management",
+      "item": [
+        {
+          "name": "Admins - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admins"]
+            }
+          }
+        },
+        {
+          "name": "Admins - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ADM001\",\n  \"name\": \"Admin One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admins",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admins"]
+            }
+          }
+        },
+        {
+          "name": "Admins - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admins/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admins", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admins - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ADM002\",\n  \"name\": \"Admin Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admins/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admins", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admins - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admins/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admins", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admin Groups - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-groups"]
+            }
+          }
+        },
+        {
+          "name": "Admin Groups - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"GRP001\",\n  \"name\": \"Group One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-groups"]
+            }
+          }
+        },
+        {
+          "name": "Admin Groups - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-groups/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-groups", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admin Groups - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"GRP002\",\n  \"name\": \"Group Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-groups/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-groups", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admin Groups - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-groups/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-groups", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Group Menu Mappings - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/group-menu-mappings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "group-menu-mappings"]
+            }
+          }
+        },
+        {
+          "name": "Group Menu Mappings - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"MENU001\",\n  \"name\": \"Menu One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/group-menu-mappings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "group-menu-mappings"]
+            }
+          }
+        },
+        {
+          "name": "Group Menu Mappings - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/group-menu-mappings/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "group-menu-mappings", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Group Menu Mappings - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"MENU002\",\n  \"name\": \"Menu Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/group-menu-mappings/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "group-menu-mappings", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Group Menu Mappings - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/group-menu-mappings/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "group-menu-mappings", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admin Sub Warehouses - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-sub-warehouses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-sub-warehouses"]
+            }
+          }
+        },
+        {
+          "name": "Admin Sub Warehouses - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WH001\",\n  \"name\": \"Warehouse One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-sub-warehouses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-sub-warehouses"]
+            }
+          }
+        },
+        {
+          "name": "Admin Sub Warehouses - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-sub-warehouses/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-sub-warehouses", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admin Sub Warehouses - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WH002\",\n  \"name\": \"Warehouse Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-sub-warehouses/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-sub-warehouses", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Admin Sub Warehouses - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin-sub-warehouses/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin-sub-warehouses", "{{resourceId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Master Data",
+      "item": [
+        {
+          "name": "Umat - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/umats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "umats"]
+            }
+          }
+        },
+        {
+          "name": "Umat - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"UMAT001\",\n  \"name\": \"Umat One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/umats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "umats"]
+            }
+          }
+        },
+        {
+          "name": "Umat - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/umats/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "umats", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Umat - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"UMAT002\",\n  \"name\": \"Umat Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/umats/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "umats", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Umat - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/umats/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "umats", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Topics - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "topics"]
+            }
+          }
+        },
+        {
+          "name": "Topics - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TOP001\",\n  \"name\": \"Topic One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "topics"]
+            }
+          }
+        },
+        {
+          "name": "Topics - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/topics/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "topics", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Topics - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TOP002\",\n  \"name\": \"Topic Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/topics/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "topics", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Topics - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/topics/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "topics", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Activities - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/activities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activities"]
+            }
+          }
+        },
+        {
+          "name": "Activities - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ACT001\",\n  \"name\": \"Activity One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/activities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activities"]
+            }
+          }
+        },
+        {
+          "name": "Activities - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/activities/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activities", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Activities - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ACT002\",\n  \"name\": \"Activity Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/activities/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activities", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Activities - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/activities/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activities", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Tim Kerja - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tim-kerja",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tim-kerja"]
+            }
+          }
+        },
+        {
+          "name": "Tim Kerja - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"POS001\",\n  \"name\": \"Position One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tim-kerja",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tim-kerja"]
+            }
+          }
+        },
+        {
+          "name": "Tim Kerja - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tim-kerja/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tim-kerja", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Tim Kerja - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"POS002\",\n  \"name\": \"Position Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tim-kerja/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tim-kerja", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Tim Kerja - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tim-kerja/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tim-kerja", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Tahun Ciu Tao - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tahun-ciu-tao",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tahun-ciu-tao"]
+            }
+          }
+        },
+        {
+          "name": "Tahun Ciu Tao - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TAH001\",\n  \"name\": \"Year One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tahun-ciu-tao",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tahun-ciu-tao"]
+            }
+          }
+        },
+        {
+          "name": "Tahun Ciu Tao - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tahun-ciu-tao/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tahun-ciu-tao", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Tahun Ciu Tao - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TAH002\",\n  \"name\": \"Year Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tahun-ciu-tao/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tahun-ciu-tao", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Tahun Ciu Tao - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tahun-ciu-tao/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tahun-ciu-tao", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Penggalang Dana - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/penggalang-dana",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "penggalang-dana"]
+            }
+          }
+        },
+        {
+          "name": "Penggalang Dana - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PGD001\",\n  \"name\": \"Penggalang One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/penggalang-dana",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "penggalang-dana"]
+            }
+          }
+        },
+        {
+          "name": "Penggalang Dana - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/penggalang-dana/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "penggalang-dana", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Penggalang Dana - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PGD002\",\n  \"name\": \"Penggalang Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/penggalang-dana/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "penggalang-dana", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Penggalang Dana - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/penggalang-dana/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "penggalang-dana", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Sxy Donatur - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sxy-donatur",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sxy-donatur"]
+            }
+          }
+        },
+        {
+          "name": "Sxy Donatur - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SDN001\",\n  \"name\": \"Donatur One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sxy-donatur",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sxy-donatur"]
+            }
+          }
+        },
+        {
+          "name": "Sxy Donatur - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sxy-donatur/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sxy-donatur", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Sxy Donatur - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SDN002\",\n  \"name\": \"Donatur Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sxy-donatur/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sxy-donatur", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Sxy Donatur - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sxy-donatur/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sxy-donatur", "{{resourceId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Kelas - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/kelas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "kelas"]
+            }
+          }
+        },
+        {
+          "name": "Kelas - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"KLS001\",\n  \"name\": \"Kelas One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/kelas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "kelas"]
+            }
+          }
+        },
+        {
+          "name": "Kelas - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/kelas/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "kelas", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Kelas - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"KLS002\",\n  \"name\": \"Kelas Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/kelas/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "kelas", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Kelas - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/kelas/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "kelas", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Donasi Sxy - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donasi-sxy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donasi-sxy"]
+            }
+          }
+        },
+        {
+          "name": "Donasi Sxy - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DSX001\",\n  \"name\": \"Donasi One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/donasi-sxy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donasi-sxy"]
+            }
+          }
+        },
+        {
+          "name": "Donasi Sxy - Get By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donasi-sxy/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donasi-sxy", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Donasi Sxy - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DSX002\",\n  \"name\": \"Donasi Two\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/donasi-sxy/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donasi-sxy", "{{resourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Donasi Sxy - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/donasi-sxy/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "donasi-sxy", "{{resourceId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

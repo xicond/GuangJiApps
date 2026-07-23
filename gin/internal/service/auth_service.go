@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"crypto/md5"
@@ -109,18 +108,4 @@ func (s *AuthService) Login(username, password string) (domain.User, string, err
 		return domain.User{}, "", err
 	}
 	return user, token, nil
-}
-
-func (s *AuthService) Profile(userID string) (domain.User, error) {
-	if userID == "" {
-		return domain.User{}, errors.New("user id is required")
-	}
-	parsedInt, err := strconv.Atoi(userID)
-	if err != nil {
-		return domain.User{}, fmt.Errorf("invalid user ID format: %w", err)
-	}
-
-	// 2. Explicitly cast the standard int to int32 to match your domain.User struct ID field
-	userIDInt32 := int32(parsedInt)
-	return domain.User{ID: userIDInt32, Email: "admin@example.com", Username: "Admin"}, nil
 }

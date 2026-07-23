@@ -22,57 +22,55 @@ func NewActivityService(db *gorm.DB) *ActivityService {
 	return &ActivityService{db: db, resource: "activities"}
 }
 
-func (s *ActivityService) List() []domain.Resource {
-	var items []domain.Resource
-	if err := s.db.Order("created_at DESC").Find(&items).Error; err != nil {
+func (s *ActivityService) List() []domain.Activity {
+	var items []domain.Activity
+	if err := s.db.Find(&items).Error; err != nil {
 		return nil
 	}
 	return items
 }
 
-func (s *ActivityService) Create(payload domain.Resource) (domain.Resource, error) {
-	if payload.Code == "" || payload.Name == "" {
-		return domain.Resource{}, fmt.Errorf("code and name are required")
+func (s *ActivityService) Create(payload domain.Activity) (domain.Activity, error) {
+	if payload.EventCode == "" || payload.EventName == "" {
+		return domain.Activity{}, fmt.Errorf("event_code and event_name are required")
 	}
-	payload.ID = fmt.Sprintf("%d", time.Now().UnixNano())
-	payload.Category = s.resource
-	payload.Active = true
-	payload.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	payload.UpdatedAt = payload.CreatedAt
-	payload.CreatedBy = "system"
-	payload.UpdatedBy = "system"
-
+	payload.ModAct = "I"
+	payload.ModBy = "system"
+	payload.ModDate = time.Now()
 	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.Activity{}, err
 	}
 	return payload, nil
 }
 
-func (s *ActivityService) Get(id string) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("activity %s not found", id)
+func (s *ActivityService) Get(id string) (domain.Activity, error) {
+	var item domain.Activity
+	if err := s.db.First(&item, "EventCode = ?", id).Error; err != nil {
+		return domain.Activity{}, fmt.Errorf("activity %s not found", id)
 	}
 	return item, nil
 }
 
-func (s *ActivityService) Update(id string, payload domain.Resource) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("activity %s not found", id)
+func (s *ActivityService) Update(id string, payload domain.Activity) (domain.Activity, error) {
+	var item domain.Activity
+	if err := s.db.First(&item, "EventCode = ?", id).Error; err != nil {
+		return domain.Activity{}, fmt.Errorf("activity %s not found", id)
 	}
 
-	item.Code = payload.Code
-	item.Name = payload.Name
-	item.Active = payload.Active
-	item.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-	item.UpdatedBy = "system"
+	item.EventCode = payload.EventCode
+	item.EventName = payload.EventName
+	item.EventCategory = payload.EventCategory
+	item.Description = payload.Description
+	item.Status = payload.Status
+	item.ModAct = "U"
+	item.ModBy = "system"
+	item.ModDate = time.Now()
 	if err := s.db.Save(&item).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.Activity{}, err
 	}
 	return item, nil
 }
 
 func (s *ActivityService) Delete(id string) error {
-	return s.db.Delete(&domain.Resource{}, "id = ?", id).Error
+	return s.db.Delete(&domain.Activity{}, "EventCode = ?", id).Error
 }

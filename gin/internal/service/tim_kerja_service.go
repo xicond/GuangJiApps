@@ -22,57 +22,53 @@ func NewTimKerjaService(db *gorm.DB) *TimKerjaService {
 	return &TimKerjaService{db: db, resource: "tim-kerja"}
 }
 
-func (s *TimKerjaService) List() []domain.Resource {
-	var items []domain.Resource
-	if err := s.db.Order("created_at DESC").Find(&items).Error; err != nil {
+func (s *TimKerjaService) List() []domain.TimKerja {
+	var items []domain.TimKerja
+	if err := s.db.Find(&items).Error; err != nil {
 		return nil
 	}
 	return items
 }
 
-func (s *TimKerjaService) Create(payload domain.Resource) (domain.Resource, error) {
-	if payload.Code == "" || payload.Name == "" {
-		return domain.Resource{}, fmt.Errorf("code and name are required")
+func (s *TimKerjaService) Create(payload domain.TimKerja) (domain.TimKerja, error) {
+	if payload.LookupValue == "" || payload.LookupDescription == "" {
+		return domain.TimKerja{}, fmt.Errorf("lookup_value and lookup_description are required")
 	}
-	payload.ID = fmt.Sprintf("%d", time.Now().UnixNano())
-	payload.Category = s.resource
-	payload.Active = true
-	payload.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	payload.UpdatedAt = payload.CreatedAt
-	payload.CreatedBy = "system"
-	payload.UpdatedBy = "system"
-
+	payload.ModAct = "I"
+	payload.ModBy = "system"
+	payload.ModDate = time.Now()
 	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.TimKerja{}, err
 	}
 	return payload, nil
 }
 
-func (s *TimKerjaService) Get(id string) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("tim kerja %s not found", id)
+func (s *TimKerjaService) Get(id string) (domain.TimKerja, error) {
+	var item domain.TimKerja
+	if err := s.db.First(&item, "LookupId = ?", id).Error; err != nil {
+		return domain.TimKerja{}, fmt.Errorf("tim kerja %s not found", id)
 	}
 	return item, nil
 }
 
-func (s *TimKerjaService) Update(id string, payload domain.Resource) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("tim kerja %s not found", id)
+func (s *TimKerjaService) Update(id string, payload domain.TimKerja) (domain.TimKerja, error) {
+	var item domain.TimKerja
+	if err := s.db.First(&item, "LookupId = ?", id).Error; err != nil {
+		return domain.TimKerja{}, fmt.Errorf("tim kerja %s not found", id)
 	}
 
-	item.Code = payload.Code
-	item.Name = payload.Name
-	item.Active = payload.Active
-	item.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-	item.UpdatedBy = "system"
+	item.LookupValue = payload.LookupValue
+	item.LookupDescription = payload.LookupDescription
+	item.Status = payload.Status
+	item.ModAct = "U"
+	item.ModBy = "system"
+	item.ModDate = time.Now()
 	if err := s.db.Save(&item).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.TimKerja{}, err
 	}
 	return item, nil
 }
 
 func (s *TimKerjaService) Delete(id string) error {
-	return s.db.Delete(&domain.Resource{}, "id = ?", id).Error
+	return s.db.Delete(&domain.TimKerja{}, "LookupId = ?", id).Error
 }

@@ -46,7 +46,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"root\"\n}",
+              "raw": "{\n  \"username\": \"root\",\n  \"password\": \"password123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -57,23 +57,6 @@
               "raw": "{{baseUrl}}/login",
               "host": ["{{baseUrl}}"],
               "path": ["login"]
-            }
-          }
-        },
-        {
-          "name": "Profile",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["profile"]
             }
           }
         },
@@ -145,9 +128,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admins",
+              "raw": "{{baseUrl}}/v1/admins",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admins"]
+              "path": ["v1", "admins"]
             }
           }
         },
@@ -175,9 +158,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/admins",
+              "raw": "{{baseUrl}}/v1/admins",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admins"]
+              "path": ["v1", "admins"]
             }
           }
         },
@@ -192,9 +175,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admins/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admins/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admins", "{{resourceId}}"]
+              "path": ["v1", "admins", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -222,9 +212,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/admins/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admins/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admins", "{{resourceId}}"]
+              "path": ["v1", "admins", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -239,9 +236,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admins/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admins/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admins", "{{resourceId}}"]
+              "path": ["v1", "admins", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -256,9 +260,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admin-groups",
+              "raw": "{{baseUrl}}/v1/admin-groups",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-groups"]
+              "path": ["v1", "admin-groups"]
             }
           }
         },
@@ -286,9 +290,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/admin-groups",
+              "raw": "{{baseUrl}}/v1/admin-groups",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-groups"]
+              "path": ["v1", "admin-groups"]
             }
           }
         },
@@ -303,9 +307,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admin-groups/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admin-groups/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-groups", "{{resourceId}}"]
+              "path": ["v1", "admin-groups", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -333,9 +344,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/admin-groups/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admin-groups/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-groups", "{{resourceId}}"]
+              "path": ["v1", "admin-groups", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -350,9 +368,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admin-groups/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admin-groups/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-groups", "{{resourceId}}"]
+              "path": ["v1", "admin-groups", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -367,9 +392,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/group-menu-mappings",
+              "raw": "{{baseUrl}}/v1/group-menu-mappings",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "group-menu-mappings"]
+              "path": ["v1", "group-menu-mappings"]
             }
           }
         },
@@ -397,9 +422,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/group-menu-mappings",
+              "raw": "{{baseUrl}}/v1/group-menu-mappings",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "group-menu-mappings"]
+              "path": ["v1", "group-menu-mappings"]
             }
           }
         },
@@ -414,9 +439,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/group-menu-mappings/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/group-menu-mappings/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "group-menu-mappings", "{{resourceId}}"]
+              "path": ["v1", "group-menu-mappings", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -444,9 +476,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/group-menu-mappings/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/group-menu-mappings/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "group-menu-mappings", "{{resourceId}}"]
+              "path": ["v1", "group-menu-mappings", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -461,9 +500,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/group-menu-mappings/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/group-menu-mappings/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "group-menu-mappings", "{{resourceId}}"]
+              "path": ["v1", "group-menu-mappings", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -478,9 +524,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admin-sub-warehouses",
+              "raw": "{{baseUrl}}/v1/admin-sub-warehouses",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-sub-warehouses"]
+              "path": ["v1", "admin-sub-warehouses"]
             }
           }
         },
@@ -508,9 +554,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/admin-sub-warehouses",
+              "raw": "{{baseUrl}}/v1/admin-sub-warehouses",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-sub-warehouses"]
+              "path": ["v1", "admin-sub-warehouses"]
             }
           }
         },
@@ -525,9 +571,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admin-sub-warehouses/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admin-sub-warehouses/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-sub-warehouses", "{{resourceId}}"]
+              "path": ["v1", "admin-sub-warehouses", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -555,9 +608,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/admin-sub-warehouses/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admin-sub-warehouses/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-sub-warehouses", "{{resourceId}}"]
+              "path": ["v1", "admin-sub-warehouses", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -572,9 +632,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admin-sub-warehouses/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/admin-sub-warehouses/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "admin-sub-warehouses", "{{resourceId}}"]
+              "path": ["v1", "admin-sub-warehouses", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         }
@@ -594,9 +661,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/umats",
+              "raw": "{{baseUrl}}/v1/umats",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "umats"]
+              "path": ["v1", "umats"]
             }
           }
         },
@@ -624,9 +691,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/umats",
+              "raw": "{{baseUrl}}/v1/umats",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "umats"]
+              "path": ["v1", "umats"]
             }
           }
         },
@@ -641,9 +708,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/umats/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/umats/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "umats", "{{resourceId}}"]
+              "path": ["v1", "umats", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -671,9 +745,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/umats/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/umats/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "umats", "{{resourceId}}"]
+              "path": ["v1", "umats", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -688,9 +769,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/umats/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/umats/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "umats", "{{resourceId}}"]
+              "path": ["v1", "umats", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -705,9 +793,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/topics",
+              "raw": "{{baseUrl}}/v1/topics",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "topics"]
+              "path": ["v1", "topics"]
             }
           }
         },
@@ -735,9 +823,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/topics",
+              "raw": "{{baseUrl}}/v1/topics",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "topics"]
+              "path": ["v1", "topics"]
             }
           }
         },
@@ -752,9 +840,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/topics/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/topics/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "topics", "{{resourceId}}"]
+              "path": ["v1", "topics", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -782,9 +877,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/topics/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/topics/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "topics", "{{resourceId}}"]
+              "path": ["v1", "topics", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -799,9 +901,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/topics/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/topics/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "topics", "{{resourceId}}"]
+              "path": ["v1", "topics", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -816,9 +925,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/activities",
+              "raw": "{{baseUrl}}/v1/activities",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "activities"]
+              "path": ["v1", "activities"]
             }
           }
         },
@@ -846,9 +955,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/activities",
+              "raw": "{{baseUrl}}/v1/activities",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "activities"]
+              "path": ["v1", "activities"]
             }
           }
         },
@@ -863,9 +972,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/activities/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/activities/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "activities", "{{resourceId}}"]
+              "path": ["v1", "activities", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -893,9 +1009,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/activities/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/activities/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "activities", "{{resourceId}}"]
+              "path": ["v1", "activities", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -910,9 +1033,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/activities/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/activities/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "activities", "{{resourceId}}"]
+              "path": ["v1", "activities", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -927,9 +1057,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/tim-kerja",
+              "raw": "{{baseUrl}}/v1/tim-kerja",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tim-kerja"]
+              "path": ["v1", "tim-kerja"]
             }
           }
         },
@@ -957,9 +1087,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/tim-kerja",
+              "raw": "{{baseUrl}}/v1/tim-kerja",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tim-kerja"]
+              "path": ["v1", "tim-kerja"]
             }
           }
         },
@@ -974,9 +1104,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/tim-kerja/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/tim-kerja/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tim-kerja", "{{resourceId}}"]
+              "path": ["v1", "tim-kerja", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1004,9 +1141,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/tim-kerja/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/tim-kerja/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tim-kerja", "{{resourceId}}"]
+              "path": ["v1", "tim-kerja", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1021,9 +1165,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/tim-kerja/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/tim-kerja/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tim-kerja", "{{resourceId}}"]
+              "path": ["v1", "tim-kerja", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1038,9 +1189,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/tahun-ciu-tao",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tahun-ciu-tao"]
+              "path": ["v1", "tahun-ciu-tao"]
             }
           }
         },
@@ -1068,9 +1219,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/tahun-ciu-tao",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tahun-ciu-tao"]
+              "path": ["v1", "tahun-ciu-tao"]
             }
           }
         },
@@ -1085,9 +1236,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/tahun-ciu-tao/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tahun-ciu-tao", "{{resourceId}}"]
+              "path": ["v1", "tahun-ciu-tao", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1115,9 +1273,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/tahun-ciu-tao/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tahun-ciu-tao", "{{resourceId}}"]
+              "path": ["v1", "tahun-ciu-tao", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1132,9 +1297,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/tahun-ciu-tao/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "tahun-ciu-tao", "{{resourceId}}"]
+              "path": ["v1", "tahun-ciu-tao", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1149,9 +1321,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/penggalang-dana",
+              "raw": "{{baseUrl}}/v1/penggalang-dana",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "penggalang-dana"]
+              "path": ["v1", "penggalang-dana"]
             }
           }
         },
@@ -1179,9 +1351,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/penggalang-dana",
+              "raw": "{{baseUrl}}/v1/penggalang-dana",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "penggalang-dana"]
+              "path": ["v1", "penggalang-dana"]
             }
           }
         },
@@ -1196,9 +1368,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/penggalang-dana/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/penggalang-dana/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "penggalang-dana", "{{resourceId}}"]
+              "path": ["v1", "penggalang-dana", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1226,9 +1405,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/penggalang-dana/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/penggalang-dana/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "penggalang-dana", "{{resourceId}}"]
+              "path": ["v1", "penggalang-dana", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1243,9 +1429,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/penggalang-dana/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/penggalang-dana/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "penggalang-dana", "{{resourceId}}"]
+              "path": ["v1", "penggalang-dana", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1260,9 +1453,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/sxy-donatur",
+              "raw": "{{baseUrl}}/v1/sxy-donatur",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "sxy-donatur"]
+              "path": ["v1", "sxy-donatur"]
             }
           }
         },
@@ -1290,9 +1483,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/sxy-donatur",
+              "raw": "{{baseUrl}}/v1/sxy-donatur",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "sxy-donatur"]
+              "path": ["v1", "sxy-donatur"]
             }
           }
         },
@@ -1307,9 +1500,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/sxy-donatur/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/sxy-donatur/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "sxy-donatur", "{{resourceId}}"]
+              "path": ["v1", "sxy-donatur", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1337,9 +1537,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/sxy-donatur/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/sxy-donatur/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "sxy-donatur", "{{resourceId}}"]
+              "path": ["v1", "sxy-donatur", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1354,9 +1561,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/sxy-donatur/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/sxy-donatur/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "sxy-donatur", "{{resourceId}}"]
+              "path": ["v1", "sxy-donatur", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         }
@@ -1376,9 +1590,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/kelas",
+              "raw": "{{baseUrl}}/v1/kelas",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "kelas"]
+              "path": ["v1", "kelas"]
             }
           }
         },
@@ -1406,9 +1620,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/kelas",
+              "raw": "{{baseUrl}}/v1/kelas",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "kelas"]
+              "path": ["v1", "kelas"]
             }
           }
         },
@@ -1423,9 +1637,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/kelas/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/kelas/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "kelas", "{{resourceId}}"]
+              "path": ["v1", "kelas", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1453,9 +1674,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/kelas/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/kelas/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "kelas", "{{resourceId}}"]
+              "path": ["v1", "kelas", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1470,9 +1698,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/kelas/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/kelas/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "kelas", "{{resourceId}}"]
+              "path": ["v1", "kelas", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1487,9 +1722,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/donasi-sxy",
+              "raw": "{{baseUrl}}/v1/donasi-sxy",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "donasi-sxy"]
+              "path": ["v1", "donasi-sxy"]
             }
           }
         },
@@ -1517,9 +1752,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/donasi-sxy",
+              "raw": "{{baseUrl}}/v1/donasi-sxy",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "donasi-sxy"]
+              "path": ["v1", "donasi-sxy"]
             }
           }
         },
@@ -1534,9 +1769,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/donasi-sxy/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/donasi-sxy/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "donasi-sxy", "{{resourceId}}"]
+              "path": ["v1", "donasi-sxy", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1564,9 +1806,16 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/donasi-sxy/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/donasi-sxy/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "donasi-sxy", "{{resourceId}}"]
+              "path": ["v1", "donasi-sxy", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         },
@@ -1581,9 +1830,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/donasi-sxy/{{resourceId}}",
+              "raw": "{{baseUrl}}/v1/donasi-sxy/:resourceId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "donasi-sxy", "{{resourceId}}"]
+              "path": ["v1", "donasi-sxy", ":resourceId"],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
             }
           }
         }

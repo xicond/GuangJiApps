@@ -22,57 +22,62 @@ func NewPenggalangDanaService(db *gorm.DB) *PenggalangDanaService {
 	return &PenggalangDanaService{db: db, resource: "penggalang-dana"}
 }
 
-func (s *PenggalangDanaService) List() []domain.Resource {
-	var items []domain.Resource
+func (s *PenggalangDanaService) List() []domain.PenggalangDana {
+	var items []domain.PenggalangDana
 	if err := s.db.Order("created_at DESC").Find(&items).Error; err != nil {
 		return nil
 	}
 	return items
 }
 
-func (s *PenggalangDanaService) Create(payload domain.Resource) (domain.Resource, error) {
-	if payload.Code == "" || payload.Name == "" {
-		return domain.Resource{}, fmt.Errorf("code and name are required")
+func (s *PenggalangDanaService) Create(payload domain.PenggalangDana) (domain.PenggalangDana, error) {
+	if payload.No == "" || payload.Nama == "" {
+		return domain.PenggalangDana{}, fmt.Errorf("no and nama are required")
 	}
-	payload.ID = fmt.Sprintf("%d", time.Now().UnixNano())
-	payload.Category = s.resource
-	payload.Active = true
-	payload.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	payload.UpdatedAt = payload.CreatedAt
-	payload.CreatedBy = "system"
-	payload.UpdatedBy = "system"
+	payload.Status = true
+	payload.CreatedBy = 1
+	payload.CreatedDate = time.Now()
+	payload.UpdatedBy = 1
+	payload.UpdatedDate = time.Now()
 
 	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.PenggalangDana{}, err
 	}
 	return payload, nil
 }
 
-func (s *PenggalangDanaService) Get(id string) (domain.Resource, error) {
-	var item domain.Resource
+func (s *PenggalangDanaService) Get(id string) (domain.PenggalangDana, error) {
+	var item domain.PenggalangDana
 	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("penggalang dana %s not found", id)
+		return domain.PenggalangDana{}, fmt.Errorf("penggalang dana %s not found", id)
 	}
 	return item, nil
 }
 
-func (s *PenggalangDanaService) Update(id string, payload domain.Resource) (domain.Resource, error) {
-	var item domain.Resource
+func (s *PenggalangDanaService) Update(id string, payload domain.PenggalangDana) (domain.PenggalangDana, error) {
+	var item domain.PenggalangDana
 	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("penggalang dana %s not found", id)
+		return domain.PenggalangDana{}, fmt.Errorf("penggalang dana %s not found", id)
 	}
 
-	item.Code = payload.Code
-	item.Name = payload.Name
-	item.Active = payload.Active
-	item.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-	item.UpdatedBy = "system"
+	item.No = payload.No
+	item.Nama = payload.Nama
+	item.Mandarin = payload.Mandarin
+	item.Keterangan = payload.Keterangan
+	item.LookupFothang = payload.LookupFothang
+	item.Alamat = payload.Alamat
+	item.Telepon = payload.Telepon
+	item.Mobile = payload.Mobile
+	item.Email = payload.Email
+	item.Status = payload.Status
+	item.UpdatedBy = 1
+	item.UpdatedDate = time.Now()
 	if err := s.db.Save(&item).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.PenggalangDana{}, err
 	}
 	return item, nil
 }
 
 func (s *PenggalangDanaService) Delete(id string) error {
-	return s.db.Delete(&domain.Resource{}, "id = ?", id).Error
+	return s.db.Delete(&domain.PenggalangDana{}, "id = ?", id).Error
 }

@@ -22,57 +22,62 @@ func NewSxyDonaturService(db *gorm.DB) *SxyDonaturService {
 	return &SxyDonaturService{db: db, resource: "sxy-donatur"}
 }
 
-func (s *SxyDonaturService) List() []domain.Resource {
-	var items []domain.Resource
-	if err := s.db.Order("created_at DESC").Find(&items).Error; err != nil {
+func (s *SxyDonaturService) List() []domain.SxyDonatur {
+	var items []domain.SxyDonatur
+	if err := s.db.Find(&items).Error; err != nil {
 		return nil
 	}
 	return items
 }
 
-func (s *SxyDonaturService) Create(payload domain.Resource) (domain.Resource, error) {
-	if payload.Code == "" || payload.Name == "" {
-		return domain.Resource{}, fmt.Errorf("code and name are required")
+func (s *SxyDonaturService) Create(payload domain.SxyDonatur) (domain.SxyDonatur, error) {
+	if payload.No == "" || payload.Nama == "" {
+		return domain.SxyDonatur{}, fmt.Errorf("no and nama are required")
 	}
-	payload.ID = fmt.Sprintf("%d", time.Now().UnixNano())
-	payload.Category = s.resource
-	payload.Active = true
-	payload.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	payload.UpdatedAt = payload.CreatedAt
-	payload.CreatedBy = "system"
-	payload.UpdatedBy = "system"
+	payload.Status = true
+	payload.CreatedBy = 1
+	payload.CreatedDate = time.Now()
+	payload.UpdatedBy = 1
+	payload.UpdatedDate = time.Now()
 
 	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.SxyDonatur{}, err
 	}
 	return payload, nil
 }
 
-func (s *SxyDonaturService) Get(id string) (domain.Resource, error) {
-	var item domain.Resource
+func (s *SxyDonaturService) Get(id string) (domain.SxyDonatur, error) {
+	var item domain.SxyDonatur
 	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("sxy donatur %s not found", id)
+		return domain.SxyDonatur{}, fmt.Errorf("sxy donatur %s not found", id)
 	}
 	return item, nil
 }
 
-func (s *SxyDonaturService) Update(id string, payload domain.Resource) (domain.Resource, error) {
-	var item domain.Resource
+func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur) (domain.SxyDonatur, error) {
+	var item domain.SxyDonatur
 	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("sxy donatur %s not found", id)
+		return domain.SxyDonatur{}, fmt.Errorf("sxy donatur %s not found", id)
 	}
 
-	item.Code = payload.Code
-	item.Name = payload.Name
-	item.Active = payload.Active
-	item.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-	item.UpdatedBy = "system"
+	item.No = payload.No
+	item.Nama = payload.Nama
+	item.Mandarin = payload.Mandarin
+	item.Keterangan = payload.Keterangan
+	item.LookupFothang = payload.LookupFothang
+	item.Alamat = payload.Alamat
+	item.Telepon = payload.Telepon
+	item.Mobile = payload.Mobile
+	item.Email = payload.Email
+	item.Status = payload.Status
+	item.UpdatedBy = 1
+	item.UpdatedDate = time.Now()
 	if err := s.db.Save(&item).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.SxyDonatur{}, err
 	}
 	return item, nil
 }
 
 func (s *SxyDonaturService) Delete(id string) error {
-	return s.db.Delete(&domain.Resource{}, "id = ?", id).Error
+	return s.db.Delete(&domain.SxyDonatur{}, "id = ?", id).Error
 }

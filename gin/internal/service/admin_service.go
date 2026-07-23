@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -22,57 +21,62 @@ func NewAdminService(db *gorm.DB) *AdminService {
 	return &AdminService{db: db, resource: "admins"}
 }
 
-func (s *AdminService) List() []domain.Resource {
-	var items []domain.Resource
-	if err := s.db.Order("created_at DESC").Find(&items).Error; err != nil {
+func (s *AdminService) List() []domain.Admin {
+	var items []domain.Admin
+	if err := s.db.Find(&items).Error; err != nil {
 		return nil
 	}
 	return items
 }
 
-func (s *AdminService) Create(payload domain.Resource) (domain.Resource, error) {
-	if payload.Code == "" || payload.Name == "" {
-		return domain.Resource{}, fmt.Errorf("code and name are required")
+func (s *AdminService) Create(payload domain.Admin) (domain.Admin, error) {
+	if payload.Username == "" {
+		return domain.Admin{}, fmt.Errorf("username is required")
 	}
-	payload.ID = fmt.Sprintf("%d", time.Now().UnixNano())
-	payload.Category = s.resource
-	payload.Active = true
-	payload.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	payload.UpdatedAt = payload.CreatedAt
-	payload.CreatedBy = "system"
-	payload.UpdatedBy = "system"
-
+	if payload.GroupId == 0 {
+		return domain.Admin{}, fmt.Errorf("group_id is required")
+	}
 	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.Admin{}, err
 	}
 	return payload, nil
 }
 
-func (s *AdminService) Get(id string) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("admin %s not found", id)
+func (s *AdminService) Get(id string) (domain.Admin, error) {
+	var item domain.Admin
+	if err := s.db.First(&item, "LoginId = ?", id).Error; err != nil {
+		return domain.Admin{}, fmt.Errorf("admin %s not found", id)
 	}
 	return item, nil
 }
 
-func (s *AdminService) Update(id string, payload domain.Resource) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("admin %s not found", id)
+func (s *AdminService) Update(id string, payload domain.Admin) (domain.Admin, error) {
+	var item domain.Admin
+	if err := s.db.First(&item, "LoginId = ?", id).Error; err != nil {
+		return domain.Admin{}, fmt.Errorf("admin %s not found", id)
 	}
 
-	item.Code = payload.Code
-	item.Name = payload.Name
-	item.Active = payload.Active
-	item.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-	item.UpdatedBy = "system"
+	item.Username = payload.Username
+	item.Email = payload.Email
+	item.GroupId = payload.GroupId
+	item.PhoneNumber = payload.PhoneNumber
+	item.ImgUrl = payload.ImgUrl
+	item.FlagUse = payload.FlagUse
+	item.DateStart = payload.DateStart
+	item.DateEnd = payload.DateEnd
+	item.LoginDesc = payload.LoginDesc
+	item.LastLogin = payload.LastLogin
+	item.DepartmentId = payload.DepartmentId
+	item.IsWarehouse = payload.IsWarehouse
+	if payload.Password != "" {
+		item.Password = payload.Password
+	}
 	if err := s.db.Save(&item).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.Admin{}, err
 	}
 	return item, nil
 }
 
 func (s *AdminService) Delete(id string) error {
-	return s.db.Delete(&domain.Resource{}, "id = ?", id).Error
+	return s.db.Delete(&domain.Admin{}, "LoginId = ?", id).Error
 }

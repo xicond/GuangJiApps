@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -22,57 +21,58 @@ func NewGroupMenuService(db *gorm.DB) *GroupMenuService {
 	return &GroupMenuService{db: db, resource: "group-menu-mappings"}
 }
 
-func (s *GroupMenuService) List() []domain.Resource {
-	var items []domain.Resource
-	if err := s.db.Order("created_at DESC").Find(&items).Error; err != nil {
+func (s *GroupMenuService) List() []domain.GroupMenuMapping {
+	var items []domain.GroupMenuMapping
+	if err := s.db.Find(&items).Error; err != nil {
 		return nil
 	}
 	return items
 }
 
-func (s *GroupMenuService) Create(payload domain.Resource) (domain.Resource, error) {
-	if payload.Code == "" || payload.Name == "" {
-		return domain.Resource{}, fmt.Errorf("code and name are required")
+func (s *GroupMenuService) Create(payload domain.GroupMenuMapping) (domain.GroupMenuMapping, error) {
+	if payload.MenuName == "" || payload.PageUrl == "" {
+		return domain.GroupMenuMapping{}, fmt.Errorf("menu_name and page_url are required")
 	}
-	payload.ID = fmt.Sprintf("%d", time.Now().UnixNano())
-	payload.Category = s.resource
-	payload.Active = true
-	payload.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	payload.UpdatedAt = payload.CreatedAt
-	payload.CreatedBy = "system"
-	payload.UpdatedBy = "system"
-
+	if payload.Sequence == 0 {
+		payload.Sequence = 1
+	}
+	if payload.ParentLevel1 == 0 {
+		payload.ParentLevel1 = 1
+	}
+	payload.FlagActive = true
 	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.GroupMenuMapping{}, err
 	}
 	return payload, nil
 }
 
-func (s *GroupMenuService) Get(id string) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("group menu mapping %s not found", id)
+func (s *GroupMenuService) Get(id string) (domain.GroupMenuMapping, error) {
+	var item domain.GroupMenuMapping
+	if err := s.db.First(&item, "MenuId = ?", id).Error; err != nil {
+		return domain.GroupMenuMapping{}, fmt.Errorf("group menu mapping %s not found", id)
 	}
 	return item, nil
 }
 
-func (s *GroupMenuService) Update(id string, payload domain.Resource) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("group menu mapping %s not found", id)
+func (s *GroupMenuService) Update(id string, payload domain.GroupMenuMapping) (domain.GroupMenuMapping, error) {
+	var item domain.GroupMenuMapping
+	if err := s.db.First(&item, "MenuId = ?", id).Error; err != nil {
+		return domain.GroupMenuMapping{}, fmt.Errorf("group menu mapping %s not found", id)
 	}
 
-	item.Code = payload.Code
-	item.Name = payload.Name
-	item.Active = payload.Active
-	item.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-	item.UpdatedBy = "system"
+	item.ParentId = payload.ParentId
+	item.MenuName = payload.MenuName
+	item.PageUrl = payload.PageUrl
+	item.Sequence = payload.Sequence
+	item.MenuDesc = payload.MenuDesc
+	item.ParentLevel1 = payload.ParentLevel1
+	item.FlagActive = payload.FlagActive
 	if err := s.db.Save(&item).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.GroupMenuMapping{}, err
 	}
 	return item, nil
 }
 
 func (s *GroupMenuService) Delete(id string) error {
-	return s.db.Delete(&domain.Resource{}, "id = ?", id).Error
+	return s.db.Delete(&domain.GroupMenuMapping{}, "MenuId = ?", id).Error
 }

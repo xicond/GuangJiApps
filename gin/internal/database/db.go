@@ -59,12 +59,10 @@ func AutoMigrate(db *gorm.DB) error {
 	}
 
 	models := []interface{}{
-		&domain.Resource{},
-		&domain.LoginGroup{},
-		&domain.LoginMenu{},
-		&domain.LoginMenuGroup{},
-		&domain.LoginMst{},
-		&domain.SubWarehouse{},
+		// &domain.Resource{},
+		&domain.GroupMenuMapping{},
+		&domain.Admin{},
+		&domain.AdminSubWarehouse{},
 		&domain.Umat{},
 		&domain.Topic{},
 		&domain.Activity{},

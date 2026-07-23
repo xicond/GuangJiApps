@@ -2,7 +2,7 @@
 
 ## Completed
 - Created a Gin-based server scaffold under the Gin project folder.
-- Added a basic router with public endpoints: `/ping`, `/login`, `/profile`, `/forgot-password`, and `/reset-password`.
+- Added a basic router with public endpoints: `/ping`, `/login`, `/forgot-password`, and `/reset-password`.
 - Added environment-based configuration loading with `.env.example`.
 - Added initial unit tests for the router and a Dockerfile for containerized builds.
 - Verified the server starts and `/ping` returns `{"message":"pong"}`.

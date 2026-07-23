@@ -82,18 +82,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected := r.Group(cfg.BaseURL + "/v1")
 	protected.Use(middleware.AuthMiddleware(cfg))
 
-	protected.GET("/profile", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		userID, _ := c.Get("userID")
-		user, err := authService.Profile(userID.(string))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"user": user})
-	})
-
 	r.POST(cfg.BaseURL+"/reset-password", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"message": "password reset complete"})
@@ -103,9 +91,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": adminService.List(), "resource": "Admin"})
 	})
+	protected.GET("/admins/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := adminService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Admin"})
+	})
 	protected.POST("/admins", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Admin
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -128,7 +125,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/admins/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Admin
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -153,9 +150,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": adminGroupService.List(), "resource": "Admin Group"})
 	})
+	protected.GET("/admin-groups/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := adminGroupService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Admin Group"})
+	})
 	protected.POST("/admin-groups", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.AdminGroup
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -178,7 +184,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/admin-groups/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.AdminGroup
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -203,9 +209,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": groupMenuService.List(), "resource": "Group Menu Mapping"})
 	})
+	protected.GET("/group-menu-mappings/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := groupMenuService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Group Menu Mapping"})
+	})
 	protected.POST("/group-menu-mappings", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.GroupMenuMapping
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -228,7 +243,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/group-menu-mappings/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.GroupMenuMapping
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -253,9 +268,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": adminSubWarehouseService.List(), "resource": "Admin Sub Warehouse"})
 	})
+	protected.GET("/admin-sub-warehouses/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := adminSubWarehouseService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Admin Sub Warehouse"})
+	})
 	protected.POST("/admin-sub-warehouses", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.AdminSubWarehouse
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -278,7 +302,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/admin-sub-warehouses/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.AdminSubWarehouse
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -301,11 +325,25 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 
 	protected.GET("/umats", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": umatService.List(), "resource": "Umat"})
+		items, err := umatService.List()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "resource": "Umat"})
+	})
+	protected.GET("/umats/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := umatService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Umat"})
 	})
 	protected.POST("/umats", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Umat
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -328,7 +366,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/umats/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Umat
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -353,9 +391,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": topicService.List(), "resource": "Topic"})
 	})
+	protected.GET("/topics/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := topicService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Topic"})
+	})
 	protected.POST("/topics", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Topic
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -378,7 +425,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/topics/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Topic
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -403,9 +450,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": activityService.List(), "resource": "Activity"})
 	})
+	protected.GET("/activities/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := activityService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Activity"})
+	})
 	protected.POST("/activities", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Activity
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -428,7 +484,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/activities/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Activity
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -453,9 +509,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": timKerjaService.List(), "resource": "Tim Kerja"})
 	})
+	protected.GET("/tim-kerja/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := timKerjaService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Tim Kerja"})
+	})
 	protected.POST("/tim-kerja", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.TimKerja
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -478,7 +543,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/tim-kerja/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.TimKerja
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -503,9 +568,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": tahunCiuTaoService.List(), "resource": "Tahun Ciu Tao"})
 	})
+	protected.GET("/tahun-ciu-tao/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := tahunCiuTaoService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Tahun Ciu Tao"})
+	})
 	protected.POST("/tahun-ciu-tao", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.TahunCiuTao
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -528,7 +602,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/tahun-ciu-tao/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.TahunCiuTao
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -553,9 +627,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": penggalangDanaService.List(), "resource": "Penggalang Dana"})
 	})
+	protected.GET("/penggalang-dana/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := penggalangDanaService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Penggalang Dana"})
+	})
 	protected.POST("/penggalang-dana", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.PenggalangDana
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -578,7 +661,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/penggalang-dana/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.PenggalangDana
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -603,9 +686,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": sxyDonaturService.List(), "resource": "Sxy Donatur"})
 	})
+	protected.GET("/sxy-donatur/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := sxyDonaturService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Sxy Donatur"})
+	})
 	protected.POST("/sxy-donatur", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.SxyDonatur
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -628,7 +720,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/sxy-donatur/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.SxyDonatur
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -653,9 +745,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": kelasService.List(), "resource": "Kelas"})
 	})
+	protected.GET("/kelas/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := kelasService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Kelas"})
+	})
 	protected.POST("/kelas", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Kelas
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -678,7 +779,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/kelas/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.Kelas
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -703,9 +804,18 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"data": donasiSxyService.List(), "resource": "Donasi Sxy"})
 	})
+	protected.GET("/donasi-sxy/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		item, err := donasiSxyService.Get(c.Param("id"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Donasi Sxy"})
+	})
 	protected.POST("/donasi-sxy", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.DonasiSxy
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
@@ -728,7 +838,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/donasi-sxy/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		var payload domain.Resource
+		var payload domain.DonasiSxy
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return

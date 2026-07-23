@@ -1,157 +1,283 @@
 package domain
 
-import "time"
+import (
+	"time"
+)
 
-// LoginGroup maps the legacy table T_Login_Group.
-type LoginGroup struct {
-	GroupID    int       `gorm:"column:GroupId;primaryKey;autoIncrement" json:"groupId"`
-	GroupName  string    `gorm:"column:GroupName;size:50" json:"groupName"`
-	GroupDesc  string    `gorm:"column:GroupDesc;size:350" json:"groupDesc"`
-	FlagActive bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate    time.Time `gorm:"column:ModDate" json:"modDate"`
+// ==========================================
+// 1. ADMIN & AUTHORIZATION MODELS
+// ==========================================
+
+// Admin represents table [dbo].[T_Login_Mst]
+type Admin struct {
+	ID           int32     `gorm:"primaryKey;column:LoginId" json:"id"`
+	Username     string    `gorm:"column:Username" json:"username"`
+	Password     string    `gorm:"column:Password" json:"-"` // Hidden from JSON output
+	GroupId      int32     `gorm:"column:GroupId" json:"group_id"`
+	Email        string    `gorm:"column:email" json:"email"`
+	PhoneNumber  string    `gorm:"column:PhoneNumber" json:"phone_number"`
+	ImgUrl       string    `gorm:"column:ImgUrl" json:"img_url"`
+	FlagUse      bool      `gorm:"column:FlagUse" json:"flag_use"`
+	DateStart    time.Time `gorm:"column:DateStart" json:"date_start"`
+	DateEnd      time.Time `gorm:"column:DateEnd" json:"date_end"`
+	LoginDesc    string    `gorm:"column:LoginDesc" json:"login_desc"`
+	LastLogin    time.Time `gorm:"column:LastLogin" json:"last_login"`
+	DepartmentId int32     `gorm:"column:DepartmentId" json:"department_id"`
+	IsWarehouse  bool      `gorm:"column:IsWarehouse" json:"is_warehouse"`
 }
 
-func (LoginGroup) TableName() string { return "T_Login_Group" }
+func (Admin) TableName() string { return "T_Login_Mst" }
 
-// LoginMenu maps the legacy table T_Login_Menu.
-type LoginMenu struct {
-	MenuID     int    `gorm:"column:MenuId;primaryKey;autoIncrement" json:"menuId"`
-	ParentID   int    `gorm:"column:ParentId" json:"parentId"`
-	MenuName   string `gorm:"column:MenuName;size:200" json:"menuName"`
-	PageURL    string `gorm:"column:PageUrl;size:250" json:"pageUrl"`
-	Squence    int    `gorm:"column:Squence" json:"squence"`
-	FlagActive bool   `gorm:"column:FlagActive" json:"flagActive"`
+// AdminGroup represents table [dbo].[T_Login_Group]
+type AdminGroup struct {
+	GroupId     int32  `gorm:"primaryKey;column:GroupId" json:"group_id"`
+	GroupName   string `gorm:"column:GroupName" json:"group_name"`
+	RInsert     bool   `gorm:"column:RInsert" json:"r_insert"`
+	REdit       bool   `gorm:"column:REdit" json:"r_edit"`
+	RDelete     bool   `gorm:"column:RDelete" json:"r_delete"`
+	RReporting  bool   `gorm:"column:RReporting" json:"r_reporting"`
+	RPositionId int32  `gorm:"column:RPositionId" json:"r_position_id"`
+	GroupDesc   string `gorm:"column:GroupDesc" json:"group_desc"`
 }
 
-func (LoginMenu) TableName() string { return "T_Login_Menu" }
+func (AdminGroup) TableName() string { return "T_Login_Group" }
 
-// LoginMenuGroup maps the legacy bridge table T_Login_Menu_Group.
-type LoginMenuGroup struct {
-	MenuGroupID int  `gorm:"column:MenuGroupId;primaryKey;autoIncrement" json:"menuGroupId"`
-	GroupID     int  `gorm:"column:GroupId" json:"groupId"`
-	MenuID      int  `gorm:"column:MenuId" json:"menuId"`
-	RInsert     bool `gorm:"column:RInsert" json:"rInsert"`
-	reporting   bool `gorm:"column:RReporting" json:"rReporting"`
-	REdit       bool `gorm:"column:REdit" json:"rEdit"`
-	RDelete     bool `gorm:"column:RDelete" json:"rDelete"`
-	RReject     bool `gorm:"column:RReject" json:"rReject"`
-	FlagUse     bool `gorm:"column:FlagUse" json:"flagUse"`
+// GroupMenuMapping represents table [dbo].[T_Login_Menu]
+type GroupMenuMapping struct {
+	MenuId       int32  `gorm:"primaryKey;column:MenuId" json:"menu_id"`
+	ParentId     int32  `gorm:"column:ParentId" json:"parent_id"`
+	MenuName     string `gorm:"column:MenuName" json:"menu_name"`
+	PageUrl      string `gorm:"column:PageUrl" json:"page_url"`
+	Sequence     int32  `gorm:"column:Squence" json:"sequence"` // Matches 'Squence' typo in schema
+	MenuDesc     string `gorm:"column:MenuDesc" json:"menu_desc"`
+	ParentLevel1 int32  `gorm:"column:ParentLevel1" json:"parent_level_1"`
+	FlagActive   bool   `gorm:"column:FlagActive" json:"flag_active"`
 }
 
-func (LoginMenuGroup) TableName() string { return "T_Login_Menu_Group" }
+func (GroupMenuMapping) TableName() string { return "T_Login_Menu" }
 
-// LoginMst maps the legacy table T_Login_Mst.
-type LoginMst struct {
-	LoginID     int        `gorm:"column:LoginId;primaryKey;autoIncrement" json:"loginId"`
-	UserName    string     `gorm:"column:UserName;size:100" json:"userName"`
-	LoginName   string     `gorm:"column:LoginName;size:150" json:"loginName"`
-	GroupID     int        `gorm:"column:GroupId" json:"groupId"`
-	Group       LoginGroup `gorm:"foreignKey:GroupID;references:GroupId" json:"group"`
-	FlagActive  bool       `gorm:"column:FlagActive" json:"flagActive"`
-	IsWarehouse bool       `gorm:"column:IsWarehouse" json:"isWarehouse"`
-	ModDate     time.Time  `gorm:"column:ModDate" json:"modDate"`
+// AdminSubWarehouse represents table [dbo].[T_WH_SUBWH_MST]
+type AdminSubWarehouse struct {
+	SubWhId         int32     `gorm:"primaryKey;column:SUBWHID" json:"sub_wh_id"`
+	WhId            int64     `gorm:"column:WHID" json:"wh_id"`
+	FullName        string    `gorm:"column:FULL_NAME" json:"full_name"`
+	Pic             string    `gorm:"column:PIC" json:"pic"`
+	DocCode         string    `gorm:"column:DOCCODE" json:"doc_code"`
+	CruId           int64     `gorm:"column:CRUID" json:"cru_id"`
+	UpdateUId       int64     `gorm:"column:UPDATEUID" json:"update_uid"`
+	LstUpdate       time.Time `gorm:"column:LSTUPDATE" json:"lst_update"`
+	FlagProductions bool      `gorm:"column:FlagProductions" json:"flag_productions"`
+	SubWhType       string    `gorm:"column:SubWhType" json:"sub_wh_type"`
 }
 
-func (LoginMst) TableName() string { return "T_Login_Mst" }
+func (AdminSubWarehouse) TableName() string { return "T_WH_SUBWH_MST" }
 
-// SubWarehouse maps the legacy table T_WH_SUBWH_MST.
-type SubWarehouse struct {
-	SUBWHID    int    `gorm:"column:SUBWHID;primaryKey;autoIncrement" json:"subWhId"`
-	SubWhName  string `gorm:"column:SubWhName;size:150" json:"subWhName"`
-	SubWhType  string `gorm:"column:SubWhType;size:3" json:"subWhType"`
-	FlagActive bool   `gorm:"column:FlagActive" json:"flagActive"`
-}
+// ==========================================
+// 2. CORE SYSTEM & MASTER RECORD MODELS
+// ==========================================
 
-func (SubWarehouse) TableName() string { return "T_WH_SUBWH_MST" }
-
-// Umat maps T_BUS_UMAT.
+// Umat represents table [dbo].[T_BUS_UMAT]
 type Umat struct {
-	ID         int    `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	Kode       string `gorm:"column:kode;size:50" json:"kode"`
-	Nama       string `gorm:"column:nama;size:150" json:"nama"`
-	FlagActive bool   `gorm:"column:flagactive" json:"flagActive"`
+	ID                   int32     `gorm:"primaryKey;column:id" json:"id"`
+	Kode                 string    `gorm:"column:kode" json:"kode"`
+	Alias                string    `gorm:"column:alias" json:"alias"`
+	NamaIndonesia        string    `gorm:"column:namaindonesia" json:"nama_indonesia"`
+	Marga                string    `gorm:"column:marga" json:"marga"`
+	NamaMandarin         string    `gorm:"column:namamandarin" json:"nama_mandarin"`
+	Alamat               string    `gorm:"column:alamat" json:"alamat"`
+	Alamat2              string    `gorm:"column:alamat2" json:"alamat2"`
+	Telepon              string    `gorm:"column:telepon" json:"telepon"`
+	Mobile               string    `gorm:"column:mobile" json:"mobile"`
+	TempatLahir          string    `gorm:"column:tempatlahir" json:"tempat_lahir"`
+	TanggalLahir         time.Time `gorm:"column:tanggallahir" json:"tanggal_lahir"`
+	Usia                 int32     `gorm:"column:usia" json:"usia"`
+	Wilayah              string    `gorm:"column:wilayah" json:"wilayah"`
+	JenisKelamin         string    `gorm:"column:jeniskelamin" json:"jenis_kelamin"`
+	Pekerjaan            string    `gorm:"column:pekerjaan" json:"pekerjaan"`
+	Pendidikan           string    `gorm:"column:pendidikan" json:"pendidikan"`
+	TanggalChiutaoInt    time.Time `gorm:"column:tanggalchiutaoint" json:"tanggal_chiutao_int"`
+	TanggalChiutaoMan    string    `gorm:"column:tanggalchiutaoman" json:"tanggal_chiutao_man"`
+	TahunChiutaoMandarin string    `gorm:"column:tahunchiutaomandarin" json:"tahun_chiutao_mandarin"`
+	WaktuChiutaoMandarin string    `gorm:"column:waktuchiutaomandarin" json:"waktu_chiutao_mandarin"`
+	Pengajak             string    `gorm:"column:pengajak" json:"pengajak"`
+	PengajakManual       string    `gorm:"column:pengajakmanual" json:"pengajak_manual"`
+	Penanggung           string    `gorm:"column:penanggung" json:"penanggung"`
+	PenanggungManual     string    `gorm:"column:penanggungmanual" json:"penanggung_manual"`
+	Tcs                  string    `gorm:"column:tcs" json:"tcs"`
+	UangPahala           float64   `gorm:"column:uangpahala" json:"uang_pahala"`
+	FotangChiutao        string    `gorm:"column:fotangciutao" json:"fotang_chiutao"`
+	FotangAktif          string    `gorm:"column:fotangaktif" json:"fotang_aktif"`
+	Sd2                  bool      `gorm:"column:sd2" json:"sd2"`
+	TempatSd2            string    `gorm:"column:tempatsd2" json:"tempat_sd2"`
+	TanggalSd2           time.Time `gorm:"column:tanggalsd2" json:"tanggal_sd2"`
+	Sd3                  bool      `gorm:"column:sd3" json:"sd3"`
+	TempatSd3            string    `gorm:"column:tempatsd3" json:"tempat_sd3"`
+	TanggalSd3           time.Time `gorm:"column:tanggalsd3" json:"tanggal_sd3"`
+	KelasUmum            string    `gorm:"column:kelasumum" json:"kelas_umum"`
+	KelasKhusus          string    `gorm:"column:kelaskhusus" json:"kelas_khusus"`
+	ChingKhou            bool      `gorm:"column:chingkhou" json:"ching_khou"`
+	TanggalChingKhou     time.Time `gorm:"column:tanggalchingkhou" json:"tanggal_ching_khou"`
+	TanggalAncuo         time.Time `gorm:"column:tanggalancuo" json:"tanggal_ancuo"`
+	NamaCetyaRumah       string    `gorm:"column:namacetyarumah" json:"nama_cetya_rumah"`
+	Meninggal            bool      `gorm:"column:meninggal" json:"meninggal"`
+	TanggalMeninggal     time.Time `gorm:"column:tanggalmeninggal" json:"tanggal_meninggal"`
+	TimKerja             string    `gorm:"column:timkerja" json:"tim_kerja"`
+	Posisi               string    `gorm:"column:posisi" json:"posisi"`
+	StatusUmat           string    `gorm:"column:statusumat" json:"status_umat"`
+	Keterangan           string    `gorm:"column:keterangan" json:"keterangan"`
+	Email                string    `gorm:"column:email" json:"email"`
+	ImagePath            string    `gorm:"column:imagepath" json:"image_path"`
+	Status               bool      `gorm:"column:status" json:"status"`
+	ModAct               string    `gorm:"column:modact" json:"mod_act"`
+	ModBy                int32     `gorm:"column:modby" json:"mod_by"`
+	ModDate              time.Time `gorm:"column:moddate" json:"mod_date"`
+	Ikrar1               bool      `gorm:"column:ikrar1" json:"ikrar_1"`
+	Ikrar2               bool      `gorm:"column:ikrar2" json:"ikrar_2"`
+	Ikrar3               bool      `gorm:"column:ikrar3" json:"ikrar_3"`
+	Ikrar4               bool      `gorm:"column:ikrar4" json:"ikrar_4"`
+	Ikrar5               bool      `gorm:"column:ikrar5" json:"ikrar_5"`
+	Ikrar6               bool      `gorm:"column:ikrar6" json:"ikrar_6"`
+	RenChaiPan           bool      `gorm:"column:RenChaiPan" json:"ren_chai_pan"`
+	TanggalRenChaiPan    time.Time `gorm:"column:TanggalRenChaiPan" json:"tanggal_ren_chai_pan"`
+	LienCiangPan         bool      `gorm:"column:LienCiangPan" json:"lien_ciang_pan"`
+	TanggalLienCiangPan  time.Time `gorm:"column:TanggalLienCiangPan" json:"tanggal_lien_ciang_pan"`
+	CiangYenPan          bool      `gorm:"column:CiangYenPan" json:"ciang_yen_pan"`
+	TanggalCiangYenPan   time.Time `gorm:"column:TanggalCiangYenPan" json:"tanggal_ciang_yen_pan"`
+	ActiveStatus         bool      `gorm:"column:ActiveStatus" json:"active_status"`
+	NamaFotangLain       string    `gorm:"column:NamaFotangLain" json:"nama_fotang_lain"`
+	NamaTcsLain          string    `gorm:"column:NamaTcsLain" json:"nama_tcs_lain"`
+	KodeBuku             string    `gorm:"column:KodeBuku" json:"kode_buku"`
 }
 
 func (Umat) TableName() string { return "T_BUS_UMAT" }
 
-// Topic maps T_BUS_TOPIC.
+// Topic represents table [dbo].[T_BUS_TOPIC]
 type Topic struct {
-	TopicCode  string    `gorm:"column:TopicCode;primaryKey;size:20" json:"topicCode"`
-	TopicName  string    `gorm:"column:TopicName;size:150" json:"topicName"`
-	FlagActive bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate    time.Time `gorm:"column:ModDate" json:"modDate"`
+	TopicCode     string    `gorm:"primaryKey;column:TopicCode" json:"topic_code"`
+	TopicName     string    `gorm:"column:TopicName" json:"topic_name"`
+	TopicCategory string    `gorm:"column:TopicCategory" json:"topic_category"`
+	Description   string    `gorm:"column:Description" json:"description"`
+	Status        bool      `gorm:"column:Status" json:"status"`
+	ModAct        string    `gorm:"column:ModAct" json:"mod_act"`
+	ModBy         string    `gorm:"column:ModBy" json:"mod_by"`
+	ModDate       time.Time `gorm:"column:ModDate" json:"mod_date"`
 }
 
 func (Topic) TableName() string { return "T_BUS_TOPIC" }
 
-// Activity maps T_BUS_EVENT.
+// Activity represents table [dbo].[T_BUS_EVENT]
 type Activity struct {
-	EventCode  string    `gorm:"column:EventCode;primaryKey;size:10" json:"eventCode"`
-	EventName  string    `gorm:"column:EventName;size:150" json:"eventName"`
-	FlagActive bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate    time.Time `gorm:"column:ModDate" json:"modDate"`
+	EventCode     string    `gorm:"primaryKey;column:EventCode" json:"event_code"`
+	EventName     string    `gorm:"column:EventName" json:"event_name"`
+	EventCategory string    `gorm:"column:EventCategory" json:"event_category"`
+	Description   string    `gorm:"column:Description" json:"description"`
+	Status        bool      `gorm:"column:Status" json:"status"`
+	ModAct        string    `gorm:"column:ModAct" json:"mod_act"`
+	ModBy         string    `gorm:"column:ModBy" json:"mod_by"`
+	ModDate       time.Time `gorm:"column:ModDate" json:"mod_date"`
 }
 
-func (Activity) TableName() string { return "T_BUS_EVENT" }
+func (Activity) TableName() string { return "T_BUS_EVENT" } // TimKerja represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_POSISI'
 
-// TimKerja maps T_APP_LOOKUP for B_POSISI.
 type TimKerja struct {
-	LookupID          string    `gorm:"column:LookupId;primaryKey;size:25" json:"lookupId"`
-	LookupCategory    string    `gorm:"column:LookupCategory;size:25" json:"lookupCategory"`
-	LookupDescription string    `gorm:"column:LookupDescription;size:150" json:"lookupDescription"`
-	FlagActive        bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate           time.Time `gorm:"column:ModDate" json:"modDate"`
+	LookupId          string    `gorm:"primaryKey;column:LookupId" json:"lookup_id"`
+	CategoryId        string    `gorm:"column:CategoryId;default:B_POSISI" json:"category_id"`
+	LookupValue       string    `gorm:"column:LookupValue" json:"lookup_value"`
+	LookupDescription string    `gorm:"column:LookupDescription" json:"lookup_description"`
+	Status            bool      `gorm:"column:Status" json:"status"`
+	ModAct            string    `gorm:"column:ModAct" json:"mod_act"`
+	ModBy             string    `gorm:"column:ModBy" json:"mod_by"`
+	ModDate           time.Time `gorm:"column:ModDate" json:"mod_date"`
 }
 
-func (TimKerja) TableName() string { return "T_APP_LOOKUP" }
+func (TimKerja) TableName() string { return "T_APP_LOOKUP" } // TahunCiuTao represents table [dbo].[T_BUS_TAHUN_CIUTAO]
 
-// TahunCiuTao maps T_BUS_TAHUN_CIUTAO.
 type TahunCiuTao struct {
-	TahunMandarin string    `gorm:"column:TahunMandarin;primaryKey;size:20" json:"tahunMandarin"`
-	Description   string    `gorm:"column:description;size:50" json:"description"`
-	FlagActive    bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate       time.Time `gorm:"column:ModDate" json:"modDate"`
+	TahunMandarin string    `gorm:"primaryKey;column:TahunMandarin" json:"tahun_mandarin"`
+	StartDate     time.Time `gorm:"column:StartDate" json:"start_date"`
+	EndDate       time.Time `gorm:"column:EndDate" json:"end_date"`
+	ModAct        string    `gorm:"column:ModAct" json:"mod_act"`
+	ModBy         string    `gorm:"column:ModBy" json:"mod_by"`
+	ModDate       time.Time `gorm:"column:ModDate" json:"mod_date"`
+	Status        bool      `gorm:"column:status" json:"status"`
+	Description   string    `gorm:"column:description" json:"description"`
 }
 
-func (TahunCiuTao) TableName() string { return "T_BUS_TAHUN_CIUTAO" }
+func (TahunCiuTao) TableName() string { return "T_BUS_TAHUN_CIUTAO" } // PenggalangDana represents table [dbo].[T_SXY_MST_PENGGALANG]
 
-// PenggalangDana maps T_SXY_MST_PENGGALANG.
 type PenggalangDana struct {
-	ID         int       `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	Name       string    `gorm:"column:Name;size:150" json:"name"`
-	FlagActive bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate    time.Time `gorm:"column:updateddate" json:"updatedDate"`
+	ID            int32     `gorm:"primaryKey;column:id" json:"id"`
+	No            string    `gorm:"column:no" json:"no"`
+	Nama          string    `gorm:"column:nama" json:"nama"`
+	Mandarin      string    `gorm:"column:mandarin" json:"mandarin"`
+	Keterangan    string    `gorm:"column:keterangan" json:"keterangan"`
+	LookupFothang int32     `gorm:"column:lookup_fothang" json:"lookup_fothang"`
+	Alamat        string    `gorm:"column:alamat" json:"alamat"`
+	Telepon       string    `gorm:"column:telepon" json:"telepon"`
+	Mobile        string    `gorm:"column:mobile" json:"mobile"`
+	Email         string    `gorm:"column:email" json:"email"`
+	Status        bool      `gorm:"column:STATUS" json:"status"`
+	CreatedBy     int32     `gorm:"column:createdby" json:"created_by"`
+	CreatedDate   time.Time `gorm:"column:createddate" json:"created_date"`
+	UpdatedBy     int32     `gorm:"column:updatedby" json:"updated_by"`
+	UpdatedDate   time.Time `gorm:"column:updateddate" json:"updated_date"`
 }
 
-func (PenggalangDana) TableName() string { return "T_SXY_MST_PENGGALANG" }
+func (PenggalangDana) TableName() string { return "T_SXY_MST_PENGGALANG" } // SxyDonatur represents table [dbo].[T_SXY_MST_DONATUR]
 
-// SxyDonatur maps T_SXY_MST_DONATUR.
 type SxyDonatur struct {
-	ID         int       `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	Name       string    `gorm:"column:Name;size:150" json:"name"`
-	FlagActive bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate    time.Time `gorm:"column:updateddate" json:"updatedDate"`
+	ID            int32     `gorm:"primaryKey;column:id" json:"id"`
+	No            string    `gorm:"column:no" json:"no"`
+	Nama          string    `gorm:"column:nama" json:"nama"`
+	Mandarin      string    `gorm:"column:mandarin" json:"mandarin"`
+	Keterangan    string    `gorm:"column:keterangan" json:"keterangan"`
+	LookupFothang int32     `gorm:"column:lookup_fothang" json:"lookup_fothang"`
+	Alamat        string    `gorm:"column:alamat" json:"alamat"`
+	Telepon       string    `gorm:"column:telepon" json:"telepon"`
+	Mobile        string    `gorm:"column:mobile" json:"mobile"`
+	Email         string    `gorm:"column:email" json:"email"`
+	Status        bool      `gorm:"column:STATUS" json:"status"`
+	CreatedBy     int32     `gorm:"column:createdby" json:"created_by"`
+	CreatedDate   time.Time `gorm:"column:createddate" json:"created_date"`
+	UpdatedBy     int32     `gorm:"column:updatedby" json:"updated_by"`
+	UpdatedDate   time.Time `gorm:"column:updateddate" json:"updated_date"`
 }
 
 func (SxyDonatur) TableName() string { return "T_SXY_MST_DONATUR" }
 
-// Kelas maps T_APP_LOOKUP for B_KELASKHUSUS.
+// ==========================================// 3. SPECIAL CUSTOM TYPE & DONATION MODELS// ==========================================// Kelas represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_KELASKHUSUS'
+
 type Kelas struct {
-	LookupID          string    `gorm:"column:LookupId;primaryKey;size:25" json:"lookupId"`
-	LookupCategory    string    `gorm:"column:LookupCategory;size:25" json:"lookupCategory"`
-	LookupDescription string    `gorm:"column:LookupDescription;size:150" json:"lookupDescription"`
-	FlagActive        bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate           time.Time `gorm:"column:ModDate" json:"modDate"`
+	LookupId          string    `gorm:"primaryKey;column:LookupId" json:"lookup_id"`
+	CategoryId        string    `gorm:"column:CategoryId;default:B_KELASKHUSUS" json:"category_id"`
+	LookupValue       string    `gorm:"column:LookupValue" json:"lookup_value"`
+	LookupDescription string    `gorm:"column:LookupDescription" json:"lookup_description"`
+	Status            bool      `gorm:"column:Status" json:"status"`
+	ModAct            string    `gorm:"column:ModAct" json:"mod_act"`
+	ModBy             string    `gorm:"column:ModBy" json:"mod_by"`
+	ModDate           time.Time `gorm:"column:ModDate" json:"mod_date"`
 }
 
-func (Kelas) TableName() string { return "T_APP_LOOKUP" }
+func (Kelas) TableName() string { return "T_APP_LOOKUP" } // DonasiSxy represents table [dbo].[T_SXY_TRANSAKSI]
 
-// DonasiSxy maps T_SXY_TRANSAKSI.
 type DonasiSxy struct {
-	ID         int       `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	Name       string    `gorm:"column:Name;size:150" json:"name"`
-	FlagActive bool      `gorm:"column:FlagActive" json:"flagActive"`
-	ModDate    time.Time `gorm:"column:ttksent" json:"ttkSent"`
+	ID              int32     `gorm:"primaryKey;column:id" json:"id"`
+	NoKwitansi      string    `gorm:"column:nokwitansi" json:"no_kwitansi"`
+	Tanggal         time.Time `gorm:"column:tanggal" json:"tanggal"`
+	Donatur         int32     `gorm:"column:donatur" json:"donatur_id"`
+	Penggalang      int32     `gorm:"column:penggalang" json:"penggalang_id"`
+	Jumlah          float64   `gorm:"column:jumlah" json:"jumlah"` // Maps NUMERIC(18,0) cleanly
+	TipeSumbangan   int32     `gorm:"column:tipesumbangan" json:"tipe_sumbangan"`
+	NoKupon         string    `gorm:"column:nokupon" json:"no_kupon"`
+	Keterangan      string    `gorm:"column:keterangan" json:"keterangan"`
+	Status          bool      `gorm:"column:STATUS" json:"status"`
+	CreatedBy       int32     `gorm:"column:createdby" json:"created_by"`
+	CreatedDate     time.Time `gorm:"column:createddate" json:"created_date"`
+	UpdatedBy       int32     `gorm:"column:updatedby" json:"updated_by"`
+	UpdatedDate     time.Time `gorm:"column:updateddate" json:"updated_date"`
+	TanggalTransfer time.Time `gorm:"column:tanggaltransfer" json:"tanggal_transfer"`
+	AtasNama        string    `gorm:"column:atasnama" json:"atas_nama"`
+	TtkSent         bool      `gorm:"column:ttksent" json:"ttk_sent"`
 }
 
 func (DonasiSxy) TableName() string { return "T_SXY_TRANSAKSI" }

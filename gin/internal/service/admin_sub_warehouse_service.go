@@ -22,57 +22,64 @@ func NewAdminSubWarehouseService(db *gorm.DB) *AdminSubWarehouseService {
 	return &AdminSubWarehouseService{db: db, resource: "admin-sub-warehouses"}
 }
 
-func (s *AdminSubWarehouseService) List() []domain.Resource {
-	var items []domain.Resource
-	if err := s.db.Order("created_at DESC").Find(&items).Error; err != nil {
+func (s *AdminSubWarehouseService) List() []domain.AdminSubWarehouse {
+	var items []domain.AdminSubWarehouse
+	if err := s.db.Find(&items).Error; err != nil {
 		return nil
 	}
 	return items
 }
 
-func (s *AdminSubWarehouseService) Create(payload domain.Resource) (domain.Resource, error) {
-	if payload.Code == "" || payload.Name == "" {
-		return domain.Resource{}, fmt.Errorf("code and name are required")
+func (s *AdminSubWarehouseService) Create(payload domain.AdminSubWarehouse) (domain.AdminSubWarehouse, error) {
+	if payload.FullName == "" {
+		return domain.AdminSubWarehouse{}, fmt.Errorf("full_name is required")
 	}
-	payload.ID = fmt.Sprintf("%d", time.Now().UnixNano())
-	payload.Category = s.resource
-	payload.Active = true
-	payload.CreatedAt = time.Now().UTC().Format(time.RFC3339)
-	payload.UpdatedAt = payload.CreatedAt
-	payload.CreatedBy = "system"
-	payload.UpdatedBy = "system"
+	if payload.SubWhType == "" {
+		return domain.AdminSubWarehouse{}, fmt.Errorf("sub_wh_type is required")
+	}
+	payload.LstUpdate = time.Now()
+	if payload.CruId == 0 {
+		payload.CruId = 1
+	}
+	if payload.UpdateUId == 0 {
+		payload.UpdateUId = 1
+	}
 
 	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.AdminSubWarehouse{}, err
 	}
 	return payload, nil
 }
 
-func (s *AdminSubWarehouseService) Get(id string) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("admin sub warehouse %s not found", id)
+func (s *AdminSubWarehouseService) Get(id string) (domain.AdminSubWarehouse, error) {
+	var item domain.AdminSubWarehouse
+	if err := s.db.First(&item, "SubWhId = ?", id).Error; err != nil {
+		return domain.AdminSubWarehouse{}, fmt.Errorf("admin sub warehouse %s not found", id)
 	}
 	return item, nil
 }
 
-func (s *AdminSubWarehouseService) Update(id string, payload domain.Resource) (domain.Resource, error) {
-	var item domain.Resource
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Resource{}, fmt.Errorf("admin sub warehouse %s not found", id)
+func (s *AdminSubWarehouseService) Update(id string, payload domain.AdminSubWarehouse) (domain.AdminSubWarehouse, error) {
+	var item domain.AdminSubWarehouse
+	if err := s.db.First(&item, "SubWhId = ?", id).Error; err != nil {
+		return domain.AdminSubWarehouse{}, fmt.Errorf("admin sub warehouse %s not found", id)
 	}
 
-	item.Code = payload.Code
-	item.Name = payload.Name
-	item.Active = payload.Active
-	item.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-	item.UpdatedBy = "system"
+	item.WhId = payload.WhId
+	item.FullName = payload.FullName
+	item.Pic = payload.Pic
+	item.DocCode = payload.DocCode
+	item.CruId = payload.CruId
+	item.UpdateUId = payload.UpdateUId
+	item.LstUpdate = time.Now()
+	item.FlagProductions = payload.FlagProductions
+	item.SubWhType = payload.SubWhType
 	if err := s.db.Save(&item).Error; err != nil {
-		return domain.Resource{}, err
+		return domain.AdminSubWarehouse{}, err
 	}
 	return item, nil
 }
 
 func (s *AdminSubWarehouseService) Delete(id string) error {
-	return s.db.Delete(&domain.Resource{}, "id = ?", id).Error
+	return s.db.Delete(&domain.AdminSubWarehouse{}, "SubWhId = ?", id).Error
 }

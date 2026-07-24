@@ -9,6 +9,7 @@ import (
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -24,18 +25,53 @@ func NewUmatService(db *gorm.DB) *UmatService {
 	return &UmatService{db: db, resource: "umats"}
 }
 
-func (s *UmatService) List( /*limit int, offset int*/ ) ([]domain.Umat, error) { //[]domain.Umat {
+func (s *UmatService) List(page int, filters map[string]string, limit int) ([]domain.Umat, int64, error) { //[]domain.Umat {
 	var items []domain.Umat
+	var total int64
 
-	var limit = 10
-	var offset = 0
-	// Default fallback values if pagination parameters are missing
+	// Validasi parameter pagination
 	if limit <= 0 {
 		limit = 10
 	}
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
 
-	// Prepare the query pool
+	// Base query
 	query := s.db.Table("T_BUS_UMAT").Where("status = ?", true)
+	// Dynamic optional search on fields (dengan whitelist kolom aman dari SQL Injection)
+	type FilterRule struct {
+		Column string
+		IsLike bool
+	}
+
+	allowedFilters := map[string]FilterRule{
+		"alias":                {Column: "alias", IsLike: true},
+		"namaindonesia":        {Column: "namaindonesia", IsLike: true},
+		"namamandarin":         {Column: "namamandarin", IsLike: true},          // Tahun menggunakan exact match (=)
+		"tahunchiutaomandarin": {Column: "tahunchiutaomandarin", IsLike: false}, // Tahun menggunakan exact match (=)
+	}
+
+	for field, value := range filters {
+		if value == "" {
+			continue
+		}
+		if rule, exists := allowedFilters[field]; exists {
+			if rule.IsLike {
+				// String / Varchar menggunakan LIKE
+				query = query.Where(fmt.Sprintf("[%s] LIKE ?", rule.Column), "%"+value+"%")
+			} else {
+				// Tahun atau numerik menggunakan exact match (=)
+				query = query.Where(fmt.Sprintf("[%s] = ?", rule.Column), value)
+			}
+		}
+	}
+
+	// 1. Hitung total data keseluruhan (untuk metadata pagination)
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("database count error: %w", err)
+	}
 
 	// Execute retrieval order
 	err := query.
@@ -47,18 +83,18 @@ func (s *UmatService) List( /*limit int, offset int*/ ) ([]domain.Umat, error) {
 	if err != nil {
 		// 1. Jika error murni karena username tidak terdaftar di DB
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return []domain.Umat{}, errors.New("umat tidak ditemukan")
+			return []domain.Umat{}, 0, errors.New("umat tidak ditemukan")
 		}
 
 		// 2. Jika error karena masalah MSSQL (misal: "invalid column name", "connection timeout")
 		// Mengembalikan pesan error asli dari sistem SQL Server secara dinamis
-		return []domain.Umat{}, fmt.Errorf("database error: %w", err)
+		return []domain.Umat{}, 0, fmt.Errorf("database error: %w", err)
 		// return nil
 	}
-	return items, nil
+	return items, total, nil
 }
 
-func (s *UmatService) Create(payload domain.Umat) (domain.Umat, error) {
+func (s *UmatService) Create(payload domain.Umat, c *gin.Context) (domain.Umat, error) {
 	// 1. Validate based on your actual struct parameters
 	if payload.Kode == "" || payload.NamaIndonesia == "" {
 		return domain.Umat{}, fmt.Errorf("kode and nama_indonesia are required")
@@ -72,10 +108,10 @@ func (s *UmatService) Create(payload domain.Umat) (domain.Umat, error) {
 	payload.ID = maxID + 1
 
 	// 3. Populate matching schema structural constraints
-	payload.Status = true        // Active status mapping
-	payload.ModAct = "I"         // 'I' standard legacy flag for Insert
-	payload.ModBy = 1            // Default system user ID matching INT type
-	payload.ModDate = time.Now() // Local server time object
+	payload.Status = true                            // Active status mapping
+	payload.ModAct = "I"                             // 'I' standard legacy flag for Insert
+	payload.ModBy = int32(c.MustGet("userID").(int)) // Default system user ID matching INT type
+	payload.ModDate = time.Now()                     // Local server time object
 
 	// 4. Persist the new entity to the database pool
 	if err := s.db.Create(&payload).Error; err != nil {
@@ -92,7 +128,7 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 	return item, nil
 }
 
-func (s *UmatService) Update(id string, payload domain.Umat) (domain.Umat, error) {
+func (s *UmatService) Update(id string, payload domain.Umat, c *gin.Context) (domain.Umat, error) {
 	// 1. Cast string ID parameter safely to int32 to prevent MSSQL query crashes
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -118,10 +154,10 @@ func (s *UmatService) Update(id string, payload domain.Umat) (domain.Umat, error
 	item.Mobile = payload.Mobile
 
 	// Legacy metadata mappings
-	item.Status = payload.Status // Maps to legacy [STATUS] BIT flag
-	item.ModAct = "U"            // 'U' standard legacy flag for Update
-	item.ModBy = 1               // System user ID (int32)
-	item.ModDate = time.Now()    // Actual time.Time object expected by DATETIME column
+	// item.Status = payload.Status // Maps to legacy [STATUS] BIT flag
+	item.ModAct = "U"                             // 'U' standard legacy flag for Update
+	item.ModBy = int32(c.MustGet("userID").(int)) // System user ID (int32)
+	item.ModDate = time.Now()                     // Actual time.Time object expected by DATETIME column
 
 	// 4. Save updates back to SQL Server
 	if err := s.db.Save(&item).Error; err != nil {
@@ -130,6 +166,32 @@ func (s *UmatService) Update(id string, payload domain.Umat) (domain.Umat, error
 	return item, nil
 }
 
-func (s *UmatService) Delete(id string) error {
-	return s.db.Delete(&domain.Umat{}, "id = ?", id).Error
+func (s *UmatService) Delete(id string, c *gin.Context) error {
+	// 1. Cast string ID parameter safely to int32 to prevent MSSQL query crashes
+	parsedInt, err := strconv.Atoi(id)
+	if err != nil {
+		return fmt.Errorf("invalid ID format: %w", err)
+	}
+	userIDInt32 := int32(parsedInt)
+
+	var item domain.Umat
+	// 2. Fetch the existing item using .Take() to avoid default sorting bugs
+	if err := s.db.Where("id = ?", userIDInt32).Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("umat %s not found", id)
+		}
+		return err
+	}
+
+	// Legacy metadata mappings
+	item.Status = false
+	item.ModAct = "D"                             // 'D' standard legacy flag for Delete
+	item.ModBy = int32(c.MustGet("userID").(int)) // Default system user ID matching INT type
+	item.ModDate = time.Now()                     // Local server time object
+
+	// 4. Save updates back to SQL Server
+	if err := s.db.Save(&item).Error; err != nil {
+		return fmt.Errorf("failed to update record: %w", err)
+	}
+	return nil
 }

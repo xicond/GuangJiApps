@@ -2,7 +2,9 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
@@ -39,6 +41,12 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	r.Use(cors.New(corsConfig))
 
 	r.GET(cfg.BaseURL+"/ping", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -114,15 +122,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Admin"})
 	})
-	protected.POST("/admins/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := adminService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Admin"})
-	})
 	protected.PATCH("/admins/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.Admin
@@ -172,15 +171,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Admin Group"})
-	})
-	protected.POST("/admin-groups/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := adminGroupService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Admin Group"})
 	})
 	protected.PATCH("/admin-groups/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -232,15 +222,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Group Menu Mapping"})
 	})
-	protected.POST("/group-menu-mappings/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := groupMenuService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Group Menu Mapping"})
-	})
 	protected.PATCH("/group-menu-mappings/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.GroupMenuMapping
@@ -291,15 +272,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Admin Sub Warehouse"})
 	})
-	protected.POST("/admin-sub-warehouses/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := adminSubWarehouseService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Admin Sub Warehouse"})
-	})
 	protected.PATCH("/admin-sub-warehouses/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.AdminSubWarehouse
@@ -325,12 +297,42 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 
 	protected.GET("/umats", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		items, err := umatService.List()
+		// 1. Parsing parameter pagination dengan nilai default
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 10
+		}
+
+		// Ambil semua query secara dinamis, kecuali page & limit
+		filters := make(map[string]string)
+		for key, values := range c.Request.URL.Query() {
+			if key == "page" || key == "limit" {
+				continue
+			}
+			if len(values) > 0 && values[0] != "" {
+				filters[key] = values[0]
+			}
+		}
+
+		items, total, err := umatService.List(page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"data": items, "resource": "Umat"})
+
+		c.JSON(http.StatusOK, gin.H{
+			"data": items,
+			"meta": gin.H{
+				"page":  page,
+				"limit": limit,
+				"total": total,
+			},
+			"resource": "Umat",
+		})
 	})
 	protected.GET("/umats/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -348,21 +350,12 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := umatService.Create(payload)
+		created, err := umatService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Umat"})
-	})
-	protected.POST("/umats/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := umatService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Umat"})
 	})
 	protected.PATCH("/umats/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -371,7 +364,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := umatService.Update(c.Param("id"), payload)
+		updated, err := umatService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -380,7 +373,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/umats/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := umatService.Delete(c.Param("id")); err != nil {
+		if err := umatService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
@@ -413,15 +406,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Topic"})
-	})
-	protected.POST("/topics/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := topicService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Topic"})
 	})
 	protected.PATCH("/topics/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -473,15 +457,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Activity"})
 	})
-	protected.POST("/activities/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := activityService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Activity"})
-	})
 	protected.PATCH("/activities/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.Activity
@@ -531,15 +506,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Tim Kerja"})
-	})
-	protected.POST("/tim-kerja/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := timKerjaService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Tim Kerja"})
 	})
 	protected.PATCH("/tim-kerja/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -591,15 +557,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Tahun Ciu Tao"})
 	})
-	protected.POST("/tahun-ciu-tao/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := tahunCiuTaoService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Tahun Ciu Tao"})
-	})
 	protected.PATCH("/tahun-ciu-tao/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.TahunCiuTao
@@ -649,15 +606,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Penggalang Dana"})
-	})
-	protected.POST("/penggalang-dana/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := penggalangDanaService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Penggalang Dana"})
 	})
 	protected.PATCH("/penggalang-dana/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -709,15 +657,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Sxy Donatur"})
 	})
-	protected.POST("/sxy-donatur/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := sxyDonaturService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Sxy Donatur"})
-	})
 	protected.PATCH("/sxy-donatur/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.SxyDonatur
@@ -768,15 +707,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Kelas"})
 	})
-	protected.POST("/kelas/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := kelasService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Kelas"})
-	})
 	protected.PATCH("/kelas/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.Kelas
@@ -826,15 +756,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Donasi Sxy"})
-	})
-	protected.POST("/donasi-sxy/:id", func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		item, err := donasiSxyService.Get(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Donasi Sxy"})
 	})
 	protected.PATCH("/donasi-sxy/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")

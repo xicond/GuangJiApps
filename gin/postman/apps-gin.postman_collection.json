@@ -29,8 +29,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/ping",
-              "host": ["{{baseUrl}}"],
-              "path": ["ping"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ping"
+              ]
             }
           }
         },
@@ -55,13 +59,17 @@
             },
             "url": {
               "raw": "{{baseUrl}}/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "Forgot Password",  
+          "name": "Forgot Password",
           "request": {
             "method": "POST",
             "header": [
@@ -81,8 +89,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/forgot-password",
-              "host": ["{{baseUrl}}"],
-              "path": ["forgot-password"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "forgot-password"
+              ]
             }
           }
         },
@@ -107,8 +119,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/reset-password",
-              "host": ["{{baseUrl}}"],
-              "path": ["reset-password"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reset-password"
+              ]
             }
           }
         }
@@ -129,8 +145,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admins",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admins"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admins"
+              ]
             }
           }
         },
@@ -159,8 +180,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/admins",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admins"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admins"
+              ]
             }
           }
         },
@@ -176,8 +202,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admins/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admins", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admins",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -213,8 +245,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/admins/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admins", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admins",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -237,8 +275,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admins/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admins", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admins",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -261,8 +305,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admin-groups",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-groups"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-groups"
+              ]
             }
           }
         },
@@ -291,8 +340,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/admin-groups",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-groups"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-groups"
+              ]
             }
           }
         },
@@ -308,8 +362,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admin-groups/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-groups", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-groups",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -345,8 +405,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/admin-groups/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-groups", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-groups",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -369,8 +435,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admin-groups/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-groups", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-groups",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -393,8 +465,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/group-menu-mappings",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "group-menu-mappings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "group-menu-mappings"
+              ]
             }
           }
         },
@@ -423,8 +500,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/group-menu-mappings",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "group-menu-mappings"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "group-menu-mappings"
+              ]
             }
           }
         },
@@ -440,8 +522,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/group-menu-mappings/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "group-menu-mappings", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "group-menu-mappings",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -477,8 +565,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/group-menu-mappings/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "group-menu-mappings", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "group-menu-mappings",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -501,8 +595,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/group-menu-mappings/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "group-menu-mappings", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "group-menu-mappings",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -525,8 +625,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admin-sub-warehouses",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-sub-warehouses"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-sub-warehouses"
+              ]
             }
           }
         },
@@ -555,8 +660,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/admin-sub-warehouses",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-sub-warehouses"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-sub-warehouses"
+              ]
             }
           }
         },
@@ -572,8 +682,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admin-sub-warehouses/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-sub-warehouses", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-sub-warehouses",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -609,8 +725,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/admin-sub-warehouses/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-sub-warehouses", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-sub-warehouses",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -633,8 +755,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/admin-sub-warehouses/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "admin-sub-warehouses", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "admin-sub-warehouses",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -662,8 +790,49 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/umats",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "umats"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "alias",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan alias (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "namaindonesia",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan namaindonesia (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "namamandarin",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan namamandarin (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "tahunchiutaomandarin",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan tahunchiutaomandarin (Exact match)",
+                  "disabled": true
+                }
+              ]
             }
           }
         },
@@ -692,8 +861,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/umats",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "umats"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats"
+              ]
             }
           }
         },
@@ -709,8 +883,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/umats/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "umats", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -746,8 +926,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/umats/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "umats", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -770,8 +956,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/umats/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "umats", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -794,8 +986,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/topics",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "topics"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "topics"
+              ]
             }
           }
         },
@@ -824,8 +1021,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/topics",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "topics"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "topics"
+              ]
             }
           }
         },
@@ -841,8 +1043,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/topics/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "topics", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "topics",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -878,8 +1086,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/topics/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "topics", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "topics",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -902,8 +1116,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/topics/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "topics", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "topics",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -926,8 +1146,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/activities",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "activities"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "activities"
+              ]
             }
           }
         },
@@ -956,8 +1181,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/activities",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "activities"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "activities"
+              ]
             }
           }
         },
@@ -973,8 +1203,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/activities/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "activities", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "activities",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1010,8 +1246,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/activities/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "activities", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "activities",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1034,8 +1276,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/activities/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "activities", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "activities",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1058,8 +1306,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/tim-kerja",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tim-kerja"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tim-kerja"
+              ]
             }
           }
         },
@@ -1088,8 +1341,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/tim-kerja",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tim-kerja"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tim-kerja"
+              ]
             }
           }
         },
@@ -1105,8 +1363,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/tim-kerja/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tim-kerja", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tim-kerja",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1142,8 +1406,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/tim-kerja/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tim-kerja", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tim-kerja",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1166,8 +1436,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/tim-kerja/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tim-kerja", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tim-kerja",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1190,8 +1466,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/tahun-ciu-tao",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tahun-ciu-tao"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tahun-ciu-tao"
+              ]
             }
           }
         },
@@ -1220,8 +1501,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/tahun-ciu-tao",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tahun-ciu-tao"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tahun-ciu-tao"
+              ]
             }
           }
         },
@@ -1237,8 +1523,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tahun-ciu-tao", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tahun-ciu-tao",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1274,8 +1566,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tahun-ciu-tao", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tahun-ciu-tao",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1298,8 +1596,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "tahun-ciu-tao", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tahun-ciu-tao",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1322,8 +1626,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/penggalang-dana",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "penggalang-dana"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "penggalang-dana"
+              ]
             }
           }
         },
@@ -1352,8 +1661,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/penggalang-dana",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "penggalang-dana"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "penggalang-dana"
+              ]
             }
           }
         },
@@ -1369,8 +1683,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/penggalang-dana/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "penggalang-dana", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "penggalang-dana",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1406,8 +1726,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/penggalang-dana/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "penggalang-dana", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "penggalang-dana",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1430,8 +1756,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/penggalang-dana/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "penggalang-dana", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "penggalang-dana",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1454,8 +1786,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/sxy-donatur",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "sxy-donatur"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "sxy-donatur"
+              ]
             }
           }
         },
@@ -1484,8 +1821,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/sxy-donatur",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "sxy-donatur"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "sxy-donatur"
+              ]
             }
           }
         },
@@ -1501,8 +1843,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/sxy-donatur/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "sxy-donatur", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "sxy-donatur",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1538,8 +1886,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/sxy-donatur/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "sxy-donatur", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "sxy-donatur",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1562,8 +1916,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/sxy-donatur/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "sxy-donatur", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "sxy-donatur",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1591,8 +1951,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/kelas",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "kelas"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kelas"
+              ]
             }
           }
         },
@@ -1621,8 +1986,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/kelas",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "kelas"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kelas"
+              ]
             }
           }
         },
@@ -1638,8 +2008,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/kelas/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "kelas", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kelas",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1675,8 +2051,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/kelas/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "kelas", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kelas",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1699,8 +2081,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/kelas/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "kelas", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kelas",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1723,8 +2111,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/donasi-sxy",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "donasi-sxy"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "donasi-sxy"
+              ]
             }
           }
         },
@@ -1753,8 +2146,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/donasi-sxy",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "donasi-sxy"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "donasi-sxy"
+              ]
             }
           }
         },
@@ -1770,8 +2168,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/donasi-sxy/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "donasi-sxy", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "donasi-sxy",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1807,8 +2211,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/v1/donasi-sxy/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "donasi-sxy", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "donasi-sxy",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",
@@ -1831,8 +2241,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/donasi-sxy/:resourceId",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "donasi-sxy", ":resourceId"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "donasi-sxy",
+                ":resourceId"
+              ],
               "variable": [
                 {
                   "key": "resourceId",

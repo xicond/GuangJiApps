@@ -18,6 +18,29 @@ type Router struct {
 	*gin.Engine
 }
 
+func parsePaginationAndFilters(c *gin.Context) (int, int, map[string]string) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+
+	filters := make(map[string]string)
+	for key, values := range c.Request.URL.Query() {
+		if key == "page" || key == "limit" {
+			continue
+		}
+		if len(values) > 0 && values[0] != "" {
+			filters[key] = values[0]
+		}
+	}
+
+	return page, limit, filters
+}
+
 func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config) *Router {
 	adminService := service.NewAdminService(db)
 	adminGroupService := service.NewAdminGroupService(db)
@@ -32,6 +55,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	sxyDonaturService := service.NewSxyDonaturService(db)
 	kelasService := service.NewKelasService(db)
 	donasiSxyService := service.NewDonasiSxyService(db)
+
 	if cfg.GinMode == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	} else {
@@ -53,7 +77,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "pong", "baseUrl": cfg.BaseURL})
 	})
 
-	// Fitur Tambahan: Tangkap rute salah apa pun untuk ditampilkan di log browser
 	r.NoRoute(func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusNotFound, gin.H{
@@ -95,9 +118,16 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "password reset complete"})
 	})
 
+	// Admins
 	protected.GET("/admins", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": adminService.List(), "resource": "Admin"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := adminService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Admin"})
 	})
 	protected.GET("/admins/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -115,7 +145,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := adminService.Create(payload)
+		created, err := adminService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -129,7 +159,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := adminService.Update(c.Param("id"), payload)
+		updated, err := adminService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -138,16 +168,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/admins/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := adminService.Delete(c.Param("id")); err != nil {
+		if err := adminService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Admin Groups
 	protected.GET("/admin-groups", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": adminGroupService.List(), "resource": "Admin Group"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := adminGroupService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Admin Group"})
 	})
 	protected.GET("/admin-groups/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -165,7 +202,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := adminGroupService.Create(payload)
+		created, err := adminGroupService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -179,7 +216,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := adminGroupService.Update(c.Param("id"), payload)
+		updated, err := adminGroupService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -188,16 +225,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/admin-groups/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := adminGroupService.Delete(c.Param("id")); err != nil {
+		if err := adminGroupService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Group Menu Mappings
 	protected.GET("/group-menu-mappings", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": groupMenuService.List(), "resource": "Group Menu Mapping"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := groupMenuService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Group Menu Mapping"})
 	})
 	protected.GET("/group-menu-mappings/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -215,7 +259,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := groupMenuService.Create(payload)
+		created, err := groupMenuService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -229,7 +273,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := groupMenuService.Update(c.Param("id"), payload)
+		updated, err := groupMenuService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -238,16 +282,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/group-menu-mappings/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := groupMenuService.Delete(c.Param("id")); err != nil {
+		if err := groupMenuService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Admin Sub Warehouses
 	protected.GET("/admin-sub-warehouses", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": adminSubWarehouseService.List(), "resource": "Admin Sub Warehouse"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := adminSubWarehouseService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Admin Sub Warehouse"})
 	})
 	protected.GET("/admin-sub-warehouses/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -265,7 +316,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := adminSubWarehouseService.Create(payload)
+		created, err := adminSubWarehouseService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -279,7 +330,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := adminSubWarehouseService.Update(c.Param("id"), payload)
+		updated, err := adminSubWarehouseService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -288,51 +339,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/admin-sub-warehouses/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := adminSubWarehouseService.Delete(c.Param("id")); err != nil {
+		if err := adminSubWarehouseService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Umats
 	protected.GET("/umats", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		// 1. Parsing parameter pagination dengan nilai default
-		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 10
-		}
-
-		// Ambil semua query secara dinamis, kecuali page & limit
-		filters := make(map[string]string)
-		for key, values := range c.Request.URL.Query() {
-			if key == "page" || key == "limit" {
-				continue
-			}
-			if len(values) > 0 && values[0] != "" {
-				filters[key] = values[0]
-			}
-		}
-
+		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := umatService.List(page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"data": items,
-			"meta": gin.H{
-				"page":  page,
-				"limit": limit,
-				"total": total,
-			},
-			"resource": "Umat",
-		})
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Umat"})
 	})
 	protected.GET("/umats/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -380,9 +403,16 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Topics
 	protected.GET("/topics", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": topicService.List(), "resource": "Topic"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := topicService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Topic"})
 	})
 	protected.GET("/topics/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -400,7 +430,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := topicService.Create(payload)
+		created, err := topicService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -414,7 +444,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := topicService.Update(c.Param("id"), payload)
+		updated, err := topicService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -423,16 +453,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/topics/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := topicService.Delete(c.Param("id")); err != nil {
+		if err := topicService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Activities
 	protected.GET("/activities", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": activityService.List(), "resource": "Activity"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := activityService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Activity"})
 	})
 	protected.GET("/activities/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -450,7 +487,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := activityService.Create(payload)
+		created, err := activityService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -464,7 +501,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := activityService.Update(c.Param("id"), payload)
+		updated, err := activityService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -473,16 +510,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/activities/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := activityService.Delete(c.Param("id")); err != nil {
+		if err := activityService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Tim Kerja
 	protected.GET("/tim-kerja", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": timKerjaService.List(), "resource": "Tim Kerja"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := timKerjaService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Tim Kerja"})
 	})
 	protected.GET("/tim-kerja/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -500,7 +544,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := timKerjaService.Create(payload)
+		created, err := timKerjaService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -514,7 +558,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := timKerjaService.Update(c.Param("id"), payload)
+		updated, err := timKerjaService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -523,16 +567,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/tim-kerja/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := timKerjaService.Delete(c.Param("id")); err != nil {
+		if err := timKerjaService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Tahun Ciu Tao
 	protected.GET("/tahun-ciu-tao", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": tahunCiuTaoService.List(), "resource": "Tahun Ciu Tao"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := tahunCiuTaoService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Tahun Ciu Tao"})
 	})
 	protected.GET("/tahun-ciu-tao/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -550,7 +601,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := tahunCiuTaoService.Create(payload)
+		created, err := tahunCiuTaoService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -564,7 +615,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := tahunCiuTaoService.Update(c.Param("id"), payload)
+		updated, err := tahunCiuTaoService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -573,16 +624,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/tahun-ciu-tao/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := tahunCiuTaoService.Delete(c.Param("id")); err != nil {
+		if err := tahunCiuTaoService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Penggalang Dana
 	protected.GET("/penggalang-dana", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": penggalangDanaService.List(), "resource": "Penggalang Dana"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := penggalangDanaService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Penggalang Dana"})
 	})
 	protected.GET("/penggalang-dana/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -600,7 +658,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := penggalangDanaService.Create(payload)
+		created, err := penggalangDanaService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -614,7 +672,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := penggalangDanaService.Update(c.Param("id"), payload)
+		updated, err := penggalangDanaService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -623,16 +681,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/penggalang-dana/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := penggalangDanaService.Delete(c.Param("id")); err != nil {
+		if err := penggalangDanaService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Sxy Donatur
 	protected.GET("/sxy-donatur", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": sxyDonaturService.List(), "resource": "Sxy Donatur"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := sxyDonaturService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Sxy Donatur"})
 	})
 	protected.GET("/sxy-donatur/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -650,7 +715,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := sxyDonaturService.Create(payload)
+		created, err := sxyDonaturService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -664,7 +729,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := sxyDonaturService.Update(c.Param("id"), payload)
+		updated, err := sxyDonaturService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -673,16 +738,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/sxy-donatur/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := sxyDonaturService.Delete(c.Param("id")); err != nil {
+		if err := sxyDonaturService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Kelas
 	protected.GET("/kelas", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": kelasService.List(), "resource": "Kelas"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := kelasService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Kelas"})
 	})
 	protected.GET("/kelas/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -700,7 +772,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := kelasService.Create(payload)
+		created, err := kelasService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -714,7 +786,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := kelasService.Update(c.Param("id"), payload)
+		updated, err := kelasService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -723,16 +795,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/kelas/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := kelasService.Delete(c.Param("id")); err != nil {
+		if err := kelasService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Donasi Sxy
 	protected.GET("/donasi-sxy", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, gin.H{"data": donasiSxyService.List(), "resource": "Donasi Sxy"})
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := donasiSxyService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Donasi Sxy"})
 	})
 	protected.GET("/donasi-sxy/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -750,7 +829,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		created, err := donasiSxyService.Create(payload)
+		created, err := donasiSxyService.Create(payload, c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -764,7 +843,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 			return
 		}
-		updated, err := donasiSxyService.Update(c.Param("id"), payload)
+		updated, err := donasiSxyService.Update(c.Param("id"), payload, c)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
@@ -773,11 +852,12 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/donasi-sxy/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := donasiSxyService.Delete(c.Param("id")); err != nil {
+		if err := donasiSxyService.Delete(c.Param("id"), c); err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
+
 	return &Router{r}
 }

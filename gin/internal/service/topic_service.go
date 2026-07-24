@@ -9,6 +9,7 @@ import (
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -24,34 +25,83 @@ func NewTopicService(db *gorm.DB) *TopicService {
 	return &TopicService{db: db, resource: "topics"}
 }
 
-func (s *TopicService) List() []domain.Topic {
+func (s *TopicService) List(page int, filters map[string]string, limit int) ([]domain.Topic, int64, error) {
 	var items []domain.Topic
-	if err := s.db.Order("created_at DESC").Find(&items).Error; err != nil {
-		return nil
+	var total int64
+
+	if limit <= 0 {
+		limit = 10
 	}
-	return items
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+
+	query := s.db.Table("T_BUS_TOPIC").Where("Status = ?", true)
+
+	type FilterRule struct {
+		Column string
+		IsLike bool
+	}
+
+	allowedFilters := map[string]FilterRule{
+		"topic_code":     {Column: "TopicCode", IsLike: true},
+		"topic_name":     {Column: "TopicName", IsLike: true},
+		"topic_category": {Column: "TopicCategory", IsLike: true},
+	}
+
+	for field, value := range filters {
+		if value == "" {
+			continue
+		}
+		if rule, exists := allowedFilters[field]; exists {
+			if rule.IsLike {
+				query = query.Where(fmt.Sprintf("[%s] LIKE ?", rule.Column), "%"+value+"%")
+			} else {
+				query = query.Where(fmt.Sprintf("[%s] = ?", rule.Column), value)
+			}
+		}
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("database count error: %w", err)
+	}
+
+	err := query.
+		Limit(limit).
+		Offset(offset).
+		Order("TopicCode ASC").
+		Find(&items).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []domain.Topic{}, 0, errors.New("topic tidak ditemukan")
+		}
+		return []domain.Topic{}, 0, fmt.Errorf("database error: %w", err)
+	}
+
+	return items, total, nil
 }
 
-func (s *TopicService) Create(payload domain.Topic) (domain.Topic, error) {
-	// 1. Validate based on your actual struct parameters
-	if payload.TopicName == "" || payload.TopicCategory == "" {
-		return domain.Topic{}, fmt.Errorf("Name and Category are required")
+func (s *TopicService) Create(payload domain.Topic, c *gin.Context) (domain.Topic, error) {
+	if payload.TopicCode == "" || payload.TopicName == "" {
+		return domain.Topic{}, fmt.Errorf("topic_code and topic_name are required")
 	}
 
-	// 2. IMPORTANT: Do NOT generate a random UnixNano string for ID!
-	// Your SQL Server schema defines [id] INT NOT NULL.
-	// If it is NOT an IDENTITY column, we calculate the next integer sequence manually.
-	var maxID int32
-	s.db.Table("T_BUS_UMAT").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
-	// payload.ID = maxID + 1
+	userIDStr := "1"
+	if c != nil {
+		if val, exists := c.Get("userID"); exists {
+			if uid, ok := val.(int); ok {
+				userIDStr = strconv.Itoa(uid)
+			}
+		}
+	}
 
-	// 3. Populate matching schema structural constraints
-	payload.Status = true        // Active status mapping
-	payload.ModAct = "I"         // 'I' standard legacy flag for Insert
-	payload.ModBy = "1"          // Default system user ID matching INT type
-	payload.ModDate = time.Now() // Local server time object
+	payload.Status = true
+	payload.ModAct = "I"
+	payload.ModBy = userIDStr
+	payload.ModDate = time.Now()
 
-	// 4. Persist the new entity to the database pool
 	if err := s.db.Create(&payload).Error; err != nil {
 		return domain.Topic{}, fmt.Errorf("failed to create record: %w", err)
 	}
@@ -60,47 +110,71 @@ func (s *TopicService) Create(payload domain.Topic) (domain.Topic, error) {
 
 func (s *TopicService) Get(id string) (domain.Topic, error) {
 	var item domain.Topic
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.Topic{}, fmt.Errorf("topic %s not found", id)
+	if err := s.db.Where("TopicCode = ?", id).Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.Topic{}, fmt.Errorf("topic %s not found", id)
+		}
+		return domain.Topic{}, err
 	}
 	return item, nil
 }
 
-func (s *TopicService) Update(id string, payload domain.Topic) (domain.Topic, error) {
-	// 1. Cast string ID parameter safely to int32 to prevent MSSQL query crashes
-	parsedInt, err := strconv.Atoi(id)
-	if err != nil {
-		return domain.Topic{}, fmt.Errorf("invalid ID format: %w", err)
-	}
-	userIDInt32 := int32(parsedInt)
-
+func (s *TopicService) Update(id string, payload domain.Topic, c *gin.Context) (domain.Topic, error) {
 	var item domain.Topic
-	// 2. Fetch the existing item using .Take() to avoid default sorting bugs
-	if err := s.db.Where("id = ?", userIDInt32).Take(&item).Error; err != nil {
+	if err := s.db.Where("TopicCode = ?", id).Take(&item).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return domain.Topic{}, fmt.Errorf("umat %s not found", id)
+			return domain.Topic{}, fmt.Errorf("topic %s not found", id)
 		}
 		return domain.Topic{}, err
 	}
 
-	// 3. Map values onto the actual field variables present in your legacy schema
-	item.TopicName = payload.TopicName         // string
-	item.TopicCategory = payload.TopicCategory // string
-	item.Description = payload.Description     // string
-	item.Status = payload.Status               // bool
+	userIDStr := "1"
+	if c != nil {
+		if val, exists := c.Get("userID"); exists {
+			if uid, ok := val.(int); ok {
+				userIDStr = strconv.Itoa(uid)
+			}
+		}
+	}
 
-	// Metadata
-	item.ModDate = time.Now() // time.Time
-	item.ModAct = "U"         // 'U' standard legacy flag for Update
-	item.ModBy = "1"          // System user ID (int32)
+	item.TopicName = payload.TopicName
+	item.TopicCategory = payload.TopicCategory
+	item.Description = payload.Description
+	item.ModAct = "U"
+	item.ModBy = userIDStr
+	item.ModDate = time.Now()
 
-	// 4. Save updates back to SQL Server
 	if err := s.db.Save(&item).Error; err != nil {
 		return domain.Topic{}, fmt.Errorf("failed to update record: %w", err)
 	}
 	return item, nil
 }
 
-func (s *TopicService) Delete(id string) error {
-	return s.db.Delete(&domain.Topic{}, "id = ?", id).Error
+func (s *TopicService) Delete(id string, c *gin.Context) error {
+	var item domain.Topic
+	if err := s.db.Where("TopicCode = ?", id).Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("topic %s not found", id)
+		}
+		return err
+	}
+
+	userIDStr := "1"
+	if c != nil {
+		if val, exists := c.Get("userID"); exists {
+			if uid, ok := val.(int); ok {
+				userIDStr = strconv.Itoa(uid)
+			}
+		}
+	}
+
+	item.Status = false
+	item.ModAct = "D"
+	item.ModBy = userIDStr
+	item.ModDate = time.Now()
+
+	if err := s.db.Save(&item).Error; err != nil {
+		return fmt.Errorf("failed to delete record: %w", err)
+	}
+	return nil
 }

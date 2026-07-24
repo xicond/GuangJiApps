@@ -1,12 +1,15 @@
 package service
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -22,42 +25,131 @@ func NewSxyDonaturService(db *gorm.DB) *SxyDonaturService {
 	return &SxyDonaturService{db: db, resource: "sxy-donatur"}
 }
 
-func (s *SxyDonaturService) List() []domain.SxyDonatur {
+func (s *SxyDonaturService) List(page int, filters map[string]string, limit int) ([]domain.SxyDonatur, int64, error) {
 	var items []domain.SxyDonatur
-	if err := s.db.Find(&items).Error; err != nil {
-		return nil
+	var total int64
+
+	if limit <= 0 {
+		limit = 10
 	}
-	return items
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+
+	query := s.db.Table("T_SXY_MST_DONATUR").Where("STATUS = ?", true)
+
+	type FilterRule struct {
+		Column string
+		IsLike bool
+	}
+
+	allowedFilters := map[string]FilterRule{
+		"no":       {Column: "no", IsLike: true},
+		"nama":     {Column: "nama", IsLike: true},
+		"mandarin": {Column: "mandarin", IsLike: true},
+		"email":    {Column: "email", IsLike: true},
+	}
+
+	for field, value := range filters {
+		if value == "" {
+			continue
+		}
+		if rule, exists := allowedFilters[field]; exists {
+			if rule.IsLike {
+				query = query.Where(fmt.Sprintf("[%s] LIKE ?", rule.Column), "%"+value+"%")
+			} else {
+				query = query.Where(fmt.Sprintf("[%s] = ?", rule.Column), value)
+			}
+		}
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("database count error: %w", err)
+	}
+
+	err := query.
+		Limit(limit).
+		Offset(offset).
+		Order("id ASC").
+		Find(&items).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return []domain.SxyDonatur{}, 0, errors.New("sxy donatur tidak ditemukan")
+		}
+		return []domain.SxyDonatur{}, 0, fmt.Errorf("database error: %w", err)
+	}
+
+	return items, total, nil
 }
 
-func (s *SxyDonaturService) Create(payload domain.SxyDonatur) (domain.SxyDonatur, error) {
+func (s *SxyDonaturService) Create(payload domain.SxyDonatur, c *gin.Context) (domain.SxyDonatur, error) {
 	if payload.No == "" || payload.Nama == "" {
 		return domain.SxyDonatur{}, fmt.Errorf("no and nama are required")
 	}
+
+	var maxID int32
+	s.db.Table("T_SXY_MST_DONATUR").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
+	payload.ID = maxID + 1
+
+	userID := int32(1)
+	if c != nil {
+		if val, exists := c.Get("userID"); exists {
+			if uid, ok := val.(int); ok {
+				userID = int32(uid)
+			}
+		}
+	}
+
 	payload.Status = true
-	payload.CreatedBy = 1
+	payload.CreatedBy = userID
 	payload.CreatedDate = time.Now()
-	payload.UpdatedBy = 1
+	payload.UpdatedBy = userID
 	payload.UpdatedDate = time.Now()
 
 	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.SxyDonatur{}, err
+		return domain.SxyDonatur{}, fmt.Errorf("failed to create record: %w", err)
 	}
 	return payload, nil
 }
 
 func (s *SxyDonaturService) Get(id string) (domain.SxyDonatur, error) {
+	parsedInt, err := strconv.Atoi(id)
+	if err != nil {
+		return domain.SxyDonatur{}, fmt.Errorf("invalid ID format: %w", err)
+	}
 	var item domain.SxyDonatur
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.SxyDonatur{}, fmt.Errorf("sxy donatur %s not found", id)
+	if err := s.db.Where("id = ?", parsedInt).Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.SxyDonatur{}, fmt.Errorf("sxy donatur %s not found", id)
+		}
+		return domain.SxyDonatur{}, err
 	}
 	return item, nil
 }
 
-func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur) (domain.SxyDonatur, error) {
+func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur, c *gin.Context) (domain.SxyDonatur, error) {
+	parsedInt, err := strconv.Atoi(id)
+	if err != nil {
+		return domain.SxyDonatur{}, fmt.Errorf("invalid ID format: %w", err)
+	}
+
 	var item domain.SxyDonatur
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
-		return domain.SxyDonatur{}, fmt.Errorf("sxy donatur %s not found", id)
+	if err := s.db.Where("id = ?", parsedInt).Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.SxyDonatur{}, fmt.Errorf("sxy donatur %s not found", id)
+		}
+		return domain.SxyDonatur{}, err
+	}
+
+	userID := int32(1)
+	if c != nil {
+		if val, exists := c.Get("userID"); exists {
+			if uid, ok := val.(int); ok {
+				userID = int32(uid)
+			}
+		}
 	}
 
 	item.No = payload.No
@@ -69,15 +161,44 @@ func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur) (domain
 	item.Telepon = payload.Telepon
 	item.Mobile = payload.Mobile
 	item.Email = payload.Email
-	item.Status = payload.Status
-	item.UpdatedBy = 1
+	item.UpdatedBy = userID
 	item.UpdatedDate = time.Now()
+
 	if err := s.db.Save(&item).Error; err != nil {
-		return domain.SxyDonatur{}, err
+		return domain.SxyDonatur{}, fmt.Errorf("failed to update record: %w", err)
 	}
 	return item, nil
 }
 
-func (s *SxyDonaturService) Delete(id string) error {
-	return s.db.Delete(&domain.SxyDonatur{}, "id = ?", id).Error
+func (s *SxyDonaturService) Delete(id string, c *gin.Context) error {
+	parsedInt, err := strconv.Atoi(id)
+	if err != nil {
+		return fmt.Errorf("invalid ID format: %w", err)
+	}
+
+	var item domain.SxyDonatur
+	if err := s.db.Where("id = ?", parsedInt).Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("sxy donatur %s not found", id)
+		}
+		return err
+	}
+
+	userID := int32(1)
+	if c != nil {
+		if val, exists := c.Get("userID"); exists {
+			if uid, ok := val.(int); ok {
+				userID = int32(uid)
+			}
+		}
+	}
+
+	item.Status = false
+	item.UpdatedBy = userID
+	item.UpdatedDate = time.Now()
+
+	if err := s.db.Save(&item).Error; err != nil {
+		return fmt.Errorf("failed to delete record: %w", err)
+	}
+	return nil
 }

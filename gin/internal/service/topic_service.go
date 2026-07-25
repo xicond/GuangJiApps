@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -63,21 +64,43 @@ func (s *TopicService) List(page int, filters map[string]string, limit int) ([]d
 		}
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("database count error: %w", err)
-	}
+	var (
+		countErr error
+		findErr  error
+		wg       sync.WaitGroup
+	)
 
-	err := query.
-		Limit(limit).
-		Offset(offset).
-		Order("TopicCode ASC").
-		Find(&items).Error
+	wg.Add(2)
 
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return []domain.Topic{}, 0, errors.New("topic tidak ditemukan")
+	go func() {
+		defer wg.Done()
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			countErr = fmt.Errorf("database count error: %w", err)
 		}
-		return []domain.Topic{}, 0, fmt.Errorf("database error: %w", err)
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := query.Session(&gorm.Session{}).
+			Limit(limit).
+			Offset(offset).
+			Order("TopicCode ASC").
+			Find(&items).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				findErr = errors.New("topic tidak ditemukan")
+			} else {
+				findErr = fmt.Errorf("database error: %w", err)
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	if countErr != nil {
+		return nil, 0, countErr
+	}
+	if findErr != nil {
+		return []domain.Topic{}, 0, findErr
 	}
 
 	return items, total, nil

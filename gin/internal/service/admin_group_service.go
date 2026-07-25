@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -61,21 +62,43 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 		}
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("database count error: %w", err)
-	}
+	var (
+		countErr error
+		findErr  error
+		wg       sync.WaitGroup
+	)
 
-	err := query.
-		Limit(limit).
-		Offset(offset).
-		Order("GroupId ASC").
-		Find(&items).Error
+	wg.Add(2)
 
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return []domain.AdminGroup{}, 0, errors.New("admin group tidak ditemukan")
+	go func() {
+		defer wg.Done()
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			countErr = fmt.Errorf("database count error: %w", err)
 		}
-		return []domain.AdminGroup{}, 0, fmt.Errorf("database error: %w", err)
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := query.Session(&gorm.Session{}).
+			Limit(limit).
+			Offset(offset).
+			Order("GroupId ASC").
+			Find(&items).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				findErr = errors.New("admin group tidak ditemukan")
+			} else {
+				findErr = fmt.Errorf("database error: %w", err)
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	if countErr != nil {
+		return nil, 0, countErr
+	}
+	if findErr != nil {
+		return []domain.AdminGroup{}, 0, findErr
 	}
 
 	return items, total, nil

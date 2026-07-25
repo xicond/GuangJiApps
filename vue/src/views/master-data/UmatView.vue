@@ -96,7 +96,7 @@
       >
         <!-- <el-table-column prop="id" label="ID" width="80" align="center" sortable /> -->
         
-        <el-table-column prop="kode" label="Kode" width="120" sortable fixed="left">
+        <el-table-column prop="kode" label="Kode" width="150" sortable fixed="left">
           <template #default="{ row }">
             <el-tag size="small" type="info" class="font-mono">{{ row.kode }}</el-tag>
           </template>
@@ -120,14 +120,52 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="tahun_chiutao_mandarin" label="Tahun Ciu Tao" min-width="140" align="center">
+        <!-- alamat -->
+        <el-table-column prop="alamat" label="Alamat" min-width="250">
+          <template #default="{ row }">
+            <span>{{ row.alamat || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- pengajak -->
+        <el-table-column prop="pengajak" label="Pengajak" min-width="150">
+          <template #default="{ row }">
+            <span>{{ row.pengajak_manual || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- penanggung -->
+        <el-table-column prop="penanggung" label="Penanggung" min-width="150">
+          <template #default="{ row }">
+            <span>{{ row.penanggung_manual || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- usia -->
+        <el-table-column prop="usia" label="Usia" min-width="150">
+          <template #default="{ row }">
+            <span>{{ row.usia || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <!-- jenis kelamin -->
+        <el-table-column prop="jenis_kelamin" label="Jenis Kelamin" min-width="150">
+          <template #default="{ row }">
+            <el-tag v-if="row.jenis_kelamin" size="small" type="warning" effect="plain">
+            <span>{{ row.jenis_kelamin }}</span>
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+
+        <!-- <el-table-column prop="tahun_chiutao_mandarin" label="Tahun Ciu Tao" min-width="140" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.tahun_chiutao_mandarin" size="small" type="warning" effect="plain">
               {{ row.tahun_chiutao_mandarin }}
             </el-tag>
             <span v-else>-</span>
           </template>
-        </el-table-column>
+        </el-table-column> -->
 
         <el-table-column label="Kontak" min-width="150">
           <template #default="{ row }">

@@ -175,6 +175,17 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
+	// Department
+	protected.GET("/department", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		items, err := adminService.ListDepartments()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "resource": "Department"})
+	})
+
 	// Admin Groups
 	protected.GET("/admin-groups", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")

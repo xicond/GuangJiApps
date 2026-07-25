@@ -24,6 +24,9 @@ type Admin struct {
 	LastLogin    time.Time `gorm:"column:LastLogin" json:"last_login"`
 	DepartmentId int32     `gorm:"column:DepartmentId" json:"department_id"`
 	IsWarehouse  bool      `gorm:"column:IsWarehouse" json:"is_warehouse"`
+
+	AdminGroup AdminGroup     `gorm:"foreignKey:GroupId;references:GroupId" json:"admin_group"`
+	Department *DepartmentMst `gorm:"foreignKey:DepartmentId;references:DepartmentId" json:"department,omitempty"`
 }
 
 func (Admin) TableName() string { return "T_Login_Mst" }
@@ -41,6 +44,20 @@ type AdminGroup struct {
 }
 
 func (AdminGroup) TableName() string { return "T_Login_Group" }
+
+type DepartmentMst struct {
+	DepartmentId   int16      `gorm:"primaryKey;column:DepartmentId;type:smallint;not null" json:"department_id"`
+	DepartmentCode *string    `gorm:"column:DepartmentCode;type:varchar(25)" json:"department_code"`
+	Departmentname *string    `gorm:"column:Departmentname;type:varchar(100)" json:"department_name"`
+	Status         bool       `gorm:"column:Status;type:bit;not null" json:"status"`
+	ModAct         *string    `gorm:"column:ModAct;type:char(1)" json:"mod_act"`
+	ModBy          *string    `gorm:"column:ModBy;type:varchar(25)" json:"mod_by"`
+	ModDate        *time.Time `gorm:"column:ModDate;type:datetime" json:"mod_date"`
+}
+
+func (DepartmentMst) TableName() string {
+	return "T_BUS_DEPARTMENT_MST"
+}
 
 // GroupMenuMapping represents table [dbo].[T_Login_Menu]
 type GroupMenuMapping struct {
@@ -78,75 +95,94 @@ func (AdminSubWarehouse) TableName() string { return "T_WH_SUBWH_MST" }
 
 // Umat represents table [dbo].[T_BUS_UMAT]
 type Umat struct {
-	ID                   int32     `gorm:"primaryKey;column:id" json:"id"`
-	Kode                 string    `gorm:"column:kode" json:"kode"`
-	Alias                string    `gorm:"column:alias" json:"alias"`
-	NamaIndonesia        string    `gorm:"column:namaindonesia" json:"nama_indonesia"`
-	Marga                string    `gorm:"column:marga" json:"marga"`
-	NamaMandarin         string    `gorm:"column:namamandarin" json:"nama_mandarin"`
-	Alamat               string    `gorm:"column:alamat" json:"alamat"`
-	Alamat2              string    `gorm:"column:alamat2" json:"alamat2"`
-	Telepon              string    `gorm:"column:telepon" json:"telepon"`
-	Mobile               string    `gorm:"column:mobile" json:"mobile"`
-	TempatLahir          string    `gorm:"column:tempatlahir" json:"tempat_lahir"`
-	TanggalLahir         time.Time `gorm:"column:tanggallahir" json:"tanggal_lahir"`
-	Usia                 int32     `gorm:"column:usia" json:"usia"`
-	Wilayah              string    `gorm:"column:wilayah" json:"wilayah"`
-	JenisKelamin         string    `gorm:"column:jeniskelamin" json:"jenis_kelamin"`
-	Pekerjaan            string    `gorm:"column:pekerjaan" json:"pekerjaan"`
-	Pendidikan           string    `gorm:"column:pendidikan" json:"pendidikan"`
-	TanggalChiutaoInt    time.Time `gorm:"column:tanggalchiutaoint" json:"tanggal_chiutao_int"`
-	TanggalChiutaoMan    string    `gorm:"column:tanggalchiutaoman" json:"tanggal_chiutao_man"`
-	TahunChiutaoMandarin string    `gorm:"column:tahunchiutaomandarin" json:"tahun_chiutao_mandarin"`
-	WaktuChiutaoMandarin string    `gorm:"column:waktuchiutaomandarin" json:"waktu_chiutao_mandarin"`
-	Pengajak             string    `gorm:"column:pengajak" json:"pengajak"`
-	PengajakManual       string    `gorm:"column:pengajakmanual" json:"pengajak_manual"`
-	Penanggung           string    `gorm:"column:penanggung" json:"penanggung"`
-	PenanggungManual     string    `gorm:"column:penanggungmanual" json:"penanggung_manual"`
-	Tcs                  string    `gorm:"column:tcs" json:"tcs"`
-	UangPahala           float64   `gorm:"column:uangpahala" json:"uang_pahala"`
-	FotangChiutao        string    `gorm:"column:fotangciutao" json:"fotang_chiutao"`
-	FotangAktif          string    `gorm:"column:fotangaktif" json:"fotang_aktif"`
-	Sd2                  bool      `gorm:"column:sd2" json:"sd2"`
-	TempatSd2            string    `gorm:"column:tempatsd2" json:"tempat_sd2"`
-	TanggalSd2           time.Time `gorm:"column:tanggalsd2" json:"tanggal_sd2"`
-	Sd3                  bool      `gorm:"column:sd3" json:"sd3"`
-	TempatSd3            string    `gorm:"column:tempatsd3" json:"tempat_sd3"`
-	TanggalSd3           time.Time `gorm:"column:tanggalsd3" json:"tanggal_sd3"`
-	KelasUmum            string    `gorm:"column:kelasumum" json:"kelas_umum"`
-	KelasKhusus          string    `gorm:"column:kelaskhusus" json:"kelas_khusus"`
-	ChingKhou            bool      `gorm:"column:chingkhou" json:"ching_khou"`
-	TanggalChingKhou     time.Time `gorm:"column:tanggalchingkhou" json:"tanggal_ching_khou"`
-	TanggalAncuo         time.Time `gorm:"column:tanggalancuo" json:"tanggal_ancuo"`
-	NamaCetyaRumah       string    `gorm:"column:namacetyarumah" json:"nama_cetya_rumah"`
-	Meninggal            bool      `gorm:"column:meninggal" json:"meninggal"`
-	TanggalMeninggal     time.Time `gorm:"column:tanggalmeninggal" json:"tanggal_meninggal"`
-	TimKerja             string    `gorm:"column:timkerja" json:"tim_kerja"`
-	Posisi               string    `gorm:"column:posisi" json:"posisi"`
-	StatusUmat           string    `gorm:"column:statusumat" json:"status_umat"`
-	Keterangan           string    `gorm:"column:keterangan" json:"keterangan"`
-	Email                string    `gorm:"column:email" json:"email"`
-	ImagePath            string    `gorm:"column:imagepath" json:"image_path"`
-	Status               bool      `gorm:"column:status" json:"status"`
-	ModAct               string    `gorm:"column:modact" json:"mod_act"`
-	ModBy                int32     `gorm:"column:modby" json:"mod_by"`
-	ModDate              time.Time `gorm:"column:moddate" json:"mod_date"`
-	Ikrar1               bool      `gorm:"column:ikrar1" json:"ikrar_1"`
-	Ikrar2               bool      `gorm:"column:ikrar2" json:"ikrar_2"`
-	Ikrar3               bool      `gorm:"column:ikrar3" json:"ikrar_3"`
-	Ikrar4               bool      `gorm:"column:ikrar4" json:"ikrar_4"`
-	Ikrar5               bool      `gorm:"column:ikrar5" json:"ikrar_5"`
-	Ikrar6               bool      `gorm:"column:ikrar6" json:"ikrar_6"`
-	RenChaiPan           bool      `gorm:"column:RenChaiPan" json:"ren_chai_pan"`
-	TanggalRenChaiPan    time.Time `gorm:"column:TanggalRenChaiPan" json:"tanggal_ren_chai_pan"`
-	LienCiangPan         bool      `gorm:"column:LienCiangPan" json:"lien_ciang_pan"`
-	TanggalLienCiangPan  time.Time `gorm:"column:TanggalLienCiangPan" json:"tanggal_lien_ciang_pan"`
-	CiangYenPan          bool      `gorm:"column:CiangYenPan" json:"ciang_yen_pan"`
-	TanggalCiangYenPan   time.Time `gorm:"column:TanggalCiangYenPan" json:"tanggal_ciang_yen_pan"`
-	ActiveStatus         bool      `gorm:"column:ActiveStatus" json:"active_status"`
-	NamaFotangLain       string    `gorm:"column:NamaFotangLain" json:"nama_fotang_lain"`
-	NamaTcsLain          string    `gorm:"column:NamaTcsLain" json:"nama_tcs_lain"`
-	KodeBuku             string    `gorm:"column:KodeBuku" json:"kode_buku"`
+	ID                   int32      `gorm:"primaryKey;column:id" json:"id"`
+	Kode                 string     `gorm:"column:kode" json:"kode"`
+	Alias                string     `gorm:"column:alias" json:"alias"`
+	NamaIndonesia        string     `gorm:"column:namaindonesia" json:"nama_indonesia"`
+	Marga                string     `gorm:"column:marga" json:"marga"`
+	NamaMandarin         string     `gorm:"column:namamandarin" json:"nama_mandarin"`
+	Alamat               string     `gorm:"column:alamat" json:"alamat"`
+	Alamat2              string     `gorm:"column:alamat2" json:"alamat2"`
+	Telepon              string     `gorm:"column:telepon" json:"telepon"`
+	Mobile               string     `gorm:"column:mobile" json:"mobile"`
+	TempatLahir          string     `gorm:"column:tempatlahir" json:"tempat_lahir"`
+	TanggalLahir         time.Time  `gorm:"column:tanggallahir" json:"tanggal_lahir"`
+	Usia                 int32      `gorm:"column:usia" json:"usia"`
+	Wilayah              string     `gorm:"column:wilayah" json:"wilayah"`
+	JenisKelamin         string     `gorm:"column:jeniskelamin" json:"jenis_kelamin"`
+	JenisKelaminInfo     *AppLookup `gorm:"foreignKey:JenisKelamin;references:LookupValue" json:"jenis_kelamin_info,omitempty"`
+	Pekerjaan            string     `gorm:"column:pekerjaan" json:"pekerjaan"`
+	Pendidikan           string     `gorm:"column:pendidikan" json:"pendidikan"`
+	TanggalChiutaoInt    time.Time  `gorm:"column:tanggalchiutaoint" json:"tanggal_chiutao_int"`
+	TanggalChiutaoMan    string     `gorm:"column:tanggalchiutaoman" json:"tanggal_chiutao_man"`
+	TahunChiutaoMandarin string     `gorm:"column:tahunchiutaomandarin" json:"tahun_chiutao_mandarin"`
+	WaktuChiutaoMandarin string     `gorm:"column:waktuchiutaomandarin" json:"waktu_chiutao_mandarin"`
+	Pengajak             string     `gorm:"column:pengajak" json:"pengajak"`
+	// PengajakUmat         *Umat      `gorm:"foreignKey:Pengajak;references:Kode" json:"pengajak_umat,omitempty"`
+	PengajakManual string `gorm:"column:pengajakmanual" json:"pengajak_manual"`
+	Penanggung     string `gorm:"column:penanggung" json:"penanggung"`
+	// PenanggungUmat       *Umat      `gorm:"foreignKey:Penanggung;references:Kode" json:"penanggung_umat,omitempty"`
+	PenanggungManual    string    `gorm:"column:penanggungmanual" json:"penanggung_manual"`
+	Tcs                 string    `gorm:"column:tcs" json:"tcs"`
+	UangPahala          float64   `gorm:"column:uangpahala" json:"uang_pahala"`
+	FotangChiutao       string    `gorm:"column:fotangciutao" json:"fotang_chiutao"`
+	FotangAktif         string    `gorm:"column:fotangaktif" json:"fotang_aktif"`
+	Sd2                 bool      `gorm:"column:sd2" json:"sd2"`
+	TempatSd2           string    `gorm:"column:tempatsd2" json:"tempat_sd2"`
+	TanggalSd2          time.Time `gorm:"column:tanggalsd2" json:"tanggal_sd2"`
+	Sd3                 bool      `gorm:"column:sd3" json:"sd3"`
+	TempatSd3           string    `gorm:"column:tempatsd3" json:"tempat_sd3"`
+	TanggalSd3          time.Time `gorm:"column:tanggalsd3" json:"tanggal_sd3"`
+	KelasUmum           string    `gorm:"column:kelasumum" json:"kelas_umum"`
+	KelasKhusus         string    `gorm:"column:kelaskhusus" json:"kelas_khusus"`
+	ChingKhou           bool      `gorm:"column:chingkhou" json:"ching_khou"`
+	TanggalChingKhou    time.Time `gorm:"column:tanggalchingkhou" json:"tanggal_ching_khou"`
+	TanggalAncuo        time.Time `gorm:"column:tanggalancuo" json:"tanggal_ancuo"`
+	NamaCetyaRumah      string    `gorm:"column:namacetyarumah" json:"nama_cetya_rumah"`
+	Meninggal           bool      `gorm:"column:meninggal" json:"meninggal"`
+	TanggalMeninggal    time.Time `gorm:"column:tanggalmeninggal" json:"tanggal_meninggal"`
+	TimKerja            string    `gorm:"column:timkerja" json:"tim_kerja"`
+	Posisi              string    `gorm:"column:posisi" json:"posisi"`
+	StatusUmat          string    `gorm:"column:statusumat" json:"status_umat"`
+	Keterangan          string    `gorm:"column:keterangan" json:"keterangan"`
+	Email               string    `gorm:"column:email" json:"email"`
+	ImagePath           string    `gorm:"column:imagepath" json:"image_path"`
+	Status              bool      `gorm:"column:status" json:"status"`
+	ModAct              string    `gorm:"column:modact" json:"mod_act"`
+	ModBy               int32     `gorm:"column:modby" json:"mod_by"`
+	ModDate             time.Time `gorm:"column:moddate" json:"mod_date"`
+	Ikrar1              bool      `gorm:"column:ikrar1" json:"ikrar_1"`
+	Ikrar2              bool      `gorm:"column:ikrar2" json:"ikrar_2"`
+	Ikrar3              bool      `gorm:"column:ikrar3" json:"ikrar_3"`
+	Ikrar4              bool      `gorm:"column:ikrar4" json:"ikrar_4"`
+	Ikrar5              bool      `gorm:"column:ikrar5" json:"ikrar_5"`
+	Ikrar6              bool      `gorm:"column:ikrar6" json:"ikrar_6"`
+	RenChaiPan          bool      `gorm:"column:RenChaiPan" json:"ren_chai_pan"`
+	TanggalRenChaiPan   time.Time `gorm:"column:TanggalRenChaiPan" json:"tanggal_ren_chai_pan"`
+	LienCiangPan        bool      `gorm:"column:LienCiangPan" json:"lien_ciang_pan"`
+	TanggalLienCiangPan time.Time `gorm:"column:TanggalLienCiangPan" json:"tanggal_lien_ciang_pan"`
+	CiangYenPan         bool      `gorm:"column:CiangYenPan" json:"ciang_yen_pan"`
+	TanggalCiangYenPan  time.Time `gorm:"column:TanggalCiangYenPan" json:"tanggal_ciang_yen_pan"`
+	ActiveStatus        bool      `gorm:"column:ActiveStatus" json:"active_status"`
+	NamaFotangLain      string    `gorm:"column:NamaFotangLain" json:"nama_fotang_lain"`
+	NamaTcsLain         string    `gorm:"column:NamaTcsLain" json:"nama_tcs_lain"`
+	KodeBuku            string    `gorm:"column:KodeBuku" json:"kode_buku"`
+}
+
+type AppLookup struct {
+	LookupId          string     `gorm:"primaryKey;column:LookupId;type:varchar(25);not null"`
+	CategoryId        *string    `gorm:"column:CategoryId;type:varchar(25)"`
+	LookupValue       *string    `gorm:"column:LookupValue;type:varchar(50)"`
+	LookupDescription *string    `gorm:"column:LookupDescription;type:nvarchar(150)"`
+	Status            *bool      `gorm:"column:Status;type:bit"`
+	ModAct            *string    `gorm:"column:ModAct;type:char(1)"`
+	ModBy             *string    `gorm:"column:ModBy;type:varchar(25)"`
+	ModDate           *time.Time `gorm:"column:ModDate;type:datetime"`
+}
+
+// TableName menentukan nama tabel secara eksplisit di database
+func (AppLookup) TableName() string {
+	return "T_APP_LOOKUP"
 }
 
 func (Umat) TableName() string { return "T_BUS_UMAT" }

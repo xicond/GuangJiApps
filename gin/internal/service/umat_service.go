@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -68,29 +69,60 @@ func (s *UmatService) List(page int, filters map[string]string, limit int) ([]do
 		}
 	}
 
-	// 1. Hitung total data keseluruhan (untuk metadata pagination)
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("database count error: %w", err)
-	}
+	// Execute Count and List queries concurrently for optimal latency
+	var (
+		countErr error
+		findErr  error
+		wg       sync.WaitGroup
+	)
 
-	// Execute retrieval order
-	err := query.
-		Limit(limit).
-		Offset(offset).
-		Order("ID ASC"). // Explicitly sort by your real primary key column
-		Find(&items).Error
+	wg.Add(2)
 
-	if err != nil {
-		// 1. Jika error murni karena username tidak terdaftar di DB
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return []domain.Umat{}, 0, errors.New("umat tidak ditemukan")
+	// Goroutine 1: Concurrent Count query
+	go func() {
+		defer wg.Done()
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			countErr = fmt.Errorf("database count error: %w", err)
 		}
+	}()
 
-		// 2. Jika error karena masalah MSSQL (misal: "invalid column name", "connection timeout")
-		// Mengembalikan pesan error asli dari sistem SQL Server secara dinamis
-		return []domain.Umat{}, 0, fmt.Errorf("database error: %w", err)
-		// return nil
+	// Goroutine 2: Concurrent Find items query
+	go func() {
+		defer wg.Done()
+		if err := query.Session(&gorm.Session{}).
+			Preload("JenisKelaminInfo", "CategoryId = ? AND Status = ?", "B_JENISKELAMIN", true).
+			Limit(limit).
+			Offset(offset).
+			Order("ID ASC").
+			Find(&items).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				findErr = errors.New("umat tidak ditemukan")
+			} else {
+				findErr = fmt.Errorf("database error: %w", err)
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	if countErr != nil {
+		return nil, 0, countErr
 	}
+	if findErr != nil {
+		return []domain.Umat{}, 0, findErr
+	}
+
+	// Dynamic post-processing for lowest latency
+	now := time.Now()
+	for i := range items {
+		if !items[i].TanggalLahir.IsZero() && items[i].TanggalLahir.Year() > 1900 {
+			items[i].Usia = int32(now.Year() - items[i].TanggalLahir.Year())
+		}
+		if items[i].JenisKelaminInfo != nil && items[i].JenisKelaminInfo.LookupDescription != nil && *items[i].JenisKelaminInfo.LookupDescription != "" {
+			items[i].JenisKelamin = *items[i].JenisKelaminInfo.LookupDescription
+		}
+	}
+
 	return items, total, nil
 }
 
@@ -122,8 +154,14 @@ func (s *UmatService) Create(payload domain.Umat, c *gin.Context) (domain.Umat, 
 
 func (s *UmatService) Get(id string) (domain.Umat, error) {
 	var item domain.Umat
-	if err := s.db.First(&item, "id = ?", id).Error; err != nil {
+	if err := s.db.Preload("JenisKelaminInfo", "CategoryId = ? AND Status = ?", "B_JENISKELAMIN", true).First(&item, "id = ?", id).Error; err != nil {
 		return domain.Umat{}, fmt.Errorf("umat %s not found", id)
+	}
+	if !item.TanggalLahir.IsZero() && item.TanggalLahir.Year() > 1900 {
+		item.Usia = int32(time.Now().Year() - item.TanggalLahir.Year())
+	}
+	if item.JenisKelaminInfo != nil && item.JenisKelaminInfo.LookupDescription != nil && *item.JenisKelaminInfo.LookupDescription != "" {
+		item.JenisKelamin = *item.JenisKelaminInfo.LookupDescription
 	}
 	return item, nil
 }

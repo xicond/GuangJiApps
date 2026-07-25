@@ -51,8 +51,8 @@
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Jenis Kelamin" prop="jenis_kelamin">
             <el-select v-model="formData.jenis_kelamin" placeholder="Pilih jenis kelamin" class="w-full" clearable>
-              <el-option label="Pria (L)" value="L" />
-              <el-option label="Wanita (P)" value="P" />
+              <el-option label="Pria (L)" value="001" />
+              <el-option label="Wanita (P)" value="002" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -76,7 +76,7 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
+        <!-- <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Status Record" prop="status">
             <el-switch
               v-model="formData.status"
@@ -84,7 +84,7 @@
               inactive-text="Non-aktif"
             />
           </el-form-item>
-        </el-col>
+        </el-col> -->
       </el-row>
     </el-card>
 

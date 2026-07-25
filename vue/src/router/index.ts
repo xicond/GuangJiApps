@@ -33,25 +33,25 @@ const router = createRouter({
         {
           path: 'user-management/admin',
           name: 'admin',
-          component: PlaceholderView,
+          component: () => import('../views/user-management/AdminView.vue'),
           meta: { title: 'Admin' }
         },
         {
           path: 'user-management/admin-group',
           name: 'admin-group',
-          component: PlaceholderView,
+          component: () => import('../views/user-management/AdminGroupView.vue'),
           meta: { title: 'Admin Group' }
         },
         {
           path: 'user-management/group-menu-mapping',
           name: 'group-menu-mapping',
-          component: PlaceholderView,
+          component: () => import('../views/user-management/GroupMenuMappingView.vue'),
           meta: { title: 'Group Menu Mapping' }
         },
         {
           path: 'user-management/admin-sub-warehouse',
           name: 'admin-sub-warehouse',
-          component: PlaceholderView,
+          component: () => import('../views/user-management/AdminSubWarehouseView.vue'),
           meta: { title: 'Admin Sub Warehouse' }
         },
         // Master Data
@@ -76,63 +76,63 @@ const router = createRouter({
         {
           path: 'master-data/topic',
           name: 'topic',
-          component: PlaceholderView,
+          component: () => import('../views/master-data/TopicView.vue'),
           meta: { title: 'Topic' }
         },
         {
           path: 'master-data/activity',
           name: 'activity',
-          component: PlaceholderView,
+          component: () => import('../views/master-data/ActivityView.vue'),
           meta: { title: 'Activity' }
         },
         {
           path: 'master-data/tim-kerja',
           name: 'tim-kerja',
-          component: PlaceholderView,
+          component: () => import('../views/master-data/TimKerjaView.vue'),
           meta: { title: 'Tim Kerja' }
         },
         {
           path: 'master-data/tahun-ciu-tao',
           name: 'tahun-ciu-tao',
-          component: PlaceholderView,
+          component: () => import('../views/master-data/TahunCiuTaoView.vue'),
           meta: { title: 'Tahun Ciu Tao' }
         },
         {
           path: 'master-data/penggalang-dana',
           name: 'penggalang-dana',
-          component: PlaceholderView,
+          component: () => import('../views/master-data/PenggalangDanaView.vue'),
           meta: { title: 'Penggalang Dana' }
         },
         {
           path: 'master-data/sxy-donatur',
           name: 'sxy-donatur',
-          component: PlaceholderView,
+          component: () => import('../views/master-data/SxyDonaturView.vue'),
           meta: { title: 'Sxy Donatur' }
         },
         // Transaction
         {
           path: 'transaction/kelas',
           name: 'kelas',
-          component: PlaceholderView,
+          component: () => import('../views/transaction/KelasView.vue'),
           meta: { title: 'Kelas' }
         },
         {
           path: 'transaction/donasi-sxy',
           name: 'donasi-sxy',
-          component: PlaceholderView,
+          component: () => import('../views/transaction/DonasiSxyView.vue'),
           meta: { title: 'Donasi Sxy' }
         },
         // Report
         {
           path: 'report/master',
           name: 'report-master',
-          component: PlaceholderView,
+          component: () => import('../views/report/MasterReportView.vue'),
           meta: { title: 'Master Report' }
         },
         {
           path: 'report/sxy',
           name: 'report-sxy',
-          component: PlaceholderView,
+          component: () => import('../views/report/SxyReportView.vue'),
           meta: { title: 'Sxy Report' }
         }
       ]

@@ -66,9 +66,9 @@ func (s *AuthService) GenerateToken(userID int32) (string, error) {
 	return token.SignedString([]byte(s.cfg.JWTSecret))
 }
 
-func (s *AuthService) Login(username, password string) (domain.User, string, error) {
+func (s *AuthService) Login(username, password string) (domain.Admin, string, error) {
 	if username == "" || password == "" {
-		return domain.User{}, "", errors.New("username and password are required")
+		return domain.Admin{}, "", errors.New("username and password are required")
 	}
 
 	// Call SP_Login for validation
@@ -79,14 +79,14 @@ func (s *AuthService) Login(username, password string) (domain.User, string, err
 	}
 	err := s.db.Raw("EXEC SP_Login ?, ?", username, EncryptPassword(password)).Scan(&result).Error
 	if err != nil {
-		return domain.User{}, "", err
+		return domain.Admin{}, "", err
 	}
 	if result.FlagWarn == 0 {
-		return domain.User{}, "", errors.New(result.Warn)
+		return domain.Admin{}, "", errors.New(result.Warn)
 	}
 
 	// Fetch user from T_Login_Mst
-	var user domain.User
+	var user domain.Admin
 	err = s.db.Table("T_Login_Mst").
 		Select("LoginId as [id], email, Username as name").
 		Where("Username = ?", username).
@@ -94,18 +94,19 @@ func (s *AuthService) Login(username, password string) (domain.User, string, err
 	if err != nil {
 		// 1. Jika error murni karena username tidak terdaftar di DB
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return domain.User{}, "", errors.New("username tidak ditemukan")
+			return domain.Admin{}, "", errors.New("username tidak ditemukan")
 		}
 
 		// 2. Jika error karena masalah MSSQL (misal: "invalid column name", "connection timeout")
 		// Mengembalikan pesan error asli dari sistem SQL Server secara dinamis
-		return domain.User{}, "", fmt.Errorf("database error: %w", err)
+		return domain.Admin{}, "", fmt.Errorf("database error: %w", err)
 	}
 	// user.Role = "member" // Default role
 
 	token, err := s.GenerateToken(user.ID)
 	if err != nil {
-		return domain.User{}, "", err
+		return domain.Admin{}, "", err
 	}
+	user.Password = ""
 	return user, token, nil
 }

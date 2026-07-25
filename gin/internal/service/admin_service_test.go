@@ -69,4 +69,11 @@ func TestAdminService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
+
+	// 6. ListDepartments
+	depts, err := svc.ListDepartments()
+	if err != nil {
+		t.Fatalf("ListDepartments failed: %v", err)
+	}
+	_ = depts
 }

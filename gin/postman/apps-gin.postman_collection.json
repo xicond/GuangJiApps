@@ -151,6 +151,30 @@
               "path": [
                 "v1",
                 "admins"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "username",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan username (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "group_name",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan group_name (LIKE)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -289,6 +313,28 @@
                   "value": "12",
                   "description": "The unique numerical ID of the record"
                 }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Department - List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/department",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "department"
               ]
             }
           }

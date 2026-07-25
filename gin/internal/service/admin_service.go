@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -40,15 +41,17 @@ func (s *AdminService) List(page int, filters map[string]string, limit int) ([]d
 	query := s.db.Table("T_Login_Mst").Where("FlagUse = ?", true)
 
 	type FilterRule struct {
-		Column string
-		IsLike bool
+		Column   string
+		IsLike   bool
+		SubQuery string
 	}
 
 	allowedFilters := map[string]FilterRule{
-		"username":      {Column: "Username", IsLike: true},
-		"email":         {Column: "email", IsLike: true},
-		"phone_number":  {Column: "PhoneNumber", IsLike: true},
-		"department_id": {Column: "DepartmentId", IsLike: false},
+		"username":   {Column: "Username", IsLike: true},
+		"group_name": {SubQuery: "EXISTS (SELECT 1 FROM T_Login_Group g WHERE g.GroupId = T_Login_Mst.GroupId AND g.GroupName LIKE ?)"},
+		// "email":         {Column: "email", IsLike: true},
+		// "phone_number":  {Column: "PhoneNumber", IsLike: true},
+		// "department_id": {Column: "DepartmentId", IsLike: false},
 	}
 
 	for field, value := range filters {
@@ -56,7 +59,9 @@ func (s *AdminService) List(page int, filters map[string]string, limit int) ([]d
 			continue
 		}
 		if rule, exists := allowedFilters[field]; exists {
-			if rule.IsLike {
+			if rule.SubQuery != "" {
+				query = query.Where(rule.SubQuery, "%"+value+"%")
+			} else if rule.IsLike {
 				query = query.Where(fmt.Sprintf("[%s] LIKE ?", rule.Column), "%"+value+"%")
 			} else {
 				query = query.Where(fmt.Sprintf("[%s] = ?", rule.Column), value)
@@ -64,21 +69,49 @@ func (s *AdminService) List(page int, filters map[string]string, limit int) ([]d
 		}
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, fmt.Errorf("database count error: %w", err)
+	var (
+		countErr error
+		findErr  error
+		wg       sync.WaitGroup
+	)
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			countErr = fmt.Errorf("database count error: %w", err)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if err := query.Session(&gorm.Session{}).
+			Limit(limit).
+			Preload("AdminGroup").
+			Preload("Department").
+			Offset(offset).
+			Order("LoginId ASC").
+			Find(&items).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				findErr = errors.New("admin tidak ditemukan")
+			} else {
+				findErr = fmt.Errorf("database error: %w", err)
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	if countErr != nil {
+		return nil, 0, countErr
+	}
+	if findErr != nil {
+		return []domain.Admin{}, 0, findErr
 	}
 
-	err := query.
-		Limit(limit).
-		Offset(offset).
-		Order("LoginId ASC").
-		Find(&items).Error
-
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return []domain.Admin{}, 0, errors.New("admin tidak ditemukan")
-		}
-		return []domain.Admin{}, 0, fmt.Errorf("database error: %w", err)
+	for i := range items {
+		items[i].Password = ""
 	}
 
 	return items, total, nil
@@ -96,6 +129,10 @@ func (s *AdminService) Create(payload domain.Admin, c *gin.Context) (domain.Admi
 	s.db.Table("T_Login_Mst").Select("ISNULL(MAX(LoginId), 0)").Row().Scan(&maxID)
 	payload.ID = maxID + 1
 
+	if payload.Password != "" {
+		payload.Password = EncryptPassword(payload.Password)
+	}
+
 	payload.FlagUse = true
 	if payload.DateStart.IsZero() {
 		payload.DateStart = time.Now()
@@ -107,6 +144,7 @@ func (s *AdminService) Create(payload domain.Admin, c *gin.Context) (domain.Admi
 	if err := s.db.Create(&payload).Error; err != nil {
 		return domain.Admin{}, fmt.Errorf("failed to create record: %w", err)
 	}
+	payload.Password = ""
 	return payload, nil
 }
 
@@ -122,6 +160,7 @@ func (s *AdminService) Get(id string) (domain.Admin, error) {
 		}
 		return domain.Admin{}, err
 	}
+	item.Password = ""
 	return item, nil
 }
 
@@ -156,12 +195,13 @@ func (s *AdminService) Update(id string, payload domain.Admin, c *gin.Context) (
 		item.DateEnd = payload.DateEnd
 	}
 	if payload.Password != "" {
-		item.Password = payload.Password
+		item.Password = EncryptPassword(payload.Password)
 	}
 
 	if err := s.db.Save(&item).Error; err != nil {
 		return domain.Admin{}, fmt.Errorf("failed to update record: %w", err)
 	}
+	item.Password = ""
 	return item, nil
 }
 
@@ -184,4 +224,12 @@ func (s *AdminService) Delete(id string, c *gin.Context) error {
 		return fmt.Errorf("failed to delete record: %w", err)
 	}
 	return nil
+}
+
+func (s *AdminService) ListDepartments() ([]domain.DepartmentMst, error) {
+	var items []domain.DepartmentMst
+	if err := s.db.Order("DepartmentId ASC").Find(&items).Error; err != nil {
+		return nil, fmt.Errorf("database error: %w", err)
+	}
+	return items, nil
 }

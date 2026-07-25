@@ -46,10 +46,10 @@ func (s *PenggalangDanaService) List(page int, filters map[string]string, limit 
 	}
 
 	allowedFilters := map[string]FilterRule{
-		"no":       {Column: "no", IsLike: true},
+		// "no":       {Column: "no", IsLike: true},
 		"nama":     {Column: "nama", IsLike: true},
 		"mandarin": {Column: "mandarin", IsLike: true},
-		"email":    {Column: "email", IsLike: true},
+		"fotang":   {Column: "LookupFothang", IsLike: false},
 	}
 
 	for field, value := range filters {

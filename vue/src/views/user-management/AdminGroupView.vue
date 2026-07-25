@@ -4,7 +4,7 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">Master Data Admin Group</h2>
-        <p class="page-subtitle">Kelola daftar data admin group, pencarian, serta manajemen data</p>
+        <p class="page-subtitle">Kelola daftar data admin group, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -25,11 +25,11 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Kata Kunci">
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Nama Group">
             <el-input
-              v-model="filters.keyword"
-              placeholder="Cari berdasarkan nama atau kata kunci..."
+              v-model="filters.group_name"
+              placeholder="Cari nama group..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -37,17 +37,15 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Status">
-            <el-select
-              v-model="filters.status"
-              placeholder="Semua Status"
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Keterangan">
+            <el-input
+              v-model="filters.group_desc"
+              placeholder="Cari deskripsi..."
               clearable
-              @change="onFilterChange"
-            >
-              <el-option label="Aktif" value="active" />
-              <el-option label="Nonaktif" value="inactive" />
-            </el-select>
+              :prefix-icon="Search"
+              @input="onFilterChange"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -68,24 +66,54 @@
         style="width: 100%"
         empty-text="Tidak ada data admin group yang ditemukan"
       >
-        <el-table-column prop="id" label="ID" width="80" align="center" sortable />
+        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="nama" label="Nama Admin Group" min-width="180">
+        <el-table-column prop="group_id" label="ID" width="80"  align="center" sortable>
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.nama || row.name || '-' }}</span>
+            <span>{{ row.group_id || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="Keterangan" min-width="200">
+        <el-table-column prop="group_name" label="Nama Group" min-width="180">
           <template #default="{ row }">
-            <span>{{ row.description || row.keterangan || '-' }}</span>
+            <span class="font-semibold">{{ row.group_name || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="120" align="center">
+        <el-table-column prop="group_desc" label="Keterangan"  min-width="220"  >
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
-              {{ row.status === 'active' ? 'Aktif' : 'Nonaktif' }}
+            <span>{{ row.group_desc || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="r_insert" label="Hak Tambah" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.r_insert ? 'primary' : 'info'" size="small" effect="plain">
+              {{ row.r_insert ? 'Ya' : 'Tidak' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="r_edit" label="Hak Edit" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.r_edit ? 'primary' : 'info'" size="small" effect="plain">
+              {{ row.r_edit ? 'Ya' : 'Tidak' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="r_delete" label="Hak Hapus" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.r_delete ? 'primary' : 'info'" size="small" effect="plain">
+              {{ row.r_delete ? 'Ya' : 'Tidak' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="r_reporting" label="Hak Laporan" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.r_reporting ? 'primary' : 'info'" size="small" effect="plain">
+              {{ row.r_reporting ? 'Ya' : 'Tidak' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -100,7 +128,7 @@
                 circle
                 :icon="Edit"
                 title="Edit Admin Group"
-                @click="handleEdit(row.id)"
+                @click="handleEdit(row.group_id)"
               />
 
               <el-popconfirm
@@ -108,7 +136,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.id)"
+                @confirm="handleDelete(row.group_id)"
               >
                 <template #reference>
                   <el-button
@@ -152,21 +180,30 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
+import { adminGroupApi } from '../../api/adminGroup'
+import type { AdminGroup, AdminGroupQueryParams } from '../../types/adminGroup'
 
 const router = useRouter()
 
-const dataList = shallowRef<any[]>([])
+// Memory Optimization: shallowRef for table dataset
+const dataList = shallowRef<AdminGroup[]>([])
 const loading = ref(false)
 
+// Pagination state
 const pagination = reactive({
   page: 1,
   limit: 10,
   total: 0
 })
 
-const filters = reactive({
-  keyword: '',
-  status: ''
+const getRowIndex = (index: number) => {
+  return (pagination.page - 1) * pagination.limit + index + 1
+}
+
+// Search Filter state
+const filters = reactive<AdminGroupQueryParams>({
+  group_name: '',
+  group_desc: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -180,8 +217,18 @@ async function fetchData() {
   loading.value = true
 
   try {
-    dataList.value = []
-    pagination.total = 0
+    const res = await adminGroupApi.getAdminGroups(
+      {
+        page: pagination.page,
+        limit: pagination.limit,
+        group_name: filters.group_name?.trim(),
+        group_desc: filters.group_desc?.trim()
+      },
+      currentAbortController.signal
+    )
+
+    dataList.value = res.data || []
+    pagination.total = res.meta?.total || 0
   } catch (err: any) {
     if (err.name === 'CanceledError' || err.name === 'AbortError') return
     console.error('Error fetching data:', err)
@@ -200,20 +247,20 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.keyword = ''
-  filters.status = ''
+  filters.group_name = ''
+  filters.group_desc = ''
   pagination.page = 1
   fetchData()
 }
 
-function handleSizeChange(val: number) {
-  pagination.limit = val
+function handleSizeChange(newLimit: number) {
+  pagination.limit = newLimit
   pagination.page = 1
   fetchData()
 }
 
-function handlePageChange(val: number) {
-  pagination.page = val
+function handlePageChange(newPage: number) {
+  pagination.page = newPage
   fetchData()
 }
 
@@ -225,24 +272,26 @@ function handleCreate() {
   })
 }
 
-function handleEdit(id: number | string) {
+function handleEdit(id: number) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit admin group ID: ${id}`,
+    message: `Edit admin group ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
-async function handleDelete(id: number | string) {
+async function handleDelete(id: number) {
   try {
+    await adminGroupApi.deleteAdminGroup(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data admin group ID: ${id} berhasil dihapus`,
+      message: `Data admin group ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()
   } catch (err: any) {
-    ElMessage.error('Gagal menghapus data')
+    console.error('Failed to delete item:', err)
+    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data')
   }
 }
 
@@ -284,9 +333,14 @@ onUnmounted(() => {
   margin: 0.25rem 0 0 0;
 }
 
-.filter-card {
+.create-btn {
+  font-weight: 600;
   border-radius: 8px;
-  background-color: var(--el-bg-color);
+}
+
+.filter-card {
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
 }
 
 .filter-header {
@@ -296,6 +350,11 @@ onUnmounted(() => {
   margin-bottom: 1rem;
   font-weight: 600;
   color: var(--el-text-color-primary);
+}
+
+.filter-icon {
+  color: var(--el-color-primary);
+  font-size: 1.1rem;
 }
 
 .filter-row {
@@ -309,7 +368,16 @@ onUnmounted(() => {
 }
 
 .table-card {
-  border-radius: 8px;
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+.font-semibold {
+  font-weight: 600;
 }
 
 .action-buttons {
@@ -322,9 +390,5 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.25rem;
-}
-
-.font-semibold {
-  font-weight: 600;
 }
 </style>

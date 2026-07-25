@@ -46,10 +46,10 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 	}
 
 	allowedFilters := map[string]FilterRule{
-		"no_kwitansi":   {Column: "nokwitansi", IsLike: true},
-		"no_kupon":      {Column: "nokupon", IsLike: true},
-		"donatur_id":    {Column: "donatur", IsLike: false},
-		"penggalang_id": {Column: "penggalang", IsLike: false},
+		"no_kwitansi": {Column: "nokwitansi", IsLike: true},
+		// "no_kupon":      {Column: "nokupon", IsLike: true},
+		"donatur_id": {Column: "donatur", IsLike: false},
+		"tanggal":    {Column: "Tanggal", IsLike: false},
 	}
 
 	for field, value := range filters {

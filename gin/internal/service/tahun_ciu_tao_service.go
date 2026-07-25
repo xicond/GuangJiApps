@@ -47,7 +47,8 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 
 	allowedFilters := map[string]FilterRule{
 		"tahun_mandarin": {Column: "TahunMandarin", IsLike: true},
-		"description":    {Column: "description", IsLike: true},
+		"start_date":     {Column: "StartDate", IsLike: false},
+		"end_date":       {Column: "EndDate", IsLike: false},
 	}
 
 	for field, value := range filters {

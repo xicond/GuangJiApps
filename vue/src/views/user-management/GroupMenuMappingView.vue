@@ -4,7 +4,7 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">Group Menu Mapping</h2>
-        <p class="page-subtitle">Kelola daftar data group menu mapping, pencarian, serta manajemen data</p>
+        <p class="page-subtitle">Kelola daftar data group menu mapping, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -25,11 +25,11 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Kata Kunci">
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Nama Menu">
             <el-input
-              v-model="filters.keyword"
-              placeholder="Cari berdasarkan nama atau kata kunci..."
+              v-model="filters.menu_name"
+              placeholder="Cari nama menu..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -37,17 +37,15 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Status">
-            <el-select
-              v-model="filters.status"
-              placeholder="Semua Status"
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="URL Halaman">
+            <el-input
+              v-model="filters.page_url"
+              placeholder="Cari page url..."
               clearable
-              @change="onFilterChange"
-            >
-              <el-option label="Aktif" value="active" />
-              <el-option label="Nonaktif" value="inactive" />
-            </el-select>
+              :prefix-icon="Search"
+              @input="onFilterChange"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -68,24 +66,42 @@
         style="width: 100%"
         empty-text="Tidak ada data group menu mapping yang ditemukan"
       >
-        <el-table-column prop="id" label="ID" width="80" align="center" sortable />
+        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="nama" label="Nama Group Menu Mapping" min-width="180">
+        <el-table-column prop="menu_id" label="ID" width="80"  align="center" sortable>
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.nama || row.name || '-' }}</span>
+            <span>{{ row.menu_id || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="Keterangan" min-width="200">
+        <el-table-column prop="menu_name" label="Nama Menu" min-width="180">
           <template #default="{ row }">
-            <span>{{ row.description || row.keterangan || '-' }}</span>
+            <span class="font-semibold">{{ row.menu_name || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="120" align="center">
+        <el-table-column prop="page_url" label="URL Halaman"  min-width="200"  >
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
-              {{ row.status === 'active' ? 'Aktif' : 'Nonaktif' }}
+            <span>{{ row.page_url || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="sequence" label="Urutan" width="90"  align="center" >
+          <template #default="{ row }">
+            <span>{{ row.sequence || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="menu_desc" label="Keterangan"  min-width="200"  >
+          <template #default="{ row }">
+            <span>{{ row.menu_desc || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="flag_active" label="Status" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.flag_active ? 'success' : 'info'" size="small">
+              {{ row.flag_active ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -100,7 +116,7 @@
                 circle
                 :icon="Edit"
                 title="Edit Group Menu Mapping"
-                @click="handleEdit(row.id)"
+                @click="handleEdit(row.menu_id)"
               />
 
               <el-popconfirm
@@ -108,7 +124,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.id)"
+                @confirm="handleDelete(row.menu_id)"
               >
                 <template #reference>
                   <el-button
@@ -152,21 +168,30 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
+import { groupMenuMappingApi } from '../../api/groupMenuMapping'
+import type { GroupMenuMapping, GroupMenuMappingQueryParams } from '../../types/groupMenuMapping'
 
 const router = useRouter()
 
-const dataList = shallowRef<any[]>([])
+// Memory Optimization: shallowRef for table dataset
+const dataList = shallowRef<GroupMenuMapping[]>([])
 const loading = ref(false)
 
+// Pagination state
 const pagination = reactive({
   page: 1,
   limit: 10,
   total: 0
 })
 
-const filters = reactive({
-  keyword: '',
-  status: ''
+const getRowIndex = (index: number) => {
+  return (pagination.page - 1) * pagination.limit + index + 1
+}
+
+// Search Filter state
+const filters = reactive<GroupMenuMappingQueryParams>({
+  menu_name: '',
+  page_url: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -180,8 +205,18 @@ async function fetchData() {
   loading.value = true
 
   try {
-    dataList.value = []
-    pagination.total = 0
+    const res = await groupMenuMappingApi.getGroupMenuMappings(
+      {
+        page: pagination.page,
+        limit: pagination.limit,
+        menu_name: filters.menu_name?.trim(),
+        page_url: filters.page_url?.trim()
+      },
+      currentAbortController.signal
+    )
+
+    dataList.value = res.data || []
+    pagination.total = res.meta?.total || 0
   } catch (err: any) {
     if (err.name === 'CanceledError' || err.name === 'AbortError') return
     console.error('Error fetching data:', err)
@@ -200,20 +235,20 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.keyword = ''
-  filters.status = ''
+  filters.menu_name = ''
+  filters.page_url = ''
   pagination.page = 1
   fetchData()
 }
 
-function handleSizeChange(val: number) {
-  pagination.limit = val
+function handleSizeChange(newLimit: number) {
+  pagination.limit = newLimit
   pagination.page = 1
   fetchData()
 }
 
-function handlePageChange(val: number) {
-  pagination.page = val
+function handlePageChange(newPage: number) {
+  pagination.page = newPage
   fetchData()
 }
 
@@ -225,24 +260,26 @@ function handleCreate() {
   })
 }
 
-function handleEdit(id: number | string) {
+function handleEdit(id: number) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit group menu mapping ID: ${id}`,
+    message: `Edit group menu mapping ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
-async function handleDelete(id: number | string) {
+async function handleDelete(id: number) {
   try {
+    await groupMenuMappingApi.deleteGroupMenuMapping(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data group menu mapping ID: ${id} berhasil dihapus`,
+      message: `Data group menu mapping ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()
   } catch (err: any) {
-    ElMessage.error('Gagal menghapus data')
+    console.error('Failed to delete item:', err)
+    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data')
   }
 }
 
@@ -284,9 +321,14 @@ onUnmounted(() => {
   margin: 0.25rem 0 0 0;
 }
 
-.filter-card {
+.create-btn {
+  font-weight: 600;
   border-radius: 8px;
-  background-color: var(--el-bg-color);
+}
+
+.filter-card {
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
 }
 
 .filter-header {
@@ -296,6 +338,11 @@ onUnmounted(() => {
   margin-bottom: 1rem;
   font-weight: 600;
   color: var(--el-text-color-primary);
+}
+
+.filter-icon {
+  color: var(--el-color-primary);
+  font-size: 1.1rem;
 }
 
 .filter-row {
@@ -309,7 +356,16 @@ onUnmounted(() => {
 }
 
 .table-card {
-  border-radius: 8px;
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+.font-semibold {
+  font-weight: 600;
 }
 
 .action-buttons {
@@ -322,9 +378,5 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.25rem;
-}
-
-.font-semibold {
-  font-weight: 600;
 }
 </style>

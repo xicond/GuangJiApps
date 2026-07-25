@@ -46,7 +46,7 @@ func (s *ActivityService) List(page int, filters map[string]string, limit int) (
 	}
 
 	allowedFilters := map[string]FilterRule{
-		"event_code":     {Column: "EventCode", IsLike: true},
+		// "event_code":     {Column: "EventCode", IsLike: true},
 		"event_name":     {Column: "EventName", IsLike: true},
 		"event_category": {Column: "EventCategory", IsLike: true},
 	}

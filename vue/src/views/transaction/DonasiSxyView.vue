@@ -4,7 +4,7 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">Transaksi Donasi Sxy</h2>
-        <p class="page-subtitle">Kelola daftar data donasi sxy, pencarian, serta manajemen data</p>
+        <p class="page-subtitle">Kelola daftar data donasi sxy, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -25,29 +25,15 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Kata Kunci">
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="No. Kwitansi">
             <el-input
-              v-model="filters.keyword"
-              placeholder="Cari berdasarkan nama atau kata kunci..."
+              v-model="filters.no_kwitansi"
+              placeholder="Cari no kwitansi..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
             />
-          </el-form-item>
-        </el-col>
-
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Status">
-            <el-select
-              v-model="filters.status"
-              placeholder="Semua Status"
-              clearable
-              @change="onFilterChange"
-            >
-              <el-option label="Aktif" value="active" />
-              <el-option label="Nonaktif" value="inactive" />
-            </el-select>
           </el-form-item>
         </el-col>
       </el-row>
@@ -68,24 +54,48 @@
         style="width: 100%"
         empty-text="Tidak ada data donasi sxy yang ditemukan"
       >
-        <el-table-column prop="id" label="ID" width="80" align="center" sortable />
+        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="nama" label="Nama Donasi Sxy" min-width="180">
+        <el-table-column prop="id" label="ID" width="80"  align="center" sortable>
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.nama || row.name || '-' }}</span>
+            <span>{{ row.id || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="Keterangan" min-width="200">
+        <el-table-column prop="no_kwitansi" label="No. Kwitansi" width="130" align="left">
           <template #default="{ row }">
-            <span>{{ row.description || row.keterangan || '-' }}</span>
+            <el-tag size="small" type="info" class="font-mono">{{ row.no_kwitansi }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="120" align="center">
+        <el-table-column prop="tanggal" label="Tanggal"  min-width="140"  >
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
-              {{ row.status === 'active' ? 'Aktif' : 'Nonaktif' }}
+            <span>{{ row.tanggal || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150">
+          <template #default="{ row }">
+            <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="no_kupon" label="No. Kupon"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.no_kupon || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="keterangan" label="Keterangan"  min-width="200"  >
+          <template #default="{ row }">
+            <span>{{ row.keterangan || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="status" label="Status" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status ? 'success' : 'info'" size="small">
+              {{ row.status ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -152,21 +162,29 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
+import { donasiSxyApi } from '../../api/donasiSxy'
+import type { DonasiSxy, DonasiSxyQueryParams } from '../../types/donasiSxy'
 
 const router = useRouter()
 
-const dataList = shallowRef<any[]>([])
+// Memory Optimization: shallowRef for table dataset
+const dataList = shallowRef<DonasiSxy[]>([])
 const loading = ref(false)
 
+// Pagination state
 const pagination = reactive({
   page: 1,
   limit: 10,
   total: 0
 })
 
-const filters = reactive({
-  keyword: '',
-  status: ''
+const getRowIndex = (index: number) => {
+  return (pagination.page - 1) * pagination.limit + index + 1
+}
+
+// Search Filter state
+const filters = reactive<DonasiSxyQueryParams>({
+  no_kwitansi: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -180,8 +198,17 @@ async function fetchData() {
   loading.value = true
 
   try {
-    dataList.value = []
-    pagination.total = 0
+    const res = await donasiSxyApi.getDonasiSxys(
+      {
+        page: pagination.page,
+        limit: pagination.limit,
+        no_kwitansi: filters.no_kwitansi?.trim()
+      },
+      currentAbortController.signal
+    )
+
+    dataList.value = res.data || []
+    pagination.total = res.meta?.total || 0
   } catch (err: any) {
     if (err.name === 'CanceledError' || err.name === 'AbortError') return
     console.error('Error fetching data:', err)
@@ -200,20 +227,19 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.keyword = ''
-  filters.status = ''
+  filters.no_kwitansi = ''
   pagination.page = 1
   fetchData()
 }
 
-function handleSizeChange(val: number) {
-  pagination.limit = val
+function handleSizeChange(newLimit: number) {
+  pagination.limit = newLimit
   pagination.page = 1
   fetchData()
 }
 
-function handlePageChange(val: number) {
-  pagination.page = val
+function handlePageChange(newPage: number) {
+  pagination.page = newPage
   fetchData()
 }
 
@@ -225,24 +251,26 @@ function handleCreate() {
   })
 }
 
-function handleEdit(id: number | string) {
+function handleEdit(id: number) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit donasi sxy ID: ${id}`,
+    message: `Edit donasi sxy ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
-async function handleDelete(id: number | string) {
+async function handleDelete(id: number) {
   try {
+    await donasiSxyApi.deleteDonasiSxy(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data donasi sxy ID: ${id} berhasil dihapus`,
+      message: `Data donasi sxy ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()
   } catch (err: any) {
-    ElMessage.error('Gagal menghapus data')
+    console.error('Failed to delete item:', err)
+    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data')
   }
 }
 
@@ -284,9 +312,14 @@ onUnmounted(() => {
   margin: 0.25rem 0 0 0;
 }
 
-.filter-card {
+.create-btn {
+  font-weight: 600;
   border-radius: 8px;
-  background-color: var(--el-bg-color);
+}
+
+.filter-card {
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
 }
 
 .filter-header {
@@ -296,6 +329,11 @@ onUnmounted(() => {
   margin-bottom: 1rem;
   font-weight: 600;
   color: var(--el-text-color-primary);
+}
+
+.filter-icon {
+  color: var(--el-color-primary);
+  font-size: 1.1rem;
 }
 
 .filter-row {
@@ -309,7 +347,16 @@ onUnmounted(() => {
 }
 
 .table-card {
-  border-radius: 8px;
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+.font-semibold {
+  font-weight: 600;
 }
 
 .action-buttons {
@@ -322,9 +369,5 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.25rem;
-}
-
-.font-semibold {
-  font-weight: 600;
 }
 </style>

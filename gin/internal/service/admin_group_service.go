@@ -46,7 +46,7 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 
 	allowedFilters := map[string]FilterRule{
 		"group_name": {Column: "GroupName", IsLike: true},
-		"group_desc": {Column: "GroupDesc", IsLike: true},
+		// "group_desc": {Column: "GroupDesc", IsLike: true},
 	}
 
 	for field, value := range filters {

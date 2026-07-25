@@ -1,0 +1,72 @@
+import apiClient from './client'
+import type {
+  DonasiSxy,
+  DonasiSxyQueryParams,
+  DonasiSxyListResponse,
+  DonasiSxySingleResponse
+} from '../types/donasiSxy'
+
+export const donasiSxyApi = {
+  /**
+   * Fetch paginated list of Donasi Sxy with optional search filters.
+   */
+  async getDonasiSxys(
+    params: DonasiSxyQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<DonasiSxyListResponse> {
+    const cleanParams: Record<string, any> = {
+      page: params.page || 1,
+      limit: params.limit || 10
+    }
+
+    if (params.no_kwitansi) cleanParams.no_kwitansi = params.no_kwitansi
+    if (params.donatur_id) cleanParams.donatur_id = params.donatur_id
+    if (params.tanggal) cleanParams.tanggal = params.tanggal
+
+    const response = await apiClient.get<DonasiSxyListResponse>('/v1/donasi-sxy', {
+      params: cleanParams,
+      signal
+    })
+    return response.data
+  },
+
+  /**
+   * Fetch single DonasiSxy details by ID.
+   */
+  async getDonasiSxyById(
+    id: number,
+    signal?: AbortSignal
+  ): Promise<DonasiSxySingleResponse> {
+    const response = await apiClient.get<DonasiSxySingleResponse>(`/v1/donasi-sxy/${id}`, { signal })
+    return response.data
+  },
+
+  /**
+   * Create a new DonasiSxy record.
+   */
+  async createDonasiSxy(payload: Partial<DonasiSxy>): Promise<DonasiSxySingleResponse> {
+    const response = await apiClient.post<DonasiSxySingleResponse>('/v1/donasi-sxy', payload)
+    return response.data
+  },
+
+  /**
+   * Update an existing DonasiSxy record.
+   */
+  async updateDonasiSxy(
+    id: number,
+    payload: Partial<DonasiSxy>
+  ): Promise<DonasiSxySingleResponse> {
+    const response = await apiClient.patch<DonasiSxySingleResponse>(`/v1/donasi-sxy/${id}`, payload)
+    return response.data
+  },
+
+  /**
+   * Delete a DonasiSxy record by ID.
+   */
+  async deleteDonasiSxy(id: number): Promise<{ message: string }> {
+    const response = await apiClient.delete<{ message: string }>(`/v1/donasi-sxy/${id}`)
+    return response.data
+  }
+}
+
+export default donasiSxyApi

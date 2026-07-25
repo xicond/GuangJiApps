@@ -357,6 +357,24 @@
               "path": [
                 "v1",
                 "admin-groups"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "group_name",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan group_name (LIKE)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -517,6 +535,18 @@
               "path": [
                 "v1",
                 "group-menu-mappings"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                }
               ]
             }
           }
@@ -677,6 +707,18 @@
               "path": [
                 "v1",
                 "admin-sub-warehouses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                }
               ]
             }
           }
@@ -1038,6 +1080,30 @@
               "path": [
                 "v1",
                 "topics"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "topic_name",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan topic name (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "topic_category",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan topic category (LIKE)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -1198,6 +1264,30 @@
               "path": [
                 "v1",
                 "activities"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "event_name",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan event name (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "event_category",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan event category id (EXACT)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -1358,6 +1448,18 @@
               "path": [
                 "v1",
                 "tim-kerja"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                }
               ]
             }
           }
@@ -1518,6 +1620,36 @@
               "path": [
                 "v1",
                 "tahun-ciu-tao"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "tahun_mandarin",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan tahun_mandarin (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "start_date",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan start_date (EXACT)",
+                  "disabled": true
+                },
+                {
+                  "key": "start_date",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan start_date (EXACT)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -1678,6 +1810,36 @@
               "path": [
                 "v1",
                 "penggalang-dana"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "nama",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan nama (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "mandarin",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan mandarin (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "fotang",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan fotang (EXACT)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -1838,6 +2000,36 @@
               "path": [
                 "v1",
                 "sxy-donatur"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "nama",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan nama (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "mandarin",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan mandarin (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "fotang",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan fotang (EXACT)",
+                  "disabled": true
+                }
               ]
             }
           }
@@ -2003,6 +2195,18 @@
               "path": [
                 "v1",
                 "kelas"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                }
               ]
             }
           }
@@ -2163,6 +2367,36 @@
               "path": [
                 "v1",
                 "donasi-sxy"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "no_kwitansi",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan no kwitansi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "donatur_id",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan donatur_id (EXACT)",
+                  "disabled": true
+                },
+                {
+                  "key": "tanggal",
+                  "value": "",
+                  "description": "Filter pencarian berdasarkan tanggal (EXACT)",
+                  "disabled": true
+                }
               ]
             }
           }

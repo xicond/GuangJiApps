@@ -4,7 +4,7 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">Master Data Tahun Ciu Tao</h2>
-        <p class="page-subtitle">Kelola daftar data tahun ciu tao, pencarian, serta manajemen data</p>
+        <p class="page-subtitle">Kelola daftar data tahun ciu tao, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -25,11 +25,11 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Kata Kunci">
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Tahun Mandarin">
             <el-input
-              v-model="filters.keyword"
-              placeholder="Cari berdasarkan nama atau kata kunci..."
+              v-model="filters.tahun_mandarin"
+              placeholder="Cari tahun (e.g. 2024)..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -37,17 +37,15 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Status">
-            <el-select
-              v-model="filters.status"
-              placeholder="Semua Status"
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Keterangan">
+            <el-input
+              v-model="filters.description"
+              placeholder="Cari deskripsi..."
               clearable
-              @change="onFilterChange"
-            >
-              <el-option label="Aktif" value="active" />
-              <el-option label="Nonaktif" value="inactive" />
-            </el-select>
+              :prefix-icon="Search"
+              @input="onFilterChange"
+            />
           </el-form-item>
         </el-col>
       </el-row>
@@ -68,24 +66,36 @@
         style="width: 100%"
         empty-text="Tidak ada data tahun ciu tao yang ditemukan"
       >
-        <el-table-column prop="id" label="ID" width="80" align="center" sortable />
+        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="nama" label="Nama Tahun Ciu Tao" min-width="180">
+        <el-table-column prop="tahun_mandarin" label="Tahun Mandarin" min-width="160">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.nama || row.name || '-' }}</span>
+            <span class="font-semibold">{{ row.tahun_mandarin || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="Keterangan" min-width="200">
+        <el-table-column prop="start_date" label="Tanggal Mulai"  min-width="140"  >
           <template #default="{ row }">
-            <span>{{ row.description || row.keterangan || '-' }}</span>
+            <span>{{ row.start_date || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="120" align="center">
+        <el-table-column prop="end_date" label="Tanggal Selesai"  min-width="140"  >
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
-              {{ row.status === 'active' ? 'Aktif' : 'Nonaktif' }}
+            <span>{{ row.end_date || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="description" label="Keterangan"  min-width="220"  >
+          <template #default="{ row }">
+            <span>{{ row.description || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="status" label="Status" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status ? 'success' : 'info'" size="small">
+              {{ row.status ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -100,7 +110,7 @@
                 circle
                 :icon="Edit"
                 title="Edit Tahun Ciu Tao"
-                @click="handleEdit(row.id)"
+                @click="handleEdit(row.tahun_mandarin)"
               />
 
               <el-popconfirm
@@ -108,7 +118,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.id)"
+                @confirm="handleDelete(row.tahun_mandarin)"
               >
                 <template #reference>
                   <el-button
@@ -152,21 +162,30 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
+import { tahunCiuTaoApi } from '../../api/tahunCiuTao'
+import type { TahunCiuTao, TahunCiuTaoQueryParams } from '../../types/tahunCiuTao'
 
 const router = useRouter()
 
-const dataList = shallowRef<any[]>([])
+// Memory Optimization: shallowRef for table dataset
+const dataList = shallowRef<TahunCiuTao[]>([])
 const loading = ref(false)
 
+// Pagination state
 const pagination = reactive({
   page: 1,
   limit: 10,
   total: 0
 })
 
-const filters = reactive({
-  keyword: '',
-  status: ''
+const getRowIndex = (index: number) => {
+  return (pagination.page - 1) * pagination.limit + index + 1
+}
+
+// Search Filter state
+const filters = reactive<TahunCiuTaoQueryParams>({
+  tahun_mandarin: '',
+  description: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -180,8 +199,18 @@ async function fetchData() {
   loading.value = true
 
   try {
-    dataList.value = []
-    pagination.total = 0
+    const res = await tahunCiuTaoApi.getTahunCiuTaos(
+      {
+        page: pagination.page,
+        limit: pagination.limit,
+        tahun_mandarin: filters.tahun_mandarin?.trim(),
+        description: filters.description?.trim()
+      },
+      currentAbortController.signal
+    )
+
+    dataList.value = res.data || []
+    pagination.total = res.meta?.total || 0
   } catch (err: any) {
     if (err.name === 'CanceledError' || err.name === 'AbortError') return
     console.error('Error fetching data:', err)
@@ -200,20 +229,20 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.keyword = ''
-  filters.status = ''
+  filters.tahun_mandarin = ''
+  filters.description = ''
   pagination.page = 1
   fetchData()
 }
 
-function handleSizeChange(val: number) {
-  pagination.limit = val
+function handleSizeChange(newLimit: number) {
+  pagination.limit = newLimit
   pagination.page = 1
   fetchData()
 }
 
-function handlePageChange(val: number) {
-  pagination.page = val
+function handlePageChange(newPage: number) {
+  pagination.page = newPage
   fetchData()
 }
 
@@ -225,24 +254,26 @@ function handleCreate() {
   })
 }
 
-function handleEdit(id: number | string) {
+function handleEdit(id: string) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit tahun ciu tao ID: ${id}`,
+    message: `Edit tahun ciu tao ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
-async function handleDelete(id: number | string) {
+async function handleDelete(id: string) {
   try {
+    await tahunCiuTaoApi.deleteTahunCiuTao(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data tahun ciu tao ID: ${id} berhasil dihapus`,
+      message: `Data tahun ciu tao ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()
   } catch (err: any) {
-    ElMessage.error('Gagal menghapus data')
+    console.error('Failed to delete item:', err)
+    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data')
   }
 }
 
@@ -284,9 +315,14 @@ onUnmounted(() => {
   margin: 0.25rem 0 0 0;
 }
 
-.filter-card {
+.create-btn {
+  font-weight: 600;
   border-radius: 8px;
-  background-color: var(--el-bg-color);
+}
+
+.filter-card {
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
 }
 
 .filter-header {
@@ -296,6 +332,11 @@ onUnmounted(() => {
   margin-bottom: 1rem;
   font-weight: 600;
   color: var(--el-text-color-primary);
+}
+
+.filter-icon {
+  color: var(--el-color-primary);
+  font-size: 1.1rem;
 }
 
 .filter-row {
@@ -309,7 +350,16 @@ onUnmounted(() => {
 }
 
 .table-card {
-  border-radius: 8px;
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+.font-semibold {
+  font-weight: 600;
 }
 
 .action-buttons {
@@ -322,9 +372,5 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.25rem;
-}
-
-.font-semibold {
-  font-weight: 600;
 }
 </style>

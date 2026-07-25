@@ -342,9 +342,7 @@ const pagination = reactive({
   total: 0
 })
 
-const getRowIndex = (index: number) => {
-  return (pagination.page - 1) * pagination.limit + index + 1
-}
+const getRowIndex = (index: number) => (pagination.page - 1) * pagination.limit + index + 1
 
 // Search Filter state
 const filters = reactive<AdminQueryParams>({

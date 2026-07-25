@@ -20,50 +20,51 @@
           </el-menu-item>
 
           <!-- User Management -->
-          <el-sub-menu index="user-management">
+          <el-sub-menu v-if="hasMenu('User Management')" index="user-management">
             <template #title>
               <el-icon><User /></el-icon>
               <span>User Management</span>
             </template>
-            <el-menu-item index="/user-management/admin">Admin</el-menu-item>
-            <el-menu-item index="/user-management/admin-group">Admin Group</el-menu-item>
-            <el-menu-item index="/user-management/group-menu-mapping">Group Menu Mapping</el-menu-item>
-            <el-menu-item index="/user-management/admin-sub-warehouse">Admin Sub Warehouse</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('User Management', 'Create User')" index="/user-management/admin">Admin</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('User Management', 'Group Control')" index="/user-management/admin-group">Admin Group</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('User Management', 'Menu Control')" index="/user-management/group-menu-mapping">Group Menu Mapping</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('User Management', 'User Sub Warehouse Control')" index="/user-management/admin-sub-warehouse">Admin Sub Warehouse</el-menu-item>
           </el-sub-menu>
 
           <!-- Master Data -->
-          <el-sub-menu index="master-data">
+          <el-sub-menu v-if="hasMenu('Master Data')" index="master-data">
             <template #title>
               <el-icon><Files /></el-icon>
               <span>Master Data</span>
             </template>
-            <el-menu-item index="/master-data/umat">Umat</el-menu-item>
-            <el-menu-item index="/master-data/topic">Topic</el-menu-item>
-            <el-menu-item index="/master-data/activity">Activity</el-menu-item>
-            <el-menu-item index="/master-data/tim-kerja">Tim Kerja</el-menu-item>
-            <el-menu-item index="/master-data/tahun-ciu-tao">Tahun Ciu Tao</el-menu-item>
-            <el-menu-item index="/master-data/penggalang-dana">Penggalang Dana</el-menu-item>
-            <el-menu-item index="/master-data/sxy-donatur">Sxy Donatur</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Umat')" index="/master-data/umat">Umat</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Topik')" index="/master-data/topic">Topic</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Kegiatan')" index="/master-data/activity">Activity</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Tim Kerja')" index="/master-data/tim-kerja">Tim Kerja</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Tahun Ciu Tao')" index="/master-data/tahun-ciu-tao">Tahun Ciu Tao</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Penggalang Dana')" index="/master-data/penggalang-dana">Penggalang Dana</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'SXY Donatur')" index="/master-data/sxy-donatur">Sxy Donatur</el-menu-item>
           </el-sub-menu>
 
           <!-- Transaction -->
-          <el-sub-menu index="transaction">
+          <el-sub-menu v-if="hasMenu('Transaction')" index="transaction">
             <template #title>
               <el-icon><Tickets /></el-icon>
               <span>Transaction</span>
             </template>
-            <el-menu-item index="/transaction/kelas">Kelas</el-menu-item>
-            <el-menu-item index="/transaction/donasi-sxy">Donasi Sxy</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Transaction', 'Kegiatan')" index="/master-data/activity">Activity</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Transaction', 'Kelas')" index="/transaction/kelas">Kelas</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Transaction', 'Donasi SXY')" index="/transaction/donasi-sxy">Donasi Sxy</el-menu-item>
           </el-sub-menu>
 
           <!-- Report -->
-          <el-sub-menu index="report">
+          <el-sub-menu v-if="hasMenu('Report')" index="report">
             <template #title>
               <el-icon><DataAnalysis /></el-icon>
               <span>Report</span>
             </template>
-            <el-menu-item index="/report/master">Master</el-menu-item>
-            <el-menu-item index="/report/sxy">Sxy</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Report', 'Master')" index="/report/master">Master</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Report', 'SXY')" index="/report/sxy">Sxy</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-scrollbar>
@@ -149,6 +150,8 @@ const authStore = useAuthStore()
 
 const isCollapsed = ref(false)
 const activeMenu = computed(() => route.path)
+const hasMenu = (menuName: string) => authStore.hasMenu(menuName)
+const hasSubMenu = (parentMenuName: string, subMenuName: string) => authStore.hasSubMenu(parentMenuName, subMenuName)
 
 const currentIcon = computed(() => {
   if (currentMode.value === 'system') return Monitor

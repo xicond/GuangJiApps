@@ -25,11 +25,29 @@ type Admin struct {
 	DepartmentId int32     `gorm:"column:DepartmentId" json:"department_id"`
 	IsWarehouse  bool      `gorm:"column:IsWarehouse" json:"is_warehouse"`
 
-	AdminGroup AdminGroup     `gorm:"foreignKey:GroupId;references:GroupId" json:"admin_group"`
+	AdminGroup AdminGroup     `gorm:"foreignKey:GroupId;references:GroupId" json:"admin_group,omitempty"`
 	Department *DepartmentMst `gorm:"foreignKey:DepartmentId;references:DepartmentId" json:"department,omitempty"`
 }
 
 func (Admin) TableName() string { return "T_Login_Mst" }
+
+// SubMenuItem represents child menu items returned from SP_Login_View_Mapping_Group
+type SubMenuItem struct {
+	MenuID   int    `gorm:"column:MenuId" json:"menu_id"`
+	ParentID int    `gorm:"column:ParentId" json:"parent_id"`
+	Level1   string `gorm:"column:Level1" json:"level1,omitempty"`
+	Level2   string `gorm:"column:Level2" json:"level2"`
+	Level3   string `gorm:"column:Level3" json:"level3"`
+	PageUrl  string `gorm:"column:PageUrl" json:"page_url,omitempty"`
+	Sequence int    `gorm:"column:Sequence" json:"sequence"`
+}
+
+// MainMenuItem represents item from SP_Login_Create_Xml
+type MainMenuItem struct {
+	MenuID   int           `gorm:"column:MenuId" json:"menu_id"`
+	MainMenu string        `gorm:"column:MainMenu" json:"main_menu"`
+	SubMenu  []SubMenuItem `gorm:"-" json:"sub_menu"`
+}
 
 // AdminGroup represents table [dbo].[T_Login_Group]
 type AdminGroup struct {

@@ -59,7 +59,7 @@ services:
       - go-compiler-cache:/go-cache
       - go-modules-cache:/go-mod-cache
     command: >
-      /bin/sh -c " mkdir -p /out &&  GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -v -o /out/server.exe ./cmd/server "
+      /bin/sh -c " mkdir -p /out &&  GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=\"-s -w\" -v -o /out/server.exe ./cmd/server "
     restart: "no"
 
   vue-dev:

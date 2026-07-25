@@ -9,8 +9,10 @@ import router from './router'
 import './style.css'
 import { registerSW } from 'virtual:pwa-register'
 
-// Register Workbox PWA service worker
-registerSW({ immediate: true })
+// Register Workbox PWA service worker (Production build only)
+if (import.meta.env.PROD) {
+  registerSW({ immediate: true })
+}
 
 const app = createApp(App)
 

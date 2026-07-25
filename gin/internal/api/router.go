@@ -96,13 +96,13 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 
-		user, token, err := authService.Login(req.Username, req.Password)
+		user, token, mainMenus, err := authService.Login(req.Username, req.Password)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "login successful", "token": token, "user": user})
+		c.JSON(http.StatusOK, gin.H{"message": "login successful", "token": token, "user": user, "main_menu": mainMenus})
 	})
 
 	r.POST(cfg.BaseURL+"/forgot-password", func(c *gin.Context) {

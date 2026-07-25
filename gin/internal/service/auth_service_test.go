@@ -34,7 +34,7 @@ func TestAuthService(t *testing.T) {
 	}
 
 	// 3. Login with empty parameters
-	_, _, err = authSvc.Login("", "")
+	_, _, _, err = authSvc.Login("", "")
 	if err == nil {
 		t.Errorf("expected error for empty credentials, got nil")
 	}

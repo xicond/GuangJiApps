@@ -95,7 +95,8 @@
         empty-text="Tidak ada data umat yang ditemukan"
       >
         <!-- <el-table-column prop="id" label="ID" width="80" align="center" sortable /> -->
-        
+        <el-table-column :index="getRowIndex" type="index" label="No." width="80" fixed="left" />
+       
         <el-table-column prop="kode" label="Kode" width="150" sortable fixed="left">
           <template #default="{ row }">
             <el-tag size="small" type="info" class="font-mono">{{ row.kode }}</el-tag>
@@ -258,6 +259,8 @@ const pagination = reactive({
   limit: 10,
   total: 0
 })
+
+const getRowIndex = (row: Umat, index: number) => (pagination.page - 1) * pagination.limit + index + 1
 
 // Search Filter State
 const filters = reactive<UmatQueryParams>({

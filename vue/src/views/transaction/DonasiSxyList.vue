@@ -56,12 +56,6 @@
       >
         <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="id" label="ID" width="80"  align="center" sortable>
-          <template #default="{ row }">
-            <span>{{ row.id || '-' }}</span>
-          </template>
-        </el-table-column>
-
         <el-table-column prop="no_kwitansi" label="No. Kwitansi" width="130" align="left">
           <template #default="{ row }">
             <el-tag size="small" type="info" class="font-mono">{{ row.no_kwitansi }}</el-tag>

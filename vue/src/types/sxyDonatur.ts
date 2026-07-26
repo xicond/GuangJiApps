@@ -1,5 +1,4 @@
 export interface SxyDonatur {
-  id: number
   no?: string
   nama: string
   mandarin?: string

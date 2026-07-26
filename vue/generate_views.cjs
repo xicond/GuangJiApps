@@ -7,43 +7,6 @@ const path = require('path');
  */
 const entities = [
   {
-    key: 'adminGroup',
-    className: 'AdminGroup',
-    path: 'user-management/AdminGroupList.vue',
-    title: 'Master Data Admin Group',
-    entity: 'Admin Group',
-    endpoint: '/v1/admin-groups',
-    pk: 'group_id',
-    pkType: 'number',
-    fields: [
-      { name: 'group_id', type: 'number', optional: false },
-      { name: 'group_name', type: 'string', optional: false },
-      { name: 'r_insert', type: 'boolean', optional: true },
-      { name: 'r_edit', type: 'boolean', optional: true },
-      { name: 'r_delete', type: 'boolean', optional: true },
-      { name: 'r_reporting', type: 'boolean', optional: true },
-      { name: 'r_position_id', type: 'number', optional: true },
-      { name: 'group_desc', type: 'string', optional: true }
-    ],
-    queryParams: [
-      { name: 'group_name', type: 'string' },
-      { name: 'group_desc', type: 'string' }
-    ],
-    columns: [
-      { prop: 'group_id', label: 'ID', width: '80', align: 'center', sortable: true },
-      { prop: 'group_name', label: 'Nama Group', minWidth: '180', bold: true },
-      { prop: 'group_desc', label: 'Keterangan', minWidth: '220' },
-      { prop: 'r_insert', label: 'Hak Tambah', width: '110', type: 'boolean' },
-      { prop: 'r_edit', label: 'Hak Edit', width: '100', type: 'boolean' },
-      { prop: 'r_delete', label: 'Hak Hapus', width: '100', type: 'boolean' },
-      { prop: 'r_reporting', label: 'Hak Laporan', width: '120', type: 'boolean' }
-    ],
-    filters: [
-      { prop: 'group_name', label: 'Nama Group', placeholder: 'Cari nama group...' },
-      { prop: 'group_desc', label: 'Keterangan', placeholder: 'Cari deskripsi...' }
-    ]
-  },
-  {
     key: 'groupMenuMapping',
     className: 'GroupMenuMapping',
     path: 'user-management/GroupMenuMappingList.vue',
@@ -67,7 +30,7 @@ const entities = [
       { name: 'page_url', type: 'string' }
     ],
     columns: [
-      { prop: 'menu_id', label: 'ID', width: '80', align: 'center', sortable: true },
+      // { prop: 'menu_id', label: 'ID', width: '80', align: 'center', sortable: true },
       { prop: 'menu_name', label: 'Nama Menu', minWidth: '180', bold: true },
       { prop: 'page_url', label: 'URL Halaman', minWidth: '200' },
       { prop: 'sequence', label: 'Urutan', width: '90', align: 'center' },
@@ -77,47 +40,6 @@ const entities = [
     filters: [
       { prop: 'menu_name', label: 'Nama Menu', placeholder: 'Cari nama menu...' },
       { prop: 'page_url', label: 'URL Halaman', placeholder: 'Cari page url...' }
-    ]
-  },
-  {
-    key: 'adminSubWarehouse',
-    className: 'AdminSubWarehouse',
-    path: 'user-management/AdminSubWarehouseList.vue',
-    title: 'Admin Sub Warehouse',
-    entity: 'Admin Sub Warehouse',
-    endpoint: '/v1/admin-sub-warehouses',
-    pk: 'sub_wh_id',
-    pkType: 'number',
-    fields: [
-      { name: 'sub_wh_id', type: 'number', optional: false },
-      { name: 'wh_id', type: 'number', optional: true },
-      { name: 'full_name', type: 'string', optional: false },
-      { name: 'pic', type: 'string', optional: true },
-      { name: 'doc_code', type: 'string', optional: true },
-      { name: 'cru_id', type: 'number', optional: true },
-      { name: 'update_uid', type: 'number', optional: true },
-      { name: 'lst_update', type: 'string', optional: true },
-      { name: 'flag_productions', type: 'boolean', optional: true },
-      { name: 'sub_wh_type', type: 'string', optional: true }
-    ],
-    queryParams: [
-      { name: 'full_name', type: 'string' },
-      { name: 'pic', type: 'string' },
-      { name: 'doc_code', type: 'string' },
-      { name: 'sub_wh_type', type: 'string' }
-    ],
-    columns: [
-      { prop: 'sub_wh_id', label: 'ID', width: '80', align: 'center', sortable: true },
-      { prop: 'full_name', label: 'Nama Sub Warehouse', minWidth: '200', bold: true },
-      { prop: 'pic', label: 'PIC', minWidth: '150' },
-      { prop: 'doc_code', label: 'Kode Dokumen', minWidth: '140' },
-      { prop: 'sub_wh_type', label: 'Tipe Sub WH', minWidth: '130' },
-      { prop: 'flag_productions', label: 'Produksi', width: '110', type: 'boolean' }
-    ],
-    filters: [
-      { prop: 'full_name', label: 'Nama Warehouse', placeholder: 'Cari nama sub wh...' },
-      { prop: 'pic', label: 'PIC', placeholder: 'Cari PIC...' },
-      { prop: 'doc_code', label: 'Kode Dokumen', placeholder: 'Cari doc code...' }
     ]
   },
   {
@@ -275,7 +197,7 @@ const entities = [
     pk: 'id',
     pkType: 'number',
     fields: [
-      { name: 'id', type: 'number', optional: false },
+      // { name: 'id', type: 'number', optional: false },
       { name: 'no', type: 'string', optional: true },
       { name: 'nama', type: 'string', optional: false },
       { name: 'mandarin', type: 'string', optional: true },
@@ -297,7 +219,7 @@ const entities = [
       { name: 'fotang', type: 'number' }
     ],
     columns: [
-      { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
+      // { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
       { prop: 'no', label: 'No', width: '120', tag: true },
       { prop: 'nama', label: 'Nama', minWidth: '180', bold: true },
       { prop: 'mandarin', label: 'Nama Mandarin', minWidth: '140' },
@@ -320,7 +242,7 @@ const entities = [
     pk: 'id',
     pkType: 'number',
     fields: [
-      { name: 'id', type: 'number', optional: false },
+      // { name: 'id', type: 'number', optional: false },
       { name: 'no', type: 'string', optional: true },
       { name: 'nama', type: 'string', optional: false },
       { name: 'mandarin', type: 'string', optional: true },
@@ -342,7 +264,7 @@ const entities = [
       { name: 'fotang', type: 'number' }
     ],
     columns: [
-      { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
+      // { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
       { prop: 'no', label: 'No Donatur', width: '130', tag: true },
       { prop: 'nama', label: 'Nama Donatur', minWidth: '180', bold: true },
       { prop: 'mandarin', label: 'Nama Mandarin', minWidth: '140' },
@@ -400,7 +322,7 @@ const entities = [
     pk: 'id',
     pkType: 'number',
     fields: [
-      { name: 'id', type: 'number', optional: false },
+      // { name: 'id', type: 'number', optional: false },
       { name: 'no_kwitansi', type: 'string', optional: false },
       { name: 'tanggal', type: 'string', optional: true },
       { name: 'donatur_id', type: 'number', optional: true },
@@ -424,7 +346,7 @@ const entities = [
       { name: 'tanggal', type: 'string' }
     ],
     columns: [
-      { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
+      // { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
       { prop: 'no_kwitansi', label: 'No. Kwitansi', minWidth: '160', bold: true, tag: true },
       { prop: 'tanggal', label: 'Tanggal', minWidth: '140', type: 'date' },
       { prop: 'jumlah', label: 'Jumlah (Rp)', minWidth: '150', type: 'currency' },

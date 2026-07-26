@@ -68,12 +68,6 @@
       >
         <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="menu_id" label="ID" width="80"  align="center" sortable>
-          <template #default="{ row }">
-            <span>{{ row.menu_id || '-' }}</span>
-          </template>
-        </el-table-column>
-
         <el-table-column prop="menu_name" label="Nama Menu" min-width="180">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.menu_name || '-' }}</span>

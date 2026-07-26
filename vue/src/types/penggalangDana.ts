@@ -1,5 +1,4 @@
 export interface PenggalangDana {
-  id: number
   no?: string
   nama: string
   mandarin?: string

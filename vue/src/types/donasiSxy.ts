@@ -1,5 +1,4 @@
 export interface DonasiSxy {
-  id: number
   no_kwitansi: string
   tanggal?: string
   donatur_id?: number

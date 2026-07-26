@@ -4,9 +4,9 @@
     <div class="page-header">
       <div>
         <h2 class="page-title">Master Data Admin Group</h2>
-        <p class="page-subtitle">Kelola daftar data admin group, pencarian, serta pembaruan profil</p>
+        <p class="page-subtitle">Lihat daftar data admin group, pencarian</p>
       </div>
-      <el-button
+      <!-- <el-button
         type="primary"
         size="large"
         :icon="Plus"
@@ -14,7 +14,7 @@
         @click="handleCreate"
       >
         Tambah Admin Group Baru
-      </el-button>
+      </el-button> -->
     </div>
 
     <!-- Filter Card -->
@@ -38,7 +38,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Keterangan" :label-position="isMobile? 'top' : 'right'">
+          <!-- <el-form-item label="Keterangan" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.group_desc"
               placeholder="Cari deskripsi..."
@@ -46,13 +46,14 @@
               :prefix-icon="Search"
               @input="onFilterChange"
             />
-          </el-form-item>
+          </el-form-item> -->
+          <div>
+            <el-button :icon="Refresh" @click="resetFilters">Reset Filter</el-button>
+          </div>
+
         </el-col>
       </el-row>
 
-      <div class="filter-actions">
-        <el-button :icon="Refresh" @click="resetFilters">Reset Filter</el-button>
-      </div>
     </el-card>
 
     <!-- Table Card -->
@@ -68,11 +69,11 @@
       >
         <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="group_id" label="ID" width="80"  align="center" sortable>
+        <!-- <el-table-column prop="group_id" label="ID" width="80"  align="center" sortable>
           <template #default="{ row }">
             <span>{{ row.group_id || '-' }}</span>
           </template>
-        </el-table-column>
+        </el-table-column> -->
 
         <el-table-column prop="group_name" label="Nama Group" min-width="180">
           <template #default="{ row }">
@@ -119,7 +120,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
+        <!-- <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -150,7 +151,7 @@
               </el-popconfirm>
             </div>
           </template>
-        </el-table-column>
+        </el-table-column> -->
       </el-table>
 
       <!-- Pagination -->

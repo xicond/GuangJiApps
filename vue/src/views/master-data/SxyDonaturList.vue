@@ -26,7 +26,7 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama">
+          <el-form-item label="Nama" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.nama"
               placeholder="Cari nama donatur..."
@@ -38,7 +38,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Mandarin">
+          <el-form-item label="Mandarin" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.mandarin"
               placeholder="Cari nama mandarin..."
@@ -66,7 +66,7 @@
         style="width: 100%"
         empty-text="Tidak ada data sxy donatur yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
         <el-table-column prop="id" label="ID" width="80"  align="center" sortable>
           <template #default="{ row }">
@@ -113,7 +113,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -154,7 +154,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -165,6 +165,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -178,6 +179,13 @@ import { sxyDonaturApi } from '../../api/sxyDonatur'
 import type { SxyDonatur, SxyDonaturQueryParams } from '../../types/sxyDonatur'
 
 const router = useRouter()
+
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 // Memory Optimization: shallowRef for table dataset
 const dataList = shallowRef<SxyDonatur[]>([])

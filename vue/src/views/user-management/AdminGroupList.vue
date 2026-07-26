@@ -3,8 +3,8 @@
     <!-- Header Section -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Transaksi Donasi Sxy</h2>
-        <p class="page-subtitle">Kelola daftar data donasi sxy, pencarian, serta pembaruan profil</p>
+        <h2 class="page-title">Master Data Admin Group</h2>
+        <p class="page-subtitle">Kelola daftar data admin group, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -13,7 +13,7 @@
         class="create-btn"
         @click="handleCreate"
       >
-        Tambah Donasi Sxy Baru
+        Tambah Admin Group Baru
       </el-button>
     </div>
 
@@ -26,10 +26,22 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="No. Kwitansi">
+          <el-form-item label="Nama Group" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.no_kwitansi"
-              placeholder="Cari no kwitansi..."
+              v-model="filters.group_name"
+              placeholder="Cari nama group..."
+              clearable
+              :prefix-icon="Search"
+              @input="onFilterChange"
+            />
+          </el-form-item>
+        </el-col>
+
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Keterangan" :label-position="isMobile? 'top' : 'right'">
+            <el-input
+              v-model="filters.group_desc"
+              placeholder="Cari deskripsi..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -52,56 +64,62 @@
         border
         height="475"
         style="width: 100%"
-        empty-text="Tidak ada data donasi sxy yang ditemukan"
+        empty-text="Tidak ada data admin group yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="id" label="ID" width="80"  align="center" sortable>
+        <el-table-column prop="group_id" label="ID" width="80"  align="center" sortable>
           <template #default="{ row }">
-            <span>{{ row.id || '-' }}</span>
+            <span>{{ row.group_id || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="no_kwitansi" label="No. Kwitansi" width="130" align="left">
+        <el-table-column prop="group_name" label="Nama Group" min-width="180">
           <template #default="{ row }">
-            <el-tag size="small" type="info" class="font-mono">{{ row.no_kwitansi }}</el-tag>
+            <span class="font-semibold">{{ row.group_name || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="tanggal" label="Tanggal"  min-width="140"  >
+        <el-table-column prop="group_desc" label="Keterangan"  min-width="220"  >
           <template #default="{ row }">
-            <span>{{ row.tanggal || '-' }}</span>
+            <span>{{ row.group_desc || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150">
+        <el-table-column prop="r_insert" label="Hak Tambah" width="110" align="center">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-' }}</span>
+            <el-tag :type="row.r_insert ? 'primary' : 'info'" size="small" effect="plain">
+              {{ row.r_insert ? 'Ya' : 'Tidak' }}
+            </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="no_kupon" label="No. Kupon"  min-width="140"  >
+        <el-table-column prop="r_edit" label="Hak Edit" width="100" align="center">
           <template #default="{ row }">
-            <span>{{ row.no_kupon || '-' }}</span>
+            <el-tag :type="row.r_edit ? 'primary' : 'info'" size="small" effect="plain">
+              {{ row.r_edit ? 'Ya' : 'Tidak' }}
+            </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="keterangan" label="Keterangan"  min-width="200"  >
+        <el-table-column prop="r_delete" label="Hak Hapus" width="100" align="center">
           <template #default="{ row }">
-            <span>{{ row.keterangan || '-' }}</span>
+            <el-tag :type="row.r_delete ? 'primary' : 'info'" size="small" effect="plain">
+              {{ row.r_delete ? 'Ya' : 'Tidak' }}
+            </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="110" align="center">
+        <el-table-column prop="r_reporting" label="Hak Laporan" width="120" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status ? 'success' : 'info'" size="small">
-              {{ row.status ? 'Aktif' : 'Nonaktif' }}
+            <el-tag :type="row.r_reporting ? 'primary' : 'info'" size="small" effect="plain">
+              {{ row.r_reporting ? 'Ya' : 'Tidak' }}
             </el-tag>
           </template>
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -109,8 +127,8 @@
                 size="small"
                 circle
                 :icon="Edit"
-                title="Edit Donasi Sxy"
-                @click="handleEdit(row.id)"
+                title="Edit Admin Group"
+                @click="handleEdit(row.group_id)"
               />
 
               <el-popconfirm
@@ -118,7 +136,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.id)"
+                @confirm="handleDelete(row.group_id)"
               >
                 <template #reference>
                   <el-button
@@ -126,7 +144,7 @@
                     size="small"
                     circle
                     :icon="Delete"
-                    title="Hapus Donasi Sxy"
+                    title="Hapus Admin Group"
                   />
                 </template>
               </el-popconfirm>
@@ -142,7 +160,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -153,6 +171,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -162,13 +181,20 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
-import { donasiSxyApi } from '../../api/donasiSxy'
-import type { DonasiSxy, DonasiSxyQueryParams } from '../../types/donasiSxy'
+import { adminGroupApi } from '../../api/adminGroup'
+import type { AdminGroup, AdminGroupQueryParams } from '../../types/adminGroup'
 
 const router = useRouter()
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Memory Optimization: shallowRef for table dataset
-const dataList = shallowRef<DonasiSxy[]>([])
+const dataList = shallowRef<AdminGroup[]>([])
 const loading = ref(false)
 
 // Pagination state
@@ -183,8 +209,9 @@ const getRowIndex = (index: number) => {
 }
 
 // Search Filter state
-const filters = reactive<DonasiSxyQueryParams>({
-  no_kwitansi: ''
+const filters = reactive<AdminGroupQueryParams>({
+  group_name: '',
+  group_desc: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -198,11 +225,12 @@ async function fetchData() {
   loading.value = true
 
   try {
-    const res = await donasiSxyApi.getDonasiSxys(
+    const res = await adminGroupApi.getAdminGroups(
       {
         page: pagination.page,
         limit: pagination.limit,
-        no_kwitansi: filters.no_kwitansi?.trim()
+        group_name: filters.group_name?.trim(),
+        group_desc: filters.group_desc?.trim()
       },
       currentAbortController.signal
     )
@@ -227,7 +255,8 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.no_kwitansi = ''
+  filters.group_name = ''
+  filters.group_desc = ''
   pagination.page = 1
   fetchData()
 }
@@ -246,7 +275,7 @@ function handlePageChange(newPage: number) {
 function handleCreate() {
   ElNotification({
     title: 'Informasi',
-    message: 'Tambah donasi sxy baru',
+    message: 'Tambah admin group baru',
     type: 'info'
   })
 }
@@ -254,17 +283,17 @@ function handleCreate() {
 function handleEdit(id: number) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit donasi sxy ID/Kode: ${id}`,
+    message: `Edit admin group ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
 async function handleDelete(id: number) {
   try {
-    await donasiSxyApi.deleteDonasiSxy(id)
+    await adminGroupApi.deleteAdminGroup(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data donasi sxy ${id} berhasil dihapus`,
+      message: `Data admin group ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()

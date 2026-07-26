@@ -38,7 +38,7 @@ func (s *AdminService) List(page int, filters map[string]string, limit int) ([]d
 	}
 	offset := (page - 1) * limit
 
-	query := s.db.Table("T_Login_Mst").Where("FlagUse = ?", true)
+	query := s.db.Table("T_Login_Mst") //.Where("FlagUse = ?", true)
 
 	type FilterRule struct {
 		Column   string

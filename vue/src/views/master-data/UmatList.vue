@@ -27,7 +27,7 @@
       <el-row :gutter="16" class="filter-row">
         <!-- Filter Alias -->
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Alias">
+          <el-form-item label="Alias" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.alias"
               placeholder="Cari berdasarkan alias..."
@@ -40,7 +40,7 @@
 
         <!-- Filter Nama Indonesia -->
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Indonesia">
+          <el-form-item label="Nama Indonesia" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.namaindonesia"
               placeholder="Cari nama indonesia..."
@@ -53,7 +53,7 @@
 
         <!-- Filter Nama Mandarin -->
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Mandarin">
+          <el-form-item label="Nama Mandarin" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.namamandarin"
               placeholder="Cari nama mandarin..."
@@ -66,7 +66,7 @@
 
         <!-- Filter Tahun Ciu Tao Mandarin -->
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Tahun Ciu Tao Mandarin">
+          <el-form-item label="Tahun Ciu Tao Mandarin" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.tahunchiutaomandarin"
               placeholder="Exact match tahun (e.g. 2024)..."
@@ -95,9 +95,9 @@
         empty-text="Tidak ada data umat yang ditemukan"
       >
         <!-- <el-table-column prop="id" label="ID" width="80" align="center" sortable /> -->
-        <el-table-column :index="getRowIndex" type="index" label="No." width="80" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="80" fixed="left" />
        
-        <el-table-column prop="kode" label="Kode" width="150" sortable fixed="left">
+        <el-table-column prop="kode" label="Kode" width="150" sortable :fixed="isMobile ? false : 'left'">
           <template #default="{ row }">
             <el-tag size="small" type="info" class="font-mono">{{ row.kode }}</el-tag>
           </template>
@@ -180,7 +180,7 @@
 
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -221,7 +221,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -232,6 +232,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -253,6 +254,13 @@ const router = useRouter()
 const umatList = shallowRef<Umat[]>([])
 const loading = ref(false)
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Pagination State
 const pagination = reactive({
   page: 1,
@@ -260,7 +268,7 @@ const pagination = reactive({
   total: 0
 })
 
-const getRowIndex = (row: Umat, index: number) => (pagination.page - 1) * pagination.limit + index + 1
+const getRowIndex = (index: number) => (pagination.page - 1) * pagination.limit + index + 1
 
 // Search Filter State
 const filters = reactive<UmatQueryParams>({

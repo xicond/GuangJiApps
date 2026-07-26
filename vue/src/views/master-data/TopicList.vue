@@ -3,8 +3,8 @@
     <!-- Header Section -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Master Data Activity</h2>
-        <p class="page-subtitle">Kelola daftar data activity, pencarian, serta pembaruan profil</p>
+        <h2 class="page-title">Master Data Topic</h2>
+        <p class="page-subtitle">Kelola daftar data topic, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -13,7 +13,7 @@
         class="create-btn"
         @click="handleCreate"
       >
-        Tambah Activity Baru
+        Tambah Topic Baru
       </el-button>
     </div>
 
@@ -26,10 +26,10 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kode Event">
+          <el-form-item label="Kode Topik" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.event_code"
-              placeholder="Cari kode event..."
+              v-model="filters.topic_code"
+              placeholder="Cari kode topik..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -38,10 +38,10 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Event">
+          <el-form-item label="Nama Topik" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.event_name"
-              placeholder="Cari nama event..."
+              v-model="filters.topic_name"
+              placeholder="Cari nama topik..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -50,9 +50,9 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kategori">
+          <el-form-item label="Kategori" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.event_category"
+              v-model="filters.topic_category"
               placeholder="Cari kategori..."
               clearable
               :prefix-icon="Search"
@@ -76,25 +76,25 @@
         border
         height="475"
         style="width: 100%"
-        empty-text="Tidak ada data activity yang ditemukan"
+        empty-text="Tidak ada data topic yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="event_code" label="Kode Event" width="130" align="center">
+        <el-table-column prop="topic_code" label="Kode Topik" width="130" align="center">
           <template #default="{ row }">
-            <el-tag size="small" type="info" class="font-mono">{{ row.event_code }}</el-tag>
+            <el-tag size="small" type="info" class="font-mono">{{ row.topic_code }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="event_name" label="Nama Event" min-width="200">
+        <el-table-column prop="topic_name" label="Nama Topik" min-width="200">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.event_name || '-' }}</span>
+            <span class="font-semibold">{{ row.topic_name || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="event_category" label="Kategori"  min-width="150"  >
+        <el-table-column prop="topic_category" label="Kategori"  min-width="150"  >
           <template #default="{ row }">
-            <span>{{ row.event_category || '-' }}</span>
+            <span>{{ row.topic_category || '-' }}</span>
           </template>
         </el-table-column>
 
@@ -113,7 +113,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -121,8 +121,8 @@
                 size="small"
                 circle
                 :icon="Edit"
-                title="Edit Activity"
-                @click="handleEdit(row.event_code)"
+                title="Edit Topic"
+                @click="handleEdit(row.topic_code)"
               />
 
               <el-popconfirm
@@ -130,7 +130,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.event_code)"
+                @confirm="handleDelete(row.topic_code)"
               >
                 <template #reference>
                   <el-button
@@ -138,7 +138,7 @@
                     size="small"
                     circle
                     :icon="Delete"
-                    title="Hapus Activity"
+                    title="Hapus Topic"
                   />
                 </template>
               </el-popconfirm>
@@ -154,7 +154,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -165,6 +165,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -174,13 +175,20 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
-import { activityApi } from '../../api/activity'
-import type { Activity, ActivityQueryParams } from '../../types/activity'
+import { topicApi } from '../../api/topic'
+import type { Topic, TopicQueryParams } from '../../types/topic'
 
 const router = useRouter()
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Memory Optimization: shallowRef for table dataset
-const dataList = shallowRef<Activity[]>([])
+const dataList = shallowRef<Topic[]>([])
 const loading = ref(false)
 
 // Pagination state
@@ -195,10 +203,10 @@ const getRowIndex = (index: number) => {
 }
 
 // Search Filter state
-const filters = reactive<ActivityQueryParams>({
-  event_code: '',
-  event_name: '',
-  event_category: ''
+const filters = reactive<TopicQueryParams>({
+  topic_code: '',
+  topic_name: '',
+  topic_category: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -212,13 +220,13 @@ async function fetchData() {
   loading.value = true
 
   try {
-    const res = await activityApi.getActivitys(
+    const res = await topicApi.getTopics(
       {
         page: pagination.page,
         limit: pagination.limit,
-        event_code: filters.event_code?.trim(),
-        event_name: filters.event_name?.trim(),
-        event_category: filters.event_category?.trim()
+        topic_code: filters.topic_code?.trim(),
+        topic_name: filters.topic_name?.trim(),
+        topic_category: filters.topic_category?.trim()
       },
       currentAbortController.signal
     )
@@ -243,9 +251,9 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.event_code = ''
-  filters.event_name = ''
-  filters.event_category = ''
+  filters.topic_code = ''
+  filters.topic_name = ''
+  filters.topic_category = ''
   pagination.page = 1
   fetchData()
 }
@@ -264,7 +272,7 @@ function handlePageChange(newPage: number) {
 function handleCreate() {
   ElNotification({
     title: 'Informasi',
-    message: 'Tambah activity baru',
+    message: 'Tambah topic baru',
     type: 'info'
   })
 }
@@ -272,17 +280,17 @@ function handleCreate() {
 function handleEdit(id: string) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit activity ID/Kode: ${id}`,
+    message: `Edit topic ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
 async function handleDelete(id: string) {
   try {
-    await activityApi.deleteActivity(id)
+    await topicApi.deleteTopic(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data activity ${id} berhasil dihapus`,
+      message: `Data topic ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()

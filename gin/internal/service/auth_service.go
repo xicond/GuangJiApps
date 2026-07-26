@@ -105,7 +105,7 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 	go func() {
 		defer wgPhase1.Done()
 		err := s.db.Table("T_Login_Mst").
-			Select("LoginId as [id], email, Username as name").
+			Select("LoginId, DepartmentId, GroupId, username, ImgUrl, LastLogin, IsWarehouse, GroupId").
 			Where("Username = ?", username).
 			First(&user).Error
 		if err != nil {
@@ -229,6 +229,7 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 	}
 
 	user.Password = ""
+	// user.GroupId = nil
 	return user, token, mainMenus, nil
 }
 
@@ -272,6 +273,10 @@ func toInt(val interface{}) int {
 		i, _ := strconv.Atoi(str)
 		return i
 	}
+}
+
+func BoolPtr(b bool) *bool {
+	return &b
 }
 
 func toBool(val interface{}) bool {

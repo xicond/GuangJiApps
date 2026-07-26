@@ -3,8 +3,8 @@
     <!-- Header Section -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Transaksi Kelas</h2>
-        <p class="page-subtitle">Kelola daftar data kelas, pencarian, serta pembaruan profil</p>
+        <h2 class="page-title">Master Data Penggalang Dana</h2>
+        <p class="page-subtitle">Kelola daftar data penggalang dana, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -13,7 +13,7 @@
         class="create-btn"
         @click="handleCreate"
       >
-        Tambah Kelas Baru
+        Tambah Penggalang Dana Baru
       </el-button>
     </div>
 
@@ -26,10 +26,10 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kode Kelas">
+          <el-form-item label="Nama" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.lookup_id"
-              placeholder="Cari kode kelas..."
+              v-model="filters.nama"
+              placeholder="Cari nama..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -38,10 +38,10 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Kelas">
+          <el-form-item label="Mandarin" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.lookup_value"
-              placeholder="Cari nama kelas..."
+              v-model="filters.mandarin"
+              placeholder="Cari nama mandarin..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -64,25 +64,43 @@
         border
         height="475"
         style="width: 100%"
-        empty-text="Tidak ada data kelas yang ditemukan"
+        empty-text="Tidak ada data penggalang dana yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="lookup_id" label="Kode Kelas" width="130" align="center">
+        <el-table-column prop="id" label="ID" width="80"  align="center" sortable>
           <template #default="{ row }">
-            <el-tag size="small" type="info" class="font-mono">{{ row.lookup_id }}</el-tag>
+            <span>{{ row.id || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="lookup_value" label="Nama Kelas" min-width="200">
+        <el-table-column prop="no" label="No" width="120" align="left">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.lookup_value || '-' }}</span>
+            <el-tag size="small" type="info" class="font-mono">{{ row.no }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="lookup_description" label="Keterangan"  min-width="220"  >
+        <el-table-column prop="nama" label="Nama" min-width="180">
           <template #default="{ row }">
-            <span>{{ row.lookup_description || '-' }}</span>
+            <span class="font-semibold">{{ row.nama || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="mandarin" label="Nama Mandarin"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.mandarin || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="mobile" label="No HP / Telepon"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.mobile || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="keterangan" label="Keterangan"  min-width="200"  >
+          <template #default="{ row }">
+            <span>{{ row.keterangan || '-' }}</span>
           </template>
         </el-table-column>
 
@@ -95,7 +113,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -103,8 +121,8 @@
                 size="small"
                 circle
                 :icon="Edit"
-                title="Edit Kelas"
-                @click="handleEdit(row.lookup_id)"
+                title="Edit Penggalang Dana"
+                @click="handleEdit(row.id)"
               />
 
               <el-popconfirm
@@ -112,7 +130,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.lookup_id)"
+                @confirm="handleDelete(row.id)"
               >
                 <template #reference>
                   <el-button
@@ -120,7 +138,7 @@
                     size="small"
                     circle
                     :icon="Delete"
-                    title="Hapus Kelas"
+                    title="Hapus Penggalang Dana"
                   />
                 </template>
               </el-popconfirm>
@@ -136,7 +154,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -147,6 +165,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -156,13 +175,20 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
-import { kelasApi } from '../../api/kelas'
-import type { Kelas, KelasQueryParams } from '../../types/kelas'
+import { penggalangDanaApi } from '../../api/penggalangDana'
+import type { PenggalangDana, PenggalangDanaQueryParams } from '../../types/penggalangDana'
 
 const router = useRouter()
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Memory Optimization: shallowRef for table dataset
-const dataList = shallowRef<Kelas[]>([])
+const dataList = shallowRef<PenggalangDana[]>([])
 const loading = ref(false)
 
 // Pagination state
@@ -177,9 +203,9 @@ const getRowIndex = (index: number) => {
 }
 
 // Search Filter state
-const filters = reactive<KelasQueryParams>({
-  lookup_id: '',
-  lookup_value: ''
+const filters = reactive<PenggalangDanaQueryParams>({
+  nama: '',
+  mandarin: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -193,12 +219,12 @@ async function fetchData() {
   loading.value = true
 
   try {
-    const res = await kelasApi.getKelass(
+    const res = await penggalangDanaApi.getPenggalangDanas(
       {
         page: pagination.page,
         limit: pagination.limit,
-        lookup_id: filters.lookup_id?.trim(),
-        lookup_value: filters.lookup_value?.trim()
+        nama: filters.nama?.trim(),
+        mandarin: filters.mandarin?.trim()
       },
       currentAbortController.signal
     )
@@ -223,8 +249,8 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.lookup_id = ''
-  filters.lookup_value = ''
+  filters.nama = ''
+  filters.mandarin = ''
   pagination.page = 1
   fetchData()
 }
@@ -243,25 +269,25 @@ function handlePageChange(newPage: number) {
 function handleCreate() {
   ElNotification({
     title: 'Informasi',
-    message: 'Tambah kelas baru',
+    message: 'Tambah penggalang dana baru',
     type: 'info'
   })
 }
 
-function handleEdit(id: string) {
+function handleEdit(id: number) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit kelas ID/Kode: ${id}`,
+    message: `Edit penggalang dana ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
-async function handleDelete(id: string) {
+async function handleDelete(id: number) {
   try {
-    await kelasApi.deleteKelas(id)
+    await penggalangDanaApi.deletePenggalangDana(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data kelas ${id} berhasil dihapus`,
+      message: `Data penggalang dana ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()

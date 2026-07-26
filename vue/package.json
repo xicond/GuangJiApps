@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "build:client": "vue-tsc --noEmit && vite build --base=/client/",
+    "build:client": "NODE_ENV=production vue-tsc --noEmit && vite build --base=/client/",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit"
   },

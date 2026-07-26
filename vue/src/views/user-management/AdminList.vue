@@ -29,7 +29,7 @@
       <el-row :gutter="16" class="filter-row">
         <!-- Filter Username -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Username">
+          <el-form-item label="Username" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.username"
               placeholder="Cari berdasarkan username..."
@@ -42,7 +42,7 @@
 
         <!-- Filter Group Name -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Nama Group">
+          <el-form-item label="Nama Group" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.group_name"
               placeholder="Cari berdasarkan nama group..."
@@ -70,10 +70,10 @@
         style="width: 100%"
         empty-text="Tidak ada data admin yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="80" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="80" fixed="left" />
         <!-- <el-table-column prop="id" label="ID" width="80" align="center" sortable fixed="left" /> -->
 
-        <el-table-column prop="username" label="User Name" min-width="150" fixed="left">
+        <el-table-column prop="username" label="User Name" min-width="135" :fixed="isMobile ? false : 'left'" align="left">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.username }}</span>
           </template>
@@ -143,7 +143,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="130" align="center" fixed="right">
+        <el-table-column label="Aksi" width="130" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -184,7 +184,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -195,7 +195,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="isEditing ? `Edit Admin #${editingId}` : 'Tambah Admin Baru'"
-      width="560px"
+      :width="isMobile? '88%' : '560px'"
       destroy-on-close
       @closed="resetForm"
     >
@@ -204,7 +204,7 @@
         :model="formData"
         :rules="formRules"
         label-width="130px"
-        label-position="left"
+        :label-position="isMobile? 'top' : 'right'"
       >
         <el-form-item label="Username" prop="username">
           <el-input v-model="formData.username" placeholder="Masukkan username" />
@@ -309,6 +309,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -321,6 +322,14 @@ import {
 } from '@element-plus/icons-vue'
 import { adminApi } from '../../api/admin'
 import type { Admin, AdminGroup, AdminQueryParams, AdminDepartment } from '../../types/admin'
+
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 
 // Data state
 const adminList = shallowRef<Admin[]>([])

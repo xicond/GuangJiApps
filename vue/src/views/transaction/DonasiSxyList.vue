@@ -3,8 +3,8 @@
     <!-- Header Section -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Admin Sub Warehouse</h2>
-        <p class="page-subtitle">Kelola daftar data admin sub warehouse, pencarian, serta pembaruan profil</p>
+        <h2 class="page-title">Transaksi Donasi Sxy</h2>
+        <p class="page-subtitle">Kelola daftar data donasi sxy, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -13,7 +13,7 @@
         class="create-btn"
         @click="handleCreate"
       >
-        Tambah Admin Sub Warehouse Baru
+        Tambah Donasi Sxy Baru
       </el-button>
     </div>
 
@@ -26,34 +26,10 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Warehouse">
+          <el-form-item label="No. Kwitansi" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.full_name"
-              placeholder="Cari nama sub wh..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
-          </el-form-item>
-        </el-col>
-
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="PIC">
-            <el-input
-              v-model="filters.pic"
-              placeholder="Cari PIC..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
-          </el-form-item>
-        </el-col>
-
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kode Dokumen">
-            <el-input
-              v-model="filters.doc_code"
-              placeholder="Cari doc code..."
+              v-model="filters.no_kwitansi"
+              placeholder="Cari no kwitansi..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -76,50 +52,56 @@
         border
         height="475"
         style="width: 100%"
-        empty-text="Tidak ada data admin sub warehouse yang ditemukan"
+        empty-text="Tidak ada data donasi sxy yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="sub_wh_id" label="ID" width="80"  align="center" sortable>
+        <el-table-column prop="id" label="ID" width="80"  align="center" sortable>
           <template #default="{ row }">
-            <span>{{ row.sub_wh_id || '-' }}</span>
+            <span>{{ row.id || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="full_name" label="Nama Sub Warehouse" min-width="200">
+        <el-table-column prop="no_kwitansi" label="No. Kwitansi" width="130" align="left">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.full_name || '-' }}</span>
+            <el-tag size="small" type="info" class="font-mono">{{ row.no_kwitansi }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="pic" label="PIC"  min-width="150"  >
+        <el-table-column prop="tanggal" label="Tanggal"  min-width="140"  >
           <template #default="{ row }">
-            <span>{{ row.pic || '-' }}</span>
+            <span>{{ row.tanggal || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="doc_code" label="Kode Dokumen"  min-width="140"  >
+        <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150">
           <template #default="{ row }">
-            <span>{{ row.doc_code || '-' }}</span>
+            <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="sub_wh_type" label="Tipe Sub WH"  min-width="130"  >
+        <el-table-column prop="no_kupon" label="No. Kupon"  min-width="140"  >
           <template #default="{ row }">
-            <span>{{ row.sub_wh_type || '-' }}</span>
+            <span>{{ row.no_kupon || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="flag_productions" label="Produksi" width="110" align="center">
+        <el-table-column prop="keterangan" label="Keterangan"  min-width="200"  >
           <template #default="{ row }">
-            <el-tag :type="row.flag_productions ? 'primary' : 'info'" size="small" effect="plain">
-              {{ row.flag_productions ? 'Ya' : 'Tidak' }}
+            <span>{{ row.keterangan || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="status" label="Status" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status ? 'success' : 'info'" size="small">
+              {{ row.status ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -127,8 +109,8 @@
                 size="small"
                 circle
                 :icon="Edit"
-                title="Edit Admin Sub Warehouse"
-                @click="handleEdit(row.sub_wh_id)"
+                title="Edit Donasi Sxy"
+                @click="handleEdit(row.id)"
               />
 
               <el-popconfirm
@@ -136,7 +118,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.sub_wh_id)"
+                @confirm="handleDelete(row.id)"
               >
                 <template #reference>
                   <el-button
@@ -144,7 +126,7 @@
                     size="small"
                     circle
                     :icon="Delete"
-                    title="Hapus Admin Sub Warehouse"
+                    title="Hapus Donasi Sxy"
                   />
                 </template>
               </el-popconfirm>
@@ -160,7 +142,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -171,6 +153,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -180,13 +163,20 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
-import { adminSubWarehouseApi } from '../../api/adminSubWarehouse'
-import type { AdminSubWarehouse, AdminSubWarehouseQueryParams } from '../../types/adminSubWarehouse'
+import { donasiSxyApi } from '../../api/donasiSxy'
+import type { DonasiSxy, DonasiSxyQueryParams } from '../../types/donasiSxy'
 
 const router = useRouter()
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Memory Optimization: shallowRef for table dataset
-const dataList = shallowRef<AdminSubWarehouse[]>([])
+const dataList = shallowRef<DonasiSxy[]>([])
 const loading = ref(false)
 
 // Pagination state
@@ -201,10 +191,8 @@ const getRowIndex = (index: number) => {
 }
 
 // Search Filter state
-const filters = reactive<AdminSubWarehouseQueryParams>({
-  full_name: '',
-  pic: '',
-  doc_code: ''
+const filters = reactive<DonasiSxyQueryParams>({
+  no_kwitansi: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -218,13 +206,11 @@ async function fetchData() {
   loading.value = true
 
   try {
-    const res = await adminSubWarehouseApi.getAdminSubWarehouses(
+    const res = await donasiSxyApi.getDonasiSxys(
       {
         page: pagination.page,
         limit: pagination.limit,
-        full_name: filters.full_name?.trim(),
-        pic: filters.pic?.trim(),
-        doc_code: filters.doc_code?.trim()
+        no_kwitansi: filters.no_kwitansi?.trim()
       },
       currentAbortController.signal
     )
@@ -249,9 +235,7 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.full_name = ''
-  filters.pic = ''
-  filters.doc_code = ''
+  filters.no_kwitansi = ''
   pagination.page = 1
   fetchData()
 }
@@ -270,7 +254,7 @@ function handlePageChange(newPage: number) {
 function handleCreate() {
   ElNotification({
     title: 'Informasi',
-    message: 'Tambah admin sub warehouse baru',
+    message: 'Tambah donasi sxy baru',
     type: 'info'
   })
 }
@@ -278,17 +262,17 @@ function handleCreate() {
 function handleEdit(id: number) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit admin sub warehouse ID/Kode: ${id}`,
+    message: `Edit donasi sxy ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
 async function handleDelete(id: number) {
   try {
-    await adminSubWarehouseApi.deleteAdminSubWarehouse(id)
+    await donasiSxyApi.deleteDonasiSxy(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data admin sub warehouse ${id} berhasil dihapus`,
+      message: `Data donasi sxy ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()

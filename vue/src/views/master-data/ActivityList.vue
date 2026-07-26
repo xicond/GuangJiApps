@@ -3,8 +3,8 @@
     <!-- Header Section -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Master Data Tim Kerja</h2>
-        <p class="page-subtitle">Kelola daftar data tim kerja, pencarian, serta pembaruan profil</p>
+        <h2 class="page-title">Master Data Activity</h2>
+        <p class="page-subtitle">Kelola daftar data activity, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -13,7 +13,7 @@
         class="create-btn"
         @click="handleCreate"
       >
-        Tambah Tim Kerja Baru
+        Tambah Activity Baru
       </el-button>
     </div>
 
@@ -26,10 +26,10 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Lookup ID">
+          <el-form-item label="Kode Event" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.lookup_id"
-              placeholder="Cari lookup id..."
+              v-model="filters.event_code"
+              placeholder="Cari kode event..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -38,10 +38,10 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Posisi / Tim">
+          <el-form-item label="Nama Event" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.lookup_value"
-              placeholder="Cari posisi/tim..."
+              v-model="filters.event_name"
+              placeholder="Cari nama event..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -50,10 +50,10 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Keterangan">
+          <el-form-item label="Kategori" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.lookup_description"
-              placeholder="Cari deskripsi..."
+              v-model="filters.event_category"
+              placeholder="Cari kategori..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -76,25 +76,31 @@
         border
         height="475"
         style="width: 100%"
-        empty-text="Tidak ada data tim kerja yang ditemukan"
+        empty-text="Tidak ada data activity yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="lookup_id" label="Lookup ID" width="130" align="center">
+        <el-table-column prop="event_code" label="Kode Event" width="130" align="center">
           <template #default="{ row }">
-            <el-tag size="small" type="info" class="font-mono">{{ row.lookup_id }}</el-tag>
+            <el-tag size="small" type="info" class="font-mono">{{ row.event_code }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="lookup_value" label="Posisi / Tim Kerja" min-width="200">
+        <el-table-column prop="event_name" label="Nama Event" min-width="200">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.lookup_value || '-' }}</span>
+            <span class="font-semibold">{{ row.event_name || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="lookup_description" label="Keterangan"  min-width="220"  >
+        <el-table-column prop="event_category" label="Kategori"  min-width="150"  >
           <template #default="{ row }">
-            <span>{{ row.lookup_description || '-' }}</span>
+            <span>{{ row.event_category || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="description" label="Keterangan"  min-width="220"  >
+          <template #default="{ row }">
+            <span>{{ row.description || '-' }}</span>
           </template>
         </el-table-column>
 
@@ -107,7 +113,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -115,8 +121,8 @@
                 size="small"
                 circle
                 :icon="Edit"
-                title="Edit Tim Kerja"
-                @click="handleEdit(row.lookup_id)"
+                title="Edit Activity"
+                @click="handleEdit(row.event_code)"
               />
 
               <el-popconfirm
@@ -124,7 +130,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.lookup_id)"
+                @confirm="handleDelete(row.event_code)"
               >
                 <template #reference>
                   <el-button
@@ -132,7 +138,7 @@
                     size="small"
                     circle
                     :icon="Delete"
-                    title="Hapus Tim Kerja"
+                    title="Hapus Activity"
                   />
                 </template>
               </el-popconfirm>
@@ -148,7 +154,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -159,6 +165,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -168,13 +175,20 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
-import { timKerjaApi } from '../../api/timKerja'
-import type { TimKerja, TimKerjaQueryParams } from '../../types/timKerja'
+import { activityApi } from '../../api/activity'
+import type { Activity, ActivityQueryParams } from '../../types/activity'
 
 const router = useRouter()
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Memory Optimization: shallowRef for table dataset
-const dataList = shallowRef<TimKerja[]>([])
+const dataList = shallowRef<Activity[]>([])
 const loading = ref(false)
 
 // Pagination state
@@ -189,10 +203,10 @@ const getRowIndex = (index: number) => {
 }
 
 // Search Filter state
-const filters = reactive<TimKerjaQueryParams>({
-  lookup_id: '',
-  lookup_value: '',
-  lookup_description: ''
+const filters = reactive<ActivityQueryParams>({
+  event_code: '',
+  event_name: '',
+  event_category: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -206,13 +220,13 @@ async function fetchData() {
   loading.value = true
 
   try {
-    const res = await timKerjaApi.getTimKerjas(
+    const res = await activityApi.getActivitys(
       {
         page: pagination.page,
         limit: pagination.limit,
-        lookup_id: filters.lookup_id?.trim(),
-        lookup_value: filters.lookup_value?.trim(),
-        lookup_description: filters.lookup_description?.trim()
+        event_code: filters.event_code?.trim(),
+        event_name: filters.event_name?.trim(),
+        event_category: filters.event_category?.trim()
       },
       currentAbortController.signal
     )
@@ -237,9 +251,9 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.lookup_id = ''
-  filters.lookup_value = ''
-  filters.lookup_description = ''
+  filters.event_code = ''
+  filters.event_name = ''
+  filters.event_category = ''
   pagination.page = 1
   fetchData()
 }
@@ -258,7 +272,7 @@ function handlePageChange(newPage: number) {
 function handleCreate() {
   ElNotification({
     title: 'Informasi',
-    message: 'Tambah tim kerja baru',
+    message: 'Tambah activity baru',
     type: 'info'
   })
 }
@@ -266,17 +280,17 @@ function handleCreate() {
 function handleEdit(id: string) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit tim kerja ID/Kode: ${id}`,
+    message: `Edit activity ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
 async function handleDelete(id: string) {
   try {
-    await timKerjaApi.deleteTimKerja(id)
+    await activityApi.deleteActivity(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data tim kerja ${id} berhasil dihapus`,
+      message: `Data activity ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()

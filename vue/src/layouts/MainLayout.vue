@@ -1,15 +1,15 @@
 <template>
   <el-container class="layout-container">
-    <el-aside :width="isCollapsed ? '64px' : '240px'" class="aside">
+    <el-aside :width="isCollapsed || isMobile ? '54px' : '240px'" class="aside">
       <div class="sidebar-logo">
         <el-icon class="logo-icon"><Grid /></el-icon>
-        <span v-if="!isCollapsed" class="logo-text">GuangJi Apps</span>
+        <span v-if="!isCollapsed && !isMobile" class="logo-text">GuangJi Apps</span>
       </div>
 
       <el-scrollbar class="menu-scrollbar">
         <el-menu
           :default-active="activeMenu"
-          :collapse="isCollapsed"
+          :collapse="isCollapsed || isMobile"
           :router="true"
           class="el-menu-vertical"
         >
@@ -74,10 +74,11 @@
       <el-header class="header">
         <div class="header-left">
           <el-button
+            v-if="!isMobile"
             circle
             text
             size="large"
-            :icon="isCollapsed ? Expand : Fold"
+            :icon="isCollapsed || isCollapsed ? Expand : Fold"
             @click="isCollapsed = !isCollapsed"
           />
         </div>
@@ -125,6 +126,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { setMode, currentMode, isDark, type ThemeMode } from '../theme'
@@ -148,7 +150,12 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const isCollapsed = ref(false)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+const isTablet = breakpoints.between('md', 'lg')
+
+const isCollapsed = ref(isTablet.value)
 const activeMenu = computed(() => route.path)
 const hasMenu = (menuName: string) => authStore.hasMenu(menuName)
 const hasSubMenu = (parentMenuName: string, subMenuName: string) => authStore.hasSubMenu(parentMenuName, subMenuName)
@@ -168,6 +175,11 @@ const handleLogout = () => {
 }
 </script>
 
+<style>
+:root {
+  --el-menu-base-level-padding: 15px;
+}
+</style>
 <style scoped>
 .layout-container {
   min-height: 100vh;
@@ -186,7 +198,7 @@ const handleLogout = () => {
   height: 60px;
   display: flex;
   align-items: center;
-  padding: 0 1.25rem;
+  padding: 0 0.89rem;
   gap: 0.75rem;
   border-bottom: 1px solid var(--el-border-color-light);
   overflow: hidden;
@@ -259,3 +271,4 @@ const handleLogout = () => {
   background-color: var(--el-bg-color-page);
 }
 </style>
+

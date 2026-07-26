@@ -3,8 +3,8 @@
     <!-- Header Section -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Master Data Topic</h2>
-        <p class="page-subtitle">Kelola daftar data topic, pencarian, serta pembaruan profil</p>
+        <h2 class="page-title">Transaksi Kelas</h2>
+        <p class="page-subtitle">Kelola daftar data kelas, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -13,7 +13,7 @@
         class="create-btn"
         @click="handleCreate"
       >
-        Tambah Topic Baru
+        Tambah Kelas Baru
       </el-button>
     </div>
 
@@ -26,10 +26,10 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kode Topik">
+          <el-form-item label="Kode Kelas" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.topic_code"
-              placeholder="Cari kode topik..."
+              v-model="filters.lookup_id"
+              placeholder="Cari kode kelas..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -38,22 +38,10 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Topik">
+          <el-form-item label="Nama Kelas" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.topic_name"
-              placeholder="Cari nama topik..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
-          </el-form-item>
-        </el-col>
-
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kategori">
-            <el-input
-              v-model="filters.topic_category"
-              placeholder="Cari kategori..."
+              v-model="filters.lookup_value"
+              placeholder="Cari nama kelas..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -76,31 +64,25 @@
         border
         height="475"
         style="width: 100%"
-        empty-text="Tidak ada data topic yang ditemukan"
+        empty-text="Tidak ada data kelas yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="topic_code" label="Kode Topik" width="130" align="center">
+        <el-table-column prop="lookup_id" label="Kode Kelas" width="130" align="center">
           <template #default="{ row }">
-            <el-tag size="small" type="info" class="font-mono">{{ row.topic_code }}</el-tag>
+            <el-tag size="small" type="info" class="font-mono">{{ row.lookup_id }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="topic_name" label="Nama Topik" min-width="200">
+        <el-table-column prop="lookup_value" label="Nama Kelas" min-width="200">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.topic_name || '-' }}</span>
+            <span class="font-semibold">{{ row.lookup_value || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="topic_category" label="Kategori"  min-width="150"  >
+        <el-table-column prop="lookup_description" label="Keterangan"  min-width="220"  >
           <template #default="{ row }">
-            <span>{{ row.topic_category || '-' }}</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="description" label="Keterangan"  min-width="220"  >
-          <template #default="{ row }">
-            <span>{{ row.description || '-' }}</span>
+            <span>{{ row.lookup_description || '-' }}</span>
           </template>
         </el-table-column>
 
@@ -113,7 +95,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -121,8 +103,8 @@
                 size="small"
                 circle
                 :icon="Edit"
-                title="Edit Topic"
-                @click="handleEdit(row.topic_code)"
+                title="Edit Kelas"
+                @click="handleEdit(row.lookup_id)"
               />
 
               <el-popconfirm
@@ -130,7 +112,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.topic_code)"
+                @confirm="handleDelete(row.lookup_id)"
               >
                 <template #reference>
                   <el-button
@@ -138,7 +120,7 @@
                     size="small"
                     circle
                     :icon="Delete"
-                    title="Hapus Topic"
+                    title="Hapus Kelas"
                   />
                 </template>
               </el-popconfirm>
@@ -154,7 +136,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -165,6 +147,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -174,13 +157,20 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
-import { topicApi } from '../../api/topic'
-import type { Topic, TopicQueryParams } from '../../types/topic'
+import { kelasApi } from '../../api/kelas'
+import type { Kelas, KelasQueryParams } from '../../types/kelas'
 
 const router = useRouter()
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Memory Optimization: shallowRef for table dataset
-const dataList = shallowRef<Topic[]>([])
+const dataList = shallowRef<Kelas[]>([])
 const loading = ref(false)
 
 // Pagination state
@@ -195,10 +185,9 @@ const getRowIndex = (index: number) => {
 }
 
 // Search Filter state
-const filters = reactive<TopicQueryParams>({
-  topic_code: '',
-  topic_name: '',
-  topic_category: ''
+const filters = reactive<KelasQueryParams>({
+  lookup_id: '',
+  lookup_value: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -212,13 +201,12 @@ async function fetchData() {
   loading.value = true
 
   try {
-    const res = await topicApi.getTopics(
+    const res = await kelasApi.getKelass(
       {
         page: pagination.page,
         limit: pagination.limit,
-        topic_code: filters.topic_code?.trim(),
-        topic_name: filters.topic_name?.trim(),
-        topic_category: filters.topic_category?.trim()
+        lookup_id: filters.lookup_id?.trim(),
+        lookup_value: filters.lookup_value?.trim()
       },
       currentAbortController.signal
     )
@@ -243,9 +231,8 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.topic_code = ''
-  filters.topic_name = ''
-  filters.topic_category = ''
+  filters.lookup_id = ''
+  filters.lookup_value = ''
   pagination.page = 1
   fetchData()
 }
@@ -264,7 +251,7 @@ function handlePageChange(newPage: number) {
 function handleCreate() {
   ElNotification({
     title: 'Informasi',
-    message: 'Tambah topic baru',
+    message: 'Tambah kelas baru',
     type: 'info'
   })
 }
@@ -272,17 +259,17 @@ function handleCreate() {
 function handleEdit(id: string) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit topic ID/Kode: ${id}`,
+    message: `Edit kelas ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
 async function handleDelete(id: string) {
   try {
-    await topicApi.deleteTopic(id)
+    await kelasApi.deleteKelas(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data topic ${id} berhasil dihapus`,
+      message: `Data kelas ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()

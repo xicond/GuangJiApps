@@ -3,8 +3,8 @@
     <!-- Header Section -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Master Data Admin Group</h2>
-        <p class="page-subtitle">Kelola daftar data admin group, pencarian, serta pembaruan profil</p>
+        <h2 class="page-title">Master Data Tim Kerja</h2>
+        <p class="page-subtitle">Kelola daftar data tim kerja, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -13,7 +13,7 @@
         class="create-btn"
         @click="handleCreate"
       >
-        Tambah Admin Group Baru
+        Tambah Tim Kerja Baru
       </el-button>
     </div>
 
@@ -26,10 +26,10 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Group">
+          <el-form-item label="Lookup ID" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.group_name"
-              placeholder="Cari nama group..."
+              v-model="filters.lookup_id"
+              placeholder="Cari lookup id..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -38,9 +38,21 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Keterangan">
+          <el-form-item label="Posisi / Tim" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.group_desc"
+              v-model="filters.lookup_value"
+              placeholder="Cari posisi/tim..."
+              clearable
+              :prefix-icon="Search"
+              @input="onFilterChange"
+            />
+          </el-form-item>
+        </el-col>
+
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Keterangan" :label-position="isMobile? 'top' : 'right'">
+            <el-input
+              v-model="filters.lookup_description"
               placeholder="Cari deskripsi..."
               clearable
               :prefix-icon="Search"
@@ -64,62 +76,38 @@
         border
         height="475"
         style="width: 100%"
-        empty-text="Tidak ada data admin group yang ditemukan"
+        empty-text="Tidak ada data tim kerja yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="group_id" label="ID" width="80"  align="center" sortable>
+        <el-table-column prop="lookup_id" label="Lookup ID" width="130" align="center">
           <template #default="{ row }">
-            <span>{{ row.group_id || '-' }}</span>
+            <el-tag size="small" type="info" class="font-mono">{{ row.lookup_id }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="group_name" label="Nama Group" min-width="180">
+        <el-table-column prop="lookup_value" label="Posisi / Tim Kerja" min-width="200">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.group_name || '-' }}</span>
+            <span class="font-semibold">{{ row.lookup_value || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="group_desc" label="Keterangan"  min-width="220"  >
+        <el-table-column prop="lookup_description" label="Keterangan"  min-width="220"  >
           <template #default="{ row }">
-            <span>{{ row.group_desc || '-' }}</span>
+            <span>{{ row.lookup_description || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="r_insert" label="Hak Tambah" width="110" align="center">
+        <el-table-column prop="status" label="Status" width="110" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.r_insert ? 'primary' : 'info'" size="small" effect="plain">
-              {{ row.r_insert ? 'Ya' : 'Tidak' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="r_edit" label="Hak Edit" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.r_edit ? 'primary' : 'info'" size="small" effect="plain">
-              {{ row.r_edit ? 'Ya' : 'Tidak' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="r_delete" label="Hak Hapus" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.r_delete ? 'primary' : 'info'" size="small" effect="plain">
-              {{ row.r_delete ? 'Ya' : 'Tidak' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="r_reporting" label="Hak Laporan" width="120" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.r_reporting ? 'primary' : 'info'" size="small" effect="plain">
-              {{ row.r_reporting ? 'Ya' : 'Tidak' }}
+            <el-tag :type="row.status ? 'success' : 'info'" size="small">
+              {{ row.status ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -127,8 +115,8 @@
                 size="small"
                 circle
                 :icon="Edit"
-                title="Edit Admin Group"
-                @click="handleEdit(row.group_id)"
+                title="Edit Tim Kerja"
+                @click="handleEdit(row.lookup_id)"
               />
 
               <el-popconfirm
@@ -136,7 +124,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.group_id)"
+                @confirm="handleDelete(row.lookup_id)"
               >
                 <template #reference>
                   <el-button
@@ -144,7 +132,7 @@
                     size="small"
                     circle
                     :icon="Delete"
-                    title="Hapus Admin Group"
+                    title="Hapus Tim Kerja"
                   />
                 </template>
               </el-popconfirm>
@@ -160,7 +148,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -171,6 +159,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -180,13 +169,20 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
-import { adminGroupApi } from '../../api/adminGroup'
-import type { AdminGroup, AdminGroupQueryParams } from '../../types/adminGroup'
+import { timKerjaApi } from '../../api/timKerja'
+import type { TimKerja, TimKerjaQueryParams } from '../../types/timKerja'
 
 const router = useRouter()
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Memory Optimization: shallowRef for table dataset
-const dataList = shallowRef<AdminGroup[]>([])
+const dataList = shallowRef<TimKerja[]>([])
 const loading = ref(false)
 
 // Pagination state
@@ -201,9 +197,10 @@ const getRowIndex = (index: number) => {
 }
 
 // Search Filter state
-const filters = reactive<AdminGroupQueryParams>({
-  group_name: '',
-  group_desc: ''
+const filters = reactive<TimKerjaQueryParams>({
+  lookup_id: '',
+  lookup_value: '',
+  lookup_description: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -217,12 +214,13 @@ async function fetchData() {
   loading.value = true
 
   try {
-    const res = await adminGroupApi.getAdminGroups(
+    const res = await timKerjaApi.getTimKerjas(
       {
         page: pagination.page,
         limit: pagination.limit,
-        group_name: filters.group_name?.trim(),
-        group_desc: filters.group_desc?.trim()
+        lookup_id: filters.lookup_id?.trim(),
+        lookup_value: filters.lookup_value?.trim(),
+        lookup_description: filters.lookup_description?.trim()
       },
       currentAbortController.signal
     )
@@ -247,8 +245,9 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.group_name = ''
-  filters.group_desc = ''
+  filters.lookup_id = ''
+  filters.lookup_value = ''
+  filters.lookup_description = ''
   pagination.page = 1
   fetchData()
 }
@@ -267,25 +266,25 @@ function handlePageChange(newPage: number) {
 function handleCreate() {
   ElNotification({
     title: 'Informasi',
-    message: 'Tambah admin group baru',
+    message: 'Tambah tim kerja baru',
     type: 'info'
   })
 }
 
-function handleEdit(id: number) {
+function handleEdit(id: string) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit admin group ID/Kode: ${id}`,
+    message: `Edit tim kerja ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
-async function handleDelete(id: number) {
+async function handleDelete(id: string) {
   try {
-    await adminGroupApi.deleteAdminGroup(id)
+    await timKerjaApi.deleteTimKerja(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data admin group ${id} berhasil dihapus`,
+      message: `Data tim kerja ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()

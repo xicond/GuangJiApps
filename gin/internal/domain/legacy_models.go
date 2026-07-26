@@ -13,19 +13,19 @@ type Admin struct {
 	ID           int32     `gorm:"primaryKey;column:LoginId" json:"id"`
 	Username     string    `gorm:"column:Username" json:"username"`
 	Password     string    `gorm:"column:Password" json:"-"` // Hidden from JSON output
-	GroupId      int32     `gorm:"column:GroupId" json:"group_id"`
-	Email        string    `gorm:"column:email" json:"email"`
-	PhoneNumber  string    `gorm:"column:PhoneNumber" json:"phone_number"`
+	GroupId      int32     `gorm:"column:GroupId" json:"group_id,omitempty"`
+	Email        *string   `gorm:"column:email" json:"email,omitempty"`
+	PhoneNumber  *string   `gorm:"column:PhoneNumber" json:"phone_number,omitempty"`
 	ImgUrl       string    `gorm:"column:ImgUrl" json:"img_url"`
 	FlagUse      bool      `gorm:"column:FlagUse" json:"flag_use"`
-	DateStart    time.Time `gorm:"column:DateStart" json:"date_start"`
-	DateEnd      time.Time `gorm:"column:DateEnd" json:"date_end"`
-	LoginDesc    string    `gorm:"column:LoginDesc" json:"login_desc"`
+	DateStart    time.Time `gorm:"column:DateStart" json:"date_start,omitempty"`
+	DateEnd      time.Time `gorm:"column:DateEnd" json:"date_end,omitempty"`
+	LoginDesc    *string   `gorm:"column:LoginDesc" json:"login_desc,omitempty"`
 	LastLogin    time.Time `gorm:"column:LastLogin" json:"last_login"`
 	DepartmentId int32     `gorm:"column:DepartmentId" json:"department_id"`
 	IsWarehouse  bool      `gorm:"column:IsWarehouse" json:"is_warehouse"`
 
-	AdminGroup AdminGroup     `gorm:"foreignKey:GroupId;references:GroupId" json:"admin_group,omitempty"`
+	AdminGroup AdminGroup     `gorm:"foreignKey:GroupId;references:GroupId" json:"admin_group"`
 	Department *DepartmentMst `gorm:"foreignKey:DepartmentId;references:DepartmentId" json:"department,omitempty"`
 }
 
@@ -53,11 +53,11 @@ type MainMenuItem struct {
 type AdminGroup struct {
 	GroupId     int32  `gorm:"primaryKey;column:GroupId" json:"group_id"`
 	GroupName   string `gorm:"column:GroupName" json:"group_name"`
-	RInsert     bool   `gorm:"column:RInsert" json:"r_insert"`
-	REdit       bool   `gorm:"column:REdit" json:"r_edit"`
-	RDelete     bool   `gorm:"column:RDelete" json:"r_delete"`
-	RReporting  bool   `gorm:"column:RReporting" json:"r_reporting"`
-	RPositionId int32  `gorm:"column:RPositionId" json:"r_position_id"`
+	RInsert     bool   `gorm:"column:RInsert" json:"-"`
+	REdit       bool   `gorm:"column:REdit" json:"-"`
+	RDelete     bool   `gorm:"column:RDelete" json:"-"`
+	RReporting  bool   `gorm:"column:RReporting" json:"-"`
+	RPositionId int32  `gorm:"column:RPositionId" json:"-"`
 	GroupDesc   string `gorm:"column:GroupDesc" json:"group_desc"`
 }
 

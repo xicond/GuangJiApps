@@ -9,7 +9,7 @@ const entities = [
   {
     key: 'adminGroup',
     className: 'AdminGroup',
-    path: 'user-management/AdminGroupView.vue',
+    path: 'user-management/AdminGroupList.vue',
     title: 'Master Data Admin Group',
     entity: 'Admin Group',
     endpoint: '/v1/admin-groups',
@@ -46,7 +46,7 @@ const entities = [
   {
     key: 'groupMenuMapping',
     className: 'GroupMenuMapping',
-    path: 'user-management/GroupMenuMappingView.vue',
+    path: 'user-management/GroupMenuMappingList.vue',
     title: 'Group Menu Mapping',
     entity: 'Group Menu Mapping',
     endpoint: '/v1/group-menu-mappings',
@@ -82,7 +82,7 @@ const entities = [
   {
     key: 'adminSubWarehouse',
     className: 'AdminSubWarehouse',
-    path: 'user-management/AdminSubWarehouseView.vue',
+    path: 'user-management/AdminSubWarehouseList.vue',
     title: 'Admin Sub Warehouse',
     entity: 'Admin Sub Warehouse',
     endpoint: '/v1/admin-sub-warehouses',
@@ -123,7 +123,7 @@ const entities = [
   {
     key: 'topic',
     className: 'Topic',
-    path: 'master-data/TopicView.vue',
+    path: 'master-data/TopicList.vue',
     title: 'Master Data Topic',
     entity: 'Topic',
     endpoint: '/v1/topics',
@@ -160,7 +160,7 @@ const entities = [
   {
     key: 'activity',
     className: 'Activity',
-    path: 'master-data/ActivityView.vue',
+    path: 'master-data/ActivityList.vue',
     title: 'Master Data Activity',
     entity: 'Activity',
     endpoint: '/v1/activities',
@@ -197,7 +197,7 @@ const entities = [
   {
     key: 'timKerja',
     className: 'TimKerja',
-    path: 'master-data/TimKerjaView.vue',
+    path: 'master-data/TimKerjaList.vue',
     title: 'Master Data Tim Kerja',
     entity: 'Tim Kerja',
     endpoint: '/v1/tim-kerja',
@@ -233,7 +233,7 @@ const entities = [
   {
     key: 'tahunCiuTao',
     className: 'TahunCiuTao',
-    path: 'master-data/TahunCiuTaoView.vue',
+    path: 'master-data/TahunCiuTaoList.vue',
     title: 'Master Data Tahun Ciu Tao',
     entity: 'Tahun Ciu Tao',
     endpoint: '/v1/tahun-ciu-tao',
@@ -268,7 +268,7 @@ const entities = [
   {
     key: 'penggalangDana',
     className: 'PenggalangDana',
-    path: 'master-data/PenggalangDanaView.vue',
+    path: 'master-data/PenggalangDanaList.vue',
     title: 'Master Data Penggalang Dana',
     entity: 'Penggalang Dana',
     endpoint: '/v1/penggalang-dana',
@@ -313,7 +313,7 @@ const entities = [
   {
     key: 'sxyDonatur',
     className: 'SxyDonatur',
-    path: 'master-data/SxyDonaturView.vue',
+    path: 'master-data/SxyDonaturList.vue',
     title: 'Master Data Sxy Donatur',
     entity: 'Sxy Donatur',
     endpoint: '/v1/sxy-donatur',
@@ -358,7 +358,7 @@ const entities = [
   {
     key: 'kelas',
     className: 'Kelas',
-    path: 'transaction/KelasView.vue',
+    path: 'transaction/KelasList.vue',
     title: 'Transaksi Kelas',
     entity: 'Kelas',
     endpoint: '/v1/kelas',
@@ -393,7 +393,7 @@ const entities = [
   {
     key: 'donasiSxy',
     className: 'DonasiSxy',
-    path: 'transaction/DonasiSxyView.vue',
+    path: 'transaction/DonasiSxyList.vue',
     title: 'Transaksi Donasi Sxy',
     entity: 'Donasi Sxy',
     endpoint: '/v1/donasi-sxy',
@@ -576,7 +576,7 @@ entities.forEach(item => {
 
   // Generate Filter inputs markup
   const filterInputsMarkup = item.filters.map(f => `        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="${f.label}">
+          <el-form-item label="${f.label}" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.${f.prop}"
               placeholder="${f.placeholder}"
@@ -690,12 +690,12 @@ ${filterInputsMarkup}
         style="width: 100%"
         empty-text="Tidak ada data ${item.entity.toLowerCase()} yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
 ${tableColumnsMarkup}
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -736,7 +736,7 @@ ${tableColumnsMarkup}
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -747,6 +747,7 @@ ${tableColumnsMarkup}
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -760,6 +761,13 @@ import { ${item.key}Api } from '../../api/${item.key}'
 import type { ${item.className}, ${item.className}QueryParams } from '../../types/${item.key}'
 
 const router = useRouter()
+
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 // Memory Optimization: shallowRef for table dataset
 const dataList = shallowRef<${item.className}[]>([])

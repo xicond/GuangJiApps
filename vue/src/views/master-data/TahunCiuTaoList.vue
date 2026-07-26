@@ -3,8 +3,8 @@
     <!-- Header Section -->
     <div class="page-header">
       <div>
-        <h2 class="page-title">Group Menu Mapping</h2>
-        <p class="page-subtitle">Kelola daftar data group menu mapping, pencarian, serta pembaruan profil</p>
+        <h2 class="page-title">Master Data Tahun Ciu Tao</h2>
+        <p class="page-subtitle">Kelola daftar data tahun ciu tao, pencarian, serta pembaruan profil</p>
       </div>
       <el-button
         type="primary"
@@ -13,7 +13,7 @@
         class="create-btn"
         @click="handleCreate"
       >
-        Tambah Group Menu Mapping Baru
+        Tambah Tahun Ciu Tao Baru
       </el-button>
     </div>
 
@@ -26,10 +26,10 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Menu">
+          <el-form-item label="Tahun Mandarin" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.menu_name"
-              placeholder="Cari nama menu..."
+              v-model="filters.tahun_mandarin"
+              placeholder="Cari tahun (e.g. 2024)..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -38,10 +38,10 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="URL Halaman">
+          <el-form-item label="Keterangan" :label-position="isMobile? 'top' : 'right'">
             <el-input
-              v-model="filters.page_url"
-              placeholder="Cari page url..."
+              v-model="filters.description"
+              placeholder="Cari deskripsi..."
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
@@ -64,50 +64,44 @@
         border
         height="475"
         style="width: 100%"
-        empty-text="Tidak ada data group menu mapping yang ditemukan"
+        empty-text="Tidak ada data tahun ciu tao yang ditemukan"
       >
-        <el-table-column :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="menu_id" label="ID" width="80"  align="center" sortable>
+        <el-table-column prop="tahun_mandarin" label="Tahun Mandarin" min-width="160">
           <template #default="{ row }">
-            <span>{{ row.menu_id || '-' }}</span>
+            <span class="font-semibold">{{ row.tahun_mandarin || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="menu_name" label="Nama Menu" min-width="180">
+        <el-table-column prop="start_date" label="Tanggal Mulai"  min-width="140"  >
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.menu_name || '-' }}</span>
+            <span>{{ row.start_date || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="page_url" label="URL Halaman"  min-width="200"  >
+        <el-table-column prop="end_date" label="Tanggal Selesai"  min-width="140"  >
           <template #default="{ row }">
-            <span>{{ row.page_url || '-' }}</span>
+            <span>{{ row.end_date || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="sequence" label="Urutan" width="90"  align="center" >
+        <el-table-column prop="description" label="Keterangan"  min-width="220"  >
           <template #default="{ row }">
-            <span>{{ row.sequence || '-' }}</span>
+            <span>{{ row.description || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="menu_desc" label="Keterangan"  min-width="200"  >
+        <el-table-column prop="status" label="Status" width="110" align="center">
           <template #default="{ row }">
-            <span>{{ row.menu_desc || '-' }}</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="flag_active" label="Status" width="110" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.flag_active ? 'success' : 'info'" size="small">
-              {{ row.flag_active ? 'Aktif' : 'Nonaktif' }}
+            <el-tag :type="row.status ? 'success' : 'info'" size="small">
+              {{ row.status ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -115,8 +109,8 @@
                 size="small"
                 circle
                 :icon="Edit"
-                title="Edit Group Menu Mapping"
-                @click="handleEdit(row.menu_id)"
+                title="Edit Tahun Ciu Tao"
+                @click="handleEdit(row.tahun_mandarin)"
               />
 
               <el-popconfirm
@@ -124,7 +118,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.menu_id)"
+                @confirm="handleDelete(row.tahun_mandarin)"
               >
                 <template #reference>
                   <el-button
@@ -132,7 +126,7 @@
                     size="small"
                     circle
                     :icon="Delete"
-                    title="Hapus Group Menu Mapping"
+                    title="Hapus Tahun Ciu Tao"
                   />
                 </template>
               </el-popconfirm>
@@ -148,7 +142,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -159,6 +153,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -168,13 +163,20 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
-import { groupMenuMappingApi } from '../../api/groupMenuMapping'
-import type { GroupMenuMapping, GroupMenuMappingQueryParams } from '../../types/groupMenuMapping'
+import { tahunCiuTaoApi } from '../../api/tahunCiuTao'
+import type { TahunCiuTao, TahunCiuTaoQueryParams } from '../../types/tahunCiuTao'
 
 const router = useRouter()
 
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
 // Memory Optimization: shallowRef for table dataset
-const dataList = shallowRef<GroupMenuMapping[]>([])
+const dataList = shallowRef<TahunCiuTao[]>([])
 const loading = ref(false)
 
 // Pagination state
@@ -189,9 +191,9 @@ const getRowIndex = (index: number) => {
 }
 
 // Search Filter state
-const filters = reactive<GroupMenuMappingQueryParams>({
-  menu_name: '',
-  page_url: ''
+const filters = reactive<TahunCiuTaoQueryParams>({
+  tahun_mandarin: '',
+  description: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -205,12 +207,12 @@ async function fetchData() {
   loading.value = true
 
   try {
-    const res = await groupMenuMappingApi.getGroupMenuMappings(
+    const res = await tahunCiuTaoApi.getTahunCiuTaos(
       {
         page: pagination.page,
         limit: pagination.limit,
-        menu_name: filters.menu_name?.trim(),
-        page_url: filters.page_url?.trim()
+        tahun_mandarin: filters.tahun_mandarin?.trim(),
+        description: filters.description?.trim()
       },
       currentAbortController.signal
     )
@@ -235,8 +237,8 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.menu_name = ''
-  filters.page_url = ''
+  filters.tahun_mandarin = ''
+  filters.description = ''
   pagination.page = 1
   fetchData()
 }
@@ -255,25 +257,25 @@ function handlePageChange(newPage: number) {
 function handleCreate() {
   ElNotification({
     title: 'Informasi',
-    message: 'Tambah group menu mapping baru',
+    message: 'Tambah tahun ciu tao baru',
     type: 'info'
   })
 }
 
-function handleEdit(id: number) {
+function handleEdit(id: string) {
   ElNotification({
     title: 'Informasi',
-    message: `Edit group menu mapping ID/Kode: ${id}`,
+    message: `Edit tahun ciu tao ID/Kode: ${id}`,
     type: 'info'
   })
 }
 
-async function handleDelete(id: number) {
+async function handleDelete(id: string) {
   try {
-    await groupMenuMappingApi.deleteGroupMenuMapping(id)
+    await tahunCiuTaoApi.deleteTahunCiuTao(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data group menu mapping ${id} berhasil dihapus`,
+      message: `Data tahun ciu tao ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()

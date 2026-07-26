@@ -1,9 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import LoginView from '../views/LoginView.vue'
+import Login from '../views/Login.vue'
 import MainLayout from '../layouts/MainLayout.vue'
-import DashboardView from '../views/DashboardView.vue'
-// import PlaceholderView from '../views/PlaceholderView.vue'
+// import PlaceholderView from '../views/PlaceholderList.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,7 +10,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: LoginView,
+      component: Login,
       meta: { requiresAuth: false }
     },
     {
@@ -26,113 +25,113 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: DashboardView,
+          component: () => import('../views/Dashboard.vue'),
           meta: { title: 'Dashboard' }
         },
         // User Management
         {
           path: 'user-management/admin',
           name: 'admin',
-          component: () => import('../views/user-management/AdminView.vue'),
+          component: () => import('../views/user-management/AdminList.vue'),
           meta: { title: 'Admin' }
         },
         {
           path: 'user-management/admin-group',
           name: 'admin-group',
-          component: () => import('../views/user-management/AdminGroupView.vue'),
+          component: () => import('../views/user-management/AdminGroupList.vue'),
           meta: { title: 'Admin Group' }
         },
         {
           path: 'user-management/group-menu-mapping',
           name: 'group-menu-mapping',
-          component: () => import('../views/user-management/GroupMenuMappingView.vue'),
+          component: () => import('../views/user-management/GroupMenuMappingList.vue'),
           meta: { title: 'Group Menu Mapping' }
         },
         {
           path: 'user-management/admin-sub-warehouse',
           name: 'admin-sub-warehouse',
-          component: () => import('../views/user-management/AdminSubWarehouseView.vue'),
+          component: () => import('../views/user-management/AdminSubWarehouseList.vue'),
           meta: { title: 'Admin Sub Warehouse' }
         },
         // Master Data
         {
           path: 'master-data/umat',
           name: 'umat-list',
-          component: () => import('../views/master-data/UmatView.vue'),
+          component: () => import('../views/master-data/UmatList.vue'),
           meta: { title: 'Daftar Umat' }
         },
         {
           path: 'master-data/umat/create',
           name: 'umat-create',
-          component: () => import('../views/master-data/UmatCreateView.vue'),
+          component: () => import('../views/master-data/UmatCreateList.vue'),
           meta: { title: 'Tambah Umat' }
         },
         {
           path: 'master-data/umat/edit/:id',
           name: 'umat-edit',
-          component: () => import('../views/master-data/UmatEditView.vue'),
+          component: () => import('../views/master-data/UmatEditList.vue'),
           meta: { title: 'Edit Umat' }
         },
         {
           path: 'master-data/topic',
           name: 'topic',
-          component: () => import('../views/master-data/TopicView.vue'),
+          component: () => import('../views/master-data/TopicList.vue'),
           meta: { title: 'Topic' }
         },
         {
           path: 'master-data/activity',
           name: 'activity',
-          component: () => import('../views/master-data/ActivityView.vue'),
+          component: () => import('../views/master-data/ActivityList.vue'),
           meta: { title: 'Activity' }
         },
         {
           path: 'master-data/tim-kerja',
           name: 'tim-kerja',
-          component: () => import('../views/master-data/TimKerjaView.vue'),
+          component: () => import('../views/master-data/TimKerjaList.vue'),
           meta: { title: 'Tim Kerja' }
         },
         {
           path: 'master-data/tahun-ciu-tao',
           name: 'tahun-ciu-tao',
-          component: () => import('../views/master-data/TahunCiuTaoView.vue'),
+          component: () => import('../views/master-data/TahunCiuTaoList.vue'),
           meta: { title: 'Tahun Ciu Tao' }
         },
         {
           path: 'master-data/penggalang-dana',
           name: 'penggalang-dana',
-          component: () => import('../views/master-data/PenggalangDanaView.vue'),
+          component: () => import('../views/master-data/PenggalangDanaList.vue'),
           meta: { title: 'Penggalang Dana' }
         },
         {
           path: 'master-data/sxy-donatur',
           name: 'sxy-donatur',
-          component: () => import('../views/master-data/SxyDonaturView.vue'),
+          component: () => import('../views/master-data/SxyDonaturList.vue'),
           meta: { title: 'Sxy Donatur' }
         },
         // Transaction
         {
           path: 'transaction/kelas',
           name: 'kelas',
-          component: () => import('../views/transaction/KelasView.vue'),
+          component: () => import('../views/transaction/KelasList.vue'),
           meta: { title: 'Kelas' }
         },
         {
           path: 'transaction/donasi-sxy',
           name: 'donasi-sxy',
-          component: () => import('../views/transaction/DonasiSxyView.vue'),
+          component: () => import('../views/transaction/DonasiSxyList.vue'),
           meta: { title: 'Donasi Sxy' }
         },
         // Report
         {
           path: 'report/master',
           name: 'report-master',
-          component: () => import('../views/report/MasterReportView.vue'),
+          component: () => import('../views/report/MasterReportList.vue'),
           meta: { title: 'Master Report' }
         },
         {
           path: 'report/sxy',
           name: 'report-sxy',
-          component: () => import('../views/report/SxyReportView.vue'),
+          component: () => import('../views/report/SxyReportList.vue'),
           meta: { title: 'Sxy Report' }
         }
       ]

@@ -74,7 +74,11 @@ func TestResourceEndpointsAreRegistered(t *testing.T) {
 		{name: "penggalang dana list", path: "/api/v1/penggalang-dana", method: http.MethodGet},
 		{name: "sxy donatur list", path: "/api/v1/sxy-donatur", method: http.MethodGet},
 		{name: "kelas list", path: "/api/v1/kelas", method: http.MethodGet},
+		{name: "fotang lookup", path: "/api/v1/fotang/lookup", method: http.MethodGet},
+		{name: "kelas lookup", path: "/api/v1/kelas/lookup", method: http.MethodGet},
 		{name: "donasi sxy list", path: "/api/v1/donasi-sxy", method: http.MethodGet},
+		{name: "change password v1", path: "/api/v1/change-password", method: http.MethodPost},
+		{name: "change password root", path: "/api/change-password", method: http.MethodPost},
 	}
 
 	for _, tt := range tests {

@@ -1,12 +1,22 @@
 export interface Kelas {
-  lookup_id: string
-  category_id?: string
-  lookup_value: string
-  lookup_description?: string
+  trx_id?: number | string
+  kode_kelas?: string
+  start_date?: string
+  end_date?: string
+  kode_fotang?: string
+  lokasi?: string
+  pic?: string
+  keterangan?: string
   status?: boolean
-  mod_act?: string
-  mod_by?: string
-  mod_date?: string
+  level?: string
+  mc1?: string
+  mc2?: string
+  mc3?: string
+  mc4?: string
+  mc5?: string
+  deadline?: string
+  kelas_desc?: string
+  fotang_desc?: string
 }
 
 export interface KelasQueryParams {
@@ -15,6 +25,10 @@ export interface KelasQueryParams {
   lookup_id?: string
   lookup_value?: string
   lookup_description?: string
+  kelas?: string
+  start_date?: string
+  end_date?: string
+  fotang?: string
 }
 
 export interface PaginatedMeta {

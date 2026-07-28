@@ -10,17 +10,23 @@
         <div class="welcome-icon">
           <el-icon :size="48" color="#409eff"><CircleCheckFilled /></el-icon>
         </div>
-        <h1>Welcome, {{ authStore.user?.username || 'User' }}!</h1>
+        <h1>Welcome, {{ usernameDisplay }}!</h1>
         <p class="welcome-subtitle">
           You have successfully logged in to GuangJi Apps Dashboard.
         </p>
+
+        <div class="action-bar" style="margin-top: 1rem;">
+          <el-button type="primary" :icon="Key" @click="isChangePasswordVisible = true">
+            Change Password
+          </el-button>
+        </div>
 
         <el-divider />
 
         <div class="info-section">
           <el-descriptions title="Session Details" :column="1" border>
             <el-descriptions-item label="Username">
-              {{ authStore.user?.username || '-' }}
+              {{ usernameDisplay }}
             </el-descriptions-item>
             <el-descriptions-item label="Status">
               <el-tag type="success" effect="dark">Active</el-tag>
@@ -29,14 +35,23 @@
         </div>
       </div>
     </el-card>
+
+    <ChangePasswordModal v-model="isChangePasswordVisible" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { CircleCheckFilled } from '@element-plus/icons-vue'
+import { CircleCheckFilled, Key } from '@element-plus/icons-vue'
+import ChangePasswordModal from '../components/ChangePasswordModal.vue'
 
 const authStore = useAuthStore()
+const isChangePasswordVisible = ref(false)
+
+const usernameDisplay = computed(() => {
+  return authStore.user?.username || authStore.user?.Username || 'User'
+})
 </script>
 
 <style scoped>

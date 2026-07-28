@@ -107,8 +107,8 @@ func (s *ActivityService) List(page int, filters map[string]string, limit int) (
 }
 
 func (s *ActivityService) Create(payload domain.Activity, c *gin.Context) (domain.Activity, error) {
-	if payload.EventCode == "" || payload.EventName == "" {
-		return domain.Activity{}, fmt.Errorf("event_code and event_name are required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.Activity{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	userIDStr := "1"

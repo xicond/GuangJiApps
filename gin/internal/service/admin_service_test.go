@@ -20,11 +20,13 @@ func TestAdminService(t *testing.T) {
 	c := setupTestContext()
 
 	// 1. Create
+	email := "admin@example.com"
+	phone := "08123456789"
 	admin := domain.Admin{
 		Username:    "admin_test",
 		GroupId:     1,
-		Email:       "admin@example.com",
-		PhoneNumber: "08123456789",
+		Email:       &email,
+		PhoneNumber: &phone,
 	}
 
 	created, err := svc.Create(admin, c)
@@ -55,13 +57,14 @@ func TestAdminService(t *testing.T) {
 	}
 
 	// 4. Update
-	created.Email = "updated@example.com"
+	updatedEmail := "updated@example.com"
+	created.Email = &updatedEmail
 	updated, err := svc.Update("1", created, c)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
-	if updated.Email != "updated@example.com" {
-		t.Errorf("expected updated email, got %s", updated.Email)
+	if updated.Email == nil || *updated.Email != "updated@example.com" {
+		t.Errorf("expected updated email, got %v", updated.Email)
 	}
 
 	// 5. Delete

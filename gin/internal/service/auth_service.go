@@ -105,7 +105,7 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 	go func() {
 		defer wgPhase1.Done()
 		err := s.db.Table("T_Login_Mst").
-			Select("LoginId, DepartmentId, GroupId, username, ImgUrl, LastLogin, IsWarehouse, GroupId").
+			Select("LoginId, DepartmentId, GroupId, Username, ImgUrl, LastLogin, IsWarehouse, GroupId").
 			Where("Username = ?", username).
 			First(&user).Error
 		if err != nil {
@@ -313,4 +313,43 @@ func toString(val interface{}) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func (s *AuthService) ChangePassword(userID int32, username, oldPassword, newPassword string) error {
+	if strings.TrimSpace(oldPassword) == "" || strings.TrimSpace(newPassword) == "" {
+		return errors.New("old_password and new_password are required")
+	}
+
+	if oldPassword == newPassword {
+		return errors.New("new password must be different from old password")
+	}
+
+	var user domain.Admin
+	query := s.db.Table("T_Login_Mst")
+	if userID > 0 {
+		query = query.Where("LoginId = ?", userID)
+	} else if strings.TrimSpace(username) != "" {
+		query = query.Where("Username = ?", strings.TrimSpace(username))
+	} else {
+		return errors.New("user identification (userID or username) is required")
+	}
+
+	err := query.First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found")
+		}
+		return fmt.Errorf("database error: %w", err)
+	}
+
+	if user.Password != EncryptPassword(oldPassword) {
+		return errors.New("invalid old password")
+	}
+
+	encryptedNew := EncryptPassword(newPassword)
+	if err := s.db.Table("T_Login_Mst").Where("LoginId = ?", user.ID).Update("Password", encryptedNew).Error; err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	return nil
 }

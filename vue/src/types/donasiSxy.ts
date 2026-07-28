@@ -21,8 +21,9 @@ export interface DonasiSxyQueryParams {
   page?: number
   limit?: number
   no_kwitansi?: string
-  donatur_id?: number
-  tanggal?: string
+  start_date?: string
+  end_date?: string
+  donatur?: string
 }
 
 export interface PaginatedMeta {

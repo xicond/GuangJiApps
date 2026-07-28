@@ -23,7 +23,7 @@ func TestActivityService(t *testing.T) {
 	act := domain.Activity{
 		EventCode:     "EV001",
 		EventName:     "Annual Gathering",
-		EventCategory: "CEREMONY",
+		EventCategory: "CER",
 		Description:   "Yearly event",
 	}
 

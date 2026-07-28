@@ -108,11 +108,8 @@ func (s *AdminSubWarehouseService) List(page int, filters map[string]string, lim
 }
 
 func (s *AdminSubWarehouseService) Create(payload domain.AdminSubWarehouse, c *gin.Context) (domain.AdminSubWarehouse, error) {
-	if payload.FullName == "" {
-		return domain.AdminSubWarehouse{}, fmt.Errorf("full_name is required")
-	}
-	if payload.SubWhType == "" {
-		return domain.AdminSubWarehouse{}, fmt.Errorf("sub_wh_type is required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.AdminSubWarehouse{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	var maxID int32

@@ -26,28 +26,42 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kode Kelas" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.lookup_id"
-              placeholder="Cari kode kelas..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
+          <el-form-item label="Kelas" :label-position="isMobile? 'top' : 'right'">
+            <LookupSelect
+              v-model="filters.kelas"
+              placeholder="Pilih kelas..."
+              :fetch-api="kelasApi.getKelasLookup"
+              @change="onFilterChange"
             />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Kelas" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.lookup_value"
-              placeholder="Cari nama kelas..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
+          <el-form-item label="Fotang" :label-position="isMobile? 'top' : 'right'">
+            <LookupSelect
+              v-model="filters.fotang"
+              placeholder="Pilih fotang..."
+              :fetch-api="fotangApi.getFotangLookup"
+              @change="onFilterChange"
             />
           </el-form-item>
         </el-col>
+
+        <el-form-item label="Periode" :label-position="isMobile ? 'top' : 'right'">
+            <el-date-picker
+              v-model="filters.date_range"
+              type="daterange"
+              range-separator="s/d"
+              start-placeholder="Start Date"
+              end-placeholder="End Date"
+              value-format="YYYY-MM-DD"
+              :disabled-date="disabledDate"
+              @change="fetchData"
+              :clearable="false"
+              style="width: 100%"
+              :single-panel="isMobile"
+            />
+          </el-form-item>
       </el-row>
 
       <div class="filter-actions">
@@ -68,29 +82,45 @@
       >
         <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="lookup_id" label="Kode Kelas" width="130" align="center">
+        <!-- <el-table-column prop="lookup_id" label="Kode Kelas" width="130" align="center">
           <template #default="{ row }">
             <el-tag size="small" type="info" class="font-mono">{{ row.lookup_id }}</el-tag>
           </template>
-        </el-table-column>
+        </el-table-column> -->
 
-        <el-table-column prop="lookup_value" label="Nama Kelas" min-width="200">
+        <el-table-column prop="kelas_desc" label="Nama Kelas" min-width="200">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.lookup_value || '-' }}</span>
+            <span class="font-semibold">{{ row.kelas_desc || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="lookup_description" label="Keterangan"  min-width="220"  >
+        <el-table-column prop="fotang_desc" label="Fotang"  min-width="220"  >
           <template #default="{ row }">
-            <span>{{ row.lookup_description || '-' }}</span>
+            <span>{{ row.fotang_desc || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="110" align="center">
+        <el-table-column prop="start_date" label="Start Date"  min-width="220"  >
           <template #default="{ row }">
-            <el-tag :type="row.status ? 'success' : 'info'" size="small">
-              {{ row.status ? 'Aktif' : 'Nonaktif' }}
-            </el-tag>
+            <span>{{ row.start_date || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="end_date" label="End Date"  min-width="220"  >
+          <template #default="{ row }">
+            <span>{{ row.end_date || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="lokasi" label="Lokasi"  min-width="220"  >
+          <template #default="{ row }">
+            <span>{{ row.lokasi || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="pic" label="PIC"  min-width="220"  >
+          <template #default="{ row }">
+            <span>{{ row.pic || '-' }}</span>
           </template>
         </el-table-column>
 
@@ -104,7 +134,7 @@
                 circle
                 :icon="Edit"
                 title="Edit Kelas"
-                @click="handleEdit(row.lookup_id)"
+                @click="handleEdit(row.trx_id)"
               />
 
               <el-popconfirm
@@ -112,7 +142,7 @@
                 confirm-button-text="Ya, Hapus"
                 cancel-button-text="Batal"
                 confirm-button-type="danger"
-                @confirm="handleDelete(row.lookup_id)"
+                @confirm="handleDelete(row.trx_id)"
               >
                 <template #reference>
                   <el-button
@@ -157,7 +187,10 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
+import dayjs from 'dayjs'
 import { kelasApi } from '../../api/kelas'
+import { fotangApi } from '../../api/fotang'
+import LookupSelect from '../../components/common/LookupSelect.vue'
 import type { Kelas, KelasQueryParams } from '../../types/kelas'
 
 const router = useRouter()
@@ -184,11 +217,25 @@ const getRowIndex = (index: number) => {
   return (pagination.page - 1) * pagination.limit + index + 1
 }
 
+const disabledDate = (time: Date) => {
+  return time.getTime() > Date.now()
+}
+
+const today = dayjs().format('YYYY-MM-DD')
+type KelasFilter = Omit<KelasQueryParams, 'start_date' | 'end_date'> & {
+  kelas: '',
+  fotang: ''
+  date_range?: string[] | null
+}
+
+
 // Search Filter state
-const filters = reactive<KelasQueryParams>({
-  lookup_id: '',
-  lookup_value: ''
+const filters = reactive<KelasFilter>({
+  kelas: '',
+  date_range: ['2018-07-01', today] as [string, string],
+  fotang: ''
 })
+
 
 let currentAbortController: AbortController | null = null
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -199,14 +246,17 @@ async function fetchData() {
   }
   currentAbortController = new AbortController()
   loading.value = true
+  const [start_date, end_date] = filters.date_range || [null, null]
 
   try {
     const res = await kelasApi.getKelass(
       {
         page: pagination.page,
         limit: pagination.limit,
-        lookup_id: filters.lookup_id?.trim(),
-        lookup_value: filters.lookup_value?.trim()
+        kelas: filters.kelas,
+        start_date: start_date?start_date:undefined,
+        end_date: end_date?end_date:undefined,
+        fotang: filters.fotang
       },
       currentAbortController.signal
     )
@@ -231,8 +281,8 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.lookup_id = ''
-  filters.lookup_value = ''
+  filters.kelas = ''
+  filters.fotang = ''
   pagination.page = 1
   fetchData()
 }
@@ -249,19 +299,11 @@ function handlePageChange(newPage: number) {
 }
 
 function handleCreate() {
-  ElNotification({
-    title: 'Informasi',
-    message: 'Tambah kelas baru',
-    type: 'info'
-  })
+  router.push('/transaction/kelas/create')
 }
 
-function handleEdit(id: string) {
-  ElNotification({
-    title: 'Informasi',
-    message: `Edit kelas ID/Kode: ${id}`,
-    type: 'info'
-  })
+function handleEdit(id: string | number) {
+  router.push(`/transaction/kelas/edit/${id}`)
 }
 
 async function handleDelete(id: string) {

@@ -28,6 +28,12 @@ const router = createRouter({
           component: () => import('../views/Dashboard.vue'),
           meta: { title: 'Dashboard' }
         },
+        {
+          path: 'change-password',
+          name: 'change-password',
+          component: () => import('../views/ChangePasswordView.vue'),
+          meta: { title: 'Change Password' }
+        },
         // User Management
         {
           path: 'user-management/admin',
@@ -114,6 +120,18 @@ const router = createRouter({
           name: 'kelas',
           component: () => import('../views/transaction/KelasList.vue'),
           meta: { title: 'Kelas' }
+        },
+        {
+          path: 'transaction/kelas/create',
+          name: 'kelas-create',
+          component: () => import('../views/transaction/KelasCreate.vue'),
+          meta: { title: 'Tambah Kelas' }
+        },
+        {
+          path: 'transaction/kelas/edit/:id',
+          name: 'kelas-edit',
+          component: () => import('../views/transaction/KelasEdit.vue'),
+          meta: { title: 'Edit Kelas' }
         },
         {
           path: 'transaction/donasi-sxy',

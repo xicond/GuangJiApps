@@ -104,14 +104,6 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="110" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status ? 'success' : 'info'" size="small">
-              {{ row.status ? 'Aktif' : 'Nonaktif' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
         <!-- Actions Column -->
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">

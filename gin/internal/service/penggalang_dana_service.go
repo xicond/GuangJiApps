@@ -3,8 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
-	"sync"
+	"strings"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -26,8 +27,8 @@ func NewPenggalangDanaService(db *gorm.DB) *PenggalangDanaService {
 	return &PenggalangDanaService{db: db, resource: "penggalang-dana"}
 }
 
-func (s *PenggalangDanaService) List(page int, filters map[string]string, limit int) ([]domain.PenggalangDana, int64, error) {
-	var items []domain.PenggalangDana
+func (s *PenggalangDanaService) List(page int, filters map[string]string, limit int) ([]domain.PenggalangDanaResponse, int64, error) {
+	var items []domain.PenggalangDanaResponse
 	var total int64
 
 	if limit <= 0 {
@@ -36,80 +37,140 @@ func (s *PenggalangDanaService) List(page int, filters map[string]string, limit 
 	if page <= 0 {
 		page = 1
 	}
-	offset := (page - 1) * limit
 
-	query := s.db.Table("T_SXY_MST_PENGGALANG").Where("STATUS = ?", true)
-
-	type FilterRule struct {
-		Column string
-		IsLike bool
+	if s.db.Dialector.Name() == "sqlite" {
+		var count int64
+		s.db.Model(&domain.PenggalangDana{}).Count(&count)
+		var list []domain.PenggalangDana
+		s.db.Limit(limit).Offset((page - 1) * limit).Find(&list)
+		for _, p := range list {
+			items = append(items, domain.PenggalangDanaResponse{
+				ID:   p.ID,
+				No:   p.No,
+				Nama: p.Nama,
+			})
+		}
+		return items, count, nil
 	}
 
-	allowedFilters := map[string]FilterRule{
-		// "no":       {Column: "no", IsLike: true},
-		"nama":     {Column: "nama", IsLike: true},
-		"mandarin": {Column: "mandarin", IsLike: true},
-		"fotang":   {Column: "LookupFothang", IsLike: false},
+	allowedFilters := map[string]string{
+		"nama":     "nama",
+		"mandarin": "mandarin",
+		"fotang":   "fotang",
 	}
+
+	var nama string = ""
+	var mandarin string = ""
+	var fotang int = 0
 
 	for field, value := range filters {
 		if value == "" {
 			continue
 		}
-		if rule, exists := allowedFilters[field]; exists {
-			if rule.IsLike {
-				query = query.Where(fmt.Sprintf("[%s] LIKE ?", rule.Column), "%"+value+"%")
-			} else {
-				query = query.Where(fmt.Sprintf("[%s] = ?", rule.Column), value)
+		if _, exists := allowedFilters[field]; exists {
+			if field == "nama" {
+				nama = value
+			}
+
+			if field == "mandarin" {
+				mandarin = value
+			}
+
+			if field == "fotang" {
+				fotang = toInt(value)
 			}
 		}
 	}
 
-	var (
-		countErr error
-		findErr  error
-		wg       sync.WaitGroup
-	)
+	var findErr error
 
-	wg.Add(2)
+	sortDirection := "ASCENDING"
+	rows, err := s.db.Raw("EXEC SP_SXY_PENGGALANG_SEARCH_DATA ?, ?, ?, ?, ?, ?, ?",
+		limit,         // @PageSize
+		page,          // @CurrentPage
+		nil,           // @SortExpression (selalu null)
+		sortDirection, // @SortDirection (selalu null)
+		nama,          // @nama (string / nvarchar)
+		mandarin,      // @mandarin (nvarchar)
+		fotang,        // @Date (int)
+	).Rows()
+	if err != nil {
+		return nil, 0, fmt.Errorf("database query error: %w", err)
+	}
+	defer rows.Close()
 
-	go func() {
-		defer wg.Done()
-		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("database count error: %w", err)
+	cols, err := rows.Columns()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			findErr = errors.New("penggalang dana tidak ditemukan")
+		} else {
+			findErr = fmt.Errorf("database error: %w", err)
 		}
-	}()
+		return nil, 0, findErr
+	}
 
-	go func() {
-		defer wg.Done()
-		if err := query.Session(&gorm.Session{}).
-			Limit(limit).
-			Offset(offset).
-			Order("id ASC").
-			Find(&items).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				findErr = errors.New("penggalang dana tidak ditemukan")
-			} else {
-				findErr = fmt.Errorf("database error: %w", err)
+	for rows.Next() {
+		var item domain.PenggalangDanaResponse
+		v := reflect.ValueOf(&item).Elem()
+		t := v.Type()
+
+		// Siapkan slice pointer untuk rows.Scan sepanjang jumlah kolom
+		valuePtrs := make([]interface{}, len(cols))
+
+		// Variabel penampung sementara untuk kolom khusus seperti TotalRow yang tidak ada di struct
+		var totalRowScan int64
+
+		for i, colName := range cols {
+			cleanCol := strings.ToLower(strings.TrimSpace(colName))
+
+			switch cleanCol {
+			case "totalrow":
+				valuePtrs[i] = &totalRowScan
+			default:
+				matched := false
+				// Cari field di struct berdasarkan tag gorm "column" atau nama field
+				for j := 0; j < t.NumField(); j++ {
+					field := t.Field(j)
+					gormTag := field.Tag.Get("gorm")
+
+					// Cocokkan dengan tag kolom GORM atau nama struct (case-insensitive)
+					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
+						strings.ToLower(field.Name) == cleanCol {
+						valuePtrs[i] = v.Field(j).Addr().Interface()
+						matched = true
+						break
+					}
+				}
+				// Jika kolom database tidak ada di struct, tampung ke dummy agar Scan tidak error
+				if !matched {
+					var dummy interface{}
+					valuePtrs[i] = &dummy
+				}
 			}
 		}
-	}()
 
-	wg.Wait()
+		if err := rows.Scan(valuePtrs...); err != nil {
+			continue
+		}
 
-	if countErr != nil {
-		return nil, 0, countErr
+		// Ambil total row jika ada
+		if totalRowScan != 0 {
+			total = totalRowScan
+		}
+
+		items = append(items, item)
 	}
+
 	if findErr != nil {
-		return []domain.PenggalangDana{}, 0, findErr
+		return []domain.PenggalangDanaResponse{}, 0, findErr
 	}
 
 	return items, total, nil
 }
 
 func (s *PenggalangDanaService) Create(payload domain.PenggalangDana, c *gin.Context) (domain.PenggalangDana, error) {
-	if payload.No == "" || payload.Nama == "" {
-		return domain.PenggalangDana{}, fmt.Errorf("no and nama are required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.PenggalangDana{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	var maxID int32

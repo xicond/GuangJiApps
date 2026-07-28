@@ -69,18 +69,22 @@
           }
         },
         {
-          "name": "Forgot Password",
+          "name": "Change Password",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"root\"\n}",
+              "raw": "{\n  \"username\": \"root\",\n  \"old_password\": \"password123\",\n  \"new_password\": \"newpassword123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -88,42 +92,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/forgot-password",
+              "raw": "{{baseUrl}}/v1/change-password",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "forgot-password"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Reset Password",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"token\": \"sample-token\",\n  \"password\": \"new-password123\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/reset-password",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "reset-password"
+                "v1",
+                "change-password"
               ]
             }
           }
@@ -2171,6 +2146,47 @@
               ]
             }
           }
+        },
+        {
+          "name": "Fotang - Lookup",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fotang/lookup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fotang",
+                "lookup"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "lookup_description",
+                  "value": "",
+                  "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
         }
       ]
     },
@@ -2206,6 +2222,47 @@
                   "key": "limit",
                   "value": "10",
                   "description": "Jumlah data per halaman (default: 10)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas - Lookup",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/lookup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kelas",
+                "lookup"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "lookup_description",
+                  "value": "",
+                  "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
                 }
               ]
             }

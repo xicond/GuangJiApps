@@ -20,8 +20,9 @@ export const donasiSxyApi = {
     }
 
     if (params.no_kwitansi) cleanParams.no_kwitansi = params.no_kwitansi
-    if (params.donatur_id) cleanParams.donatur_id = params.donatur_id
-    if (params.tanggal) cleanParams.tanggal = params.tanggal
+    if (params.start_date) cleanParams.start_date = params.start_date
+    if (params.end_date) cleanParams.end_date = params.end_date
+    if (params.donatur) cleanParams.donatur = params.donatur
 
     const response = await apiClient.get<DonasiSxyListResponse>('/v1/donasi-sxy', {
       params: cleanParams,

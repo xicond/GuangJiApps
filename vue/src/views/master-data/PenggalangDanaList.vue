@@ -6,7 +6,7 @@
         <h2 class="page-title">Master Data Penggalang Dana</h2>
         <p class="page-subtitle">Kelola daftar data penggalang dana, pencarian, serta pembaruan profil</p>
       </div>
-      <el-button
+      <!-- <el-button
         type="primary"
         size="large"
         :icon="Plus"
@@ -14,7 +14,7 @@
         @click="handleCreate"
       >
         Tambah Penggalang Dana Baru
-      </el-button>
+      </el-button> -->
     </div>
 
     <!-- Filter Card -->
@@ -26,7 +26,7 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama" :label-position="isMobile? 'top' : 'right'">
+          <el-form-item label="Nama Indo" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.nama"
               placeholder="Cari nama..."
@@ -45,6 +45,16 @@
               clearable
               :prefix-icon="Search"
               @input="onFilterChange"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Fotang" :label-position="isMobile? 'top' : 'right'">
+            <LookupSelect
+              v-model="filters.fotang"
+              placeholder="Pilih fotang..."
+              :fetch-api="fotangApi.getFotangLookup"
+              @change="onFilterChange"
             />
           </el-form-item>
         </el-col>
@@ -68,13 +78,13 @@
       >
         <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
 
-        <el-table-column prop="no" label="No" width="120" align="left">
+        <!-- <el-table-column prop="no" label="No" width="120" align="left">
           <template #default="{ row }">
             <el-tag size="small" type="info" class="font-mono">{{ row.no }}</el-tag>
           </template>
-        </el-table-column>
+        </el-table-column> -->
 
-        <el-table-column prop="nama" label="Nama" min-width="180">
+        <el-table-column prop="nama" label="Nama Indonesia" min-width="180">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.nama || '-' }}</span>
           </template>
@@ -86,9 +96,27 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="mobile" label="No HP / Telepon"  min-width="140"  >
+        <el-table-column prop="fotang" label="Fotang"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.fotang || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="alamat" label="Alamat"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.alamat || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="mobile" label="Mobile Phone"  min-width="140"  >
           <template #default="{ row }">
             <span>{{ row.mobile || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="email" label="Email"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.email || '-' }}</span>
           </template>
         </el-table-column>
 
@@ -98,13 +126,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="110" align="center">
+        <!-- <el-table-column prop="status" label="Status" width="110" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status ? 'success' : 'info'" size="small">
               {{ row.status ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
-        </el-table-column>
+        </el-table-column> -->
 
         <!-- Actions Column -->
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
@@ -170,6 +198,8 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import { penggalangDanaApi } from '../../api/penggalangDana'
+import { fotangApi } from '../../api/fotang'
+import LookupSelect from '../../components/common/LookupSelect.vue'
 import type { PenggalangDana, PenggalangDanaQueryParams } from '../../types/penggalangDana'
 
 const router = useRouter()
@@ -218,6 +248,7 @@ async function fetchData() {
         page: pagination.page,
         limit: pagination.limit,
         nama: filters.nama?.trim(),
+        fotang: filters.fotang,
         mandarin: filters.mandarin?.trim()
       },
       currentAbortController.signal

@@ -38,4 +38,21 @@ func TestAuthService(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected error for empty credentials, got nil")
 	}
+
+	// 4. ChangePassword validation tests
+	err = authSvc.ChangePassword(1, "", "", "newpass")
+	if err == nil {
+		t.Errorf("expected error for empty old password, got nil")
+	}
+
+	err = authSvc.ChangePassword(1, "", "samepass", "samepass")
+	if err == nil {
+		t.Errorf("expected error when old and new password match, got nil")
+	}
+
+	err = authSvc.ChangePassword(99999, "nonexistent", "oldpass", "newpass")
+	if err == nil {
+		t.Errorf("expected user not found error for non-existent user, got nil")
+	}
 }
+

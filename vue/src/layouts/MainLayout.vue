@@ -101,14 +101,17 @@
             </template>
           </el-dropdown>
 
-          <el-dropdown trigger="click">
+          <el-dropdown trigger="click" @command="handleUserMenuCommand">
             <span class="user-profile">
               <el-avatar :size="32" :icon="UserFilled" />
-              <span class="username">{{ authStore.user?.username || 'User' }}</span>
+              <span class="username">{{ usernameDisplay }}</span>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="handleLogout">
+                <el-dropdown-item command="change-password">
+                  <el-icon><Key /></el-icon> Change Password
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">
                   <el-icon><SwitchButton /></el-icon> Logout
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -121,6 +124,8 @@
         <router-view />
       </el-main>
     </el-container>
+
+    <ChangePasswordModal v-model="isChangePasswordVisible" />
   </el-container>
 </template>
 
@@ -130,6 +135,7 @@ import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { setMode, currentMode, isDark, type ThemeMode } from '../theme'
+import ChangePasswordModal from '../components/ChangePasswordModal.vue'
 import {
   Grid,
   HomeFilled,
@@ -140,6 +146,7 @@ import {
   Fold,
   Expand,
   UserFilled,
+  Key,
   SwitchButton,
   Sunny,
   Moon,
@@ -150,6 +157,8 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const isChangePasswordVisible = ref(false)
+
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMobile = breakpoints.smaller('md')   // True if width < 768px
 const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
@@ -157,6 +166,7 @@ const isTablet = breakpoints.between('md', 'lg')
 
 const isCollapsed = ref(isTablet.value)
 const activeMenu = computed(() => route.path)
+const usernameDisplay = computed(() => authStore.user?.username || authStore.user?.Username || 'User')
 const hasMenu = (menuName: string) => authStore.hasMenu(menuName)
 const hasSubMenu = (parentMenuName: string, subMenuName: string) => authStore.hasSubMenu(parentMenuName, subMenuName)
 
@@ -167,6 +177,14 @@ const currentIcon = computed(() => {
 
 const handleThemeChange = (mode: ThemeMode) => {
   setMode(mode)
+}
+
+const handleUserMenuCommand = (command: string) => {
+  if (command === 'change-password') {
+    isChangePasswordVisible.value = true
+  } else if (command === 'logout') {
+    handleLogout()
+  }
 }
 
 const handleLogout = () => {

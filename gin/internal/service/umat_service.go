@@ -127,9 +127,8 @@ func (s *UmatService) List(page int, filters map[string]string, limit int) ([]do
 }
 
 func (s *UmatService) Create(payload domain.Umat, c *gin.Context) (domain.Umat, error) {
-	// 1. Validate based on your actual struct parameters
-	if payload.Kode == "" || payload.NamaIndonesia == "" {
-		return domain.Umat{}, fmt.Errorf("kode and nama_indonesia are required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.Umat{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	// 2. IMPORTANT: Do NOT generate a random UnixNano string for ID!

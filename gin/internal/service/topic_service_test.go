@@ -23,7 +23,7 @@ func TestTopicService(t *testing.T) {
 	topic := domain.Topic{
 		TopicCode:     "TP001",
 		TopicName:     "Dharma Discourse",
-		TopicCategory: "LECTURE",
+		TopicCategory: "LEC",
 		Description:   "Weekly topic",
 	}
 

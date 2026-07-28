@@ -107,8 +107,8 @@ func (s *TimKerjaService) List(page int, filters map[string]string, limit int) (
 }
 
 func (s *TimKerjaService) Create(payload domain.TimKerja, c *gin.Context) (domain.TimKerja, error) {
-	if payload.LookupValue == "" || payload.LookupDescription == "" {
-		return domain.TimKerja{}, fmt.Errorf("lookup_value and lookup_description are required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.TimKerja{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	userIDStr := "1"

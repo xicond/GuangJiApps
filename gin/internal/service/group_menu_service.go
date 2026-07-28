@@ -106,8 +106,8 @@ func (s *GroupMenuService) List(page int, filters map[string]string, limit int) 
 }
 
 func (s *GroupMenuService) Create(payload domain.GroupMenuMapping, c *gin.Context) (domain.GroupMenuMapping, error) {
-	if payload.MenuName == "" || payload.PageUrl == "" {
-		return domain.GroupMenuMapping{}, fmt.Errorf("menu_name and page_url are required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.GroupMenuMapping{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	var maxID int32

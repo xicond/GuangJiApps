@@ -82,6 +82,10 @@ func (s *TopicService) List(page int, filters map[string]string, limit int) ([]d
 	go func() {
 		defer wg.Done()
 		if err := query.Session(&gorm.Session{}).
+			Preload("TopicCategoryInfo", func(db *gorm.DB) *gorm.DB {
+				// Tambahkan filter kategori secara spesifik di sini
+				return db.Where("CategoryId = ?", "B_KATEGORI_TOPIK")
+			}).
 			Limit(limit).
 			Offset(offset).
 			Order("TopicCode ASC").
@@ -103,12 +107,18 @@ func (s *TopicService) List(page int, filters map[string]string, limit int) ([]d
 		return []domain.Topic{}, 0, findErr
 	}
 
+	for i := range items {
+		if items[i].TopicCategoryInfo != nil && items[i].TopicCategoryInfo.LookupDescription != nil && *items[i].TopicCategoryInfo.LookupDescription != "" {
+			items[i].TopicCategory = *items[i].TopicCategoryInfo.LookupDescription
+		}
+	}
+
 	return items, total, nil
 }
 
 func (s *TopicService) Create(payload domain.Topic, c *gin.Context) (domain.Topic, error) {
-	if payload.TopicCode == "" || payload.TopicName == "" {
-		return domain.Topic{}, fmt.Errorf("topic_code and topic_name are required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.Topic{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	userIDStr := "1"

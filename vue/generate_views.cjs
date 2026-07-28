@@ -6,7 +6,7 @@ const path = require('path');
  * Modeled strictly after umat.ts (Types) and api/umat.ts (API Client).
  */
 const entities = [
-  {
+  /*{
     key: 'groupMenuMapping',
     className: 'GroupMenuMapping',
     path: 'user-management/GroupMenuMappingList.vue',
@@ -71,7 +71,7 @@ const entities = [
       { prop: 'topic_name', label: 'Nama Topik', minWidth: '200', bold: true },
       { prop: 'topic_category', label: 'Kategori', minWidth: '150' },
       { prop: 'description', label: 'Keterangan', minWidth: '220' },
-      { prop: 'status', label: 'Status', width: '110', type: 'statusBool' }
+      // { prop: 'status', label: 'Status', width: '110', type: 'statusBool' }
     ],
     filters: [
       { prop: 'topic_code', label: 'Kode Topik', placeholder: 'Cari kode topik...' },
@@ -180,7 +180,7 @@ const entities = [
       { prop: 'start_date', label: 'Tanggal Mulai', minWidth: '140', type: 'date' },
       { prop: 'end_date', label: 'Tanggal Selesai', minWidth: '140', type: 'date' },
       { prop: 'description', label: 'Keterangan', minWidth: '220' },
-      { prop: 'status', label: 'Status', width: '110', type: 'statusBool' }
+      // { prop: 'status', label: 'Status', width: '110', type: 'statusBool' }
     ],
     filters: [
       { prop: 'tahun_mandarin', label: 'Tahun Mandarin', placeholder: 'Cari tahun (e.g. 2024)...' },
@@ -276,7 +276,7 @@ const entities = [
       { prop: 'nama', label: 'Nama', placeholder: 'Cari nama donatur...' },
       { prop: 'mandarin', label: 'Mandarin', placeholder: 'Cari nama mandarin...' }
     ]
-  },
+  },*/
   {
     key: 'kelas',
     className: 'Kelas',

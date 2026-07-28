@@ -20,7 +20,7 @@ export interface PenggalangDanaQueryParams {
   limit?: number
   nama?: string
   mandarin?: string
-  fotang?: number
+  fotang?: number | string
 }
 
 export interface PaginatedMeta {

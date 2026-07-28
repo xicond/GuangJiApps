@@ -23,8 +23,8 @@ func TestTahunCiuTaoService(t *testing.T) {
 	// 1. Create
 	th := domain.TahunCiuTao{
 		TahunMandarin: "甲辰 (2024)",
-		StartDate:     time.Now(),
-		EndDate:       time.Now().AddDate(1, 0, 0),
+		StartDate:     domain.DateOnly{Time: time.Now()},
+		EndDate:       domain.DateOnly{Time: time.Now().AddDate(1, 0, 0)},
 		Description:   "Year of the Dragon",
 	}
 

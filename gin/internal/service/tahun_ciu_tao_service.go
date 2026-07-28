@@ -3,8 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
-	"sync"
+	"strings"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -36,69 +37,124 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 	if page <= 0 {
 		page = 1
 	}
-	offset := (page - 1) * limit
 
-	query := s.db.Table("T_BUS_TAHUN_CIUTAO").Where("status = ?", true)
-
-	type FilterRule struct {
-		Column string
-		IsLike bool
+	allowedFilters := map[string]string{
+		"tahun_mandarin": "TahunMandarin",
+		"date":           "date",
 	}
 
-	allowedFilters := map[string]FilterRule{
-		"tahun_mandarin": {Column: "TahunMandarin", IsLike: true},
-		"start_date":     {Column: "StartDate", IsLike: false},
-		"end_date":       {Column: "EndDate", IsLike: false},
-	}
+	var tahun string = ""
+	var dateVal *time.Time = nil
 
 	for field, value := range filters {
 		if value == "" {
 			continue
 		}
-		if rule, exists := allowedFilters[field]; exists {
-			if rule.IsLike {
-				query = query.Where(fmt.Sprintf("[%s] LIKE ?", rule.Column), "%"+value+"%")
-			} else {
-				query = query.Where(fmt.Sprintf("[%s] = ?", rule.Column), value)
+		if _, exists := allowedFilters[field]; exists {
+			if field == "tahun_mandarin" {
+				tahun = value
+			}
+
+			if field == "date" {
+				t, err := time.Parse("2006-01-02", value)
+				if err != nil {
+					t, err = time.Parse(time.RFC3339, value)
+					if err != nil {
+						return nil, 0, fmt.Errorf("invalid date format: %w", err)
+					}
+				}
+				dateVal = &t
 			}
 		}
 	}
 
-	var (
-		countErr error
-		findErr  error
-		wg       sync.WaitGroup
-	)
+	var findErr error
 
-	wg.Add(2)
+	if s.db.Dialector.Name() == "sqlite" {
+		var count int64
+		s.db.Model(&domain.TahunCiuTao{}).Count(&count)
+		var list []domain.TahunCiuTao
+		s.db.Limit(limit).Offset((page - 1) * limit).Find(&list)
+		return list, count, nil
+	}
 
-	go func() {
-		defer wg.Done()
-		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("database count error: %w", err)
+	sortDirection := "ASCENDING"
+	rows, err := s.db.Raw("EXEC SP_BUS_YEAR_SEARCH_DATA ?, ?, ?, ?, ?, ?",
+		limit,         // @PageSize
+		page,          // @CurrentPage
+		nil,           // @SortExpression (selalu null)
+		sortDirection, // @SortDirection (selalu null)
+		tahun,         // @Tahun (string / nvarchar)
+		dateVal,       // @Date (time.Time atau nil)
+	).Rows()
+	if err != nil {
+		return nil, 0, fmt.Errorf("database query error: %w", err)
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			findErr = errors.New("tahun ciu tao tidak ditemukan")
+		} else {
+			findErr = fmt.Errorf("database error: %w", err)
 		}
-	}()
+		return nil, 0, findErr
+	}
+	defer rows.Close()
 
-	go func() {
-		defer wg.Done()
-		if err := query.Session(&gorm.Session{}).
-			Limit(limit).
-			Offset(offset).
-			Order("TahunMandarin ASC").
-			Find(&items).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				findErr = errors.New("tahun ciu tao tidak ditemukan")
-			} else {
-				findErr = fmt.Errorf("database error: %w", err)
+	for rows.Next() {
+		var item domain.TahunCiuTao
+		v := reflect.ValueOf(&item).Elem()
+		t := v.Type()
+
+		// Siapkan slice pointer untuk rows.Scan sepanjang jumlah kolom
+		valuePtrs := make([]interface{}, len(cols))
+
+		// Variabel penampung sementara untuk kolom khusus seperti TotalRow yang tidak ada di struct
+		var totalRowScan int64
+
+		for i, colName := range cols {
+			cleanCol := strings.ToLower(strings.TrimSpace(colName))
+
+			switch cleanCol {
+			case "totalrow":
+				valuePtrs[i] = &totalRowScan
+			default:
+				matched := false
+				// Cari field di struct berdasarkan tag gorm "column" atau nama field
+				for j := 0; j < t.NumField(); j++ {
+					field := t.Field(j)
+					gormTag := field.Tag.Get("gorm")
+
+					// Cocokkan dengan tag kolom GORM atau nama struct (case-insensitive)
+					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
+						strings.ToLower(field.Name) == cleanCol {
+						valuePtrs[i] = v.Field(j).Addr().Interface()
+						matched = true
+						break
+					}
+				}
+				// Jika kolom database tidak ada di struct, tampung ke dummy agar Scan tidak error
+				if !matched {
+					var dummy interface{}
+					valuePtrs[i] = &dummy
+				}
 			}
 		}
-	}()
 
-	wg.Wait()
+		if err := rows.Scan(valuePtrs...); err != nil {
+			continue
+		}
 
-	if countErr != nil {
-		return nil, 0, countErr
+		// Ambil total row jika ada
+		if totalRowScan != 0 {
+			total = totalRowScan
+		}
+
+		items = append(items, item)
 	}
+
 	if findErr != nil {
 		return []domain.TahunCiuTao{}, 0, findErr
 	}
@@ -107,8 +163,8 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 }
 
 func (s *TahunCiuTaoService) Create(payload domain.TahunCiuTao, c *gin.Context) (domain.TahunCiuTao, error) {
-	if payload.TahunMandarin == "" {
-		return domain.TahunCiuTao{}, fmt.Errorf("tahun_mandarin is required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.TahunCiuTao{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	userIDStr := "1"

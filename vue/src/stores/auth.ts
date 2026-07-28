@@ -60,7 +60,11 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.data && response.data.token) {
         token.value = response.data.token
-        user.value = response.data.user || { username }
+        const userData = response.data.user || {}
+        user.value = {
+          ...userData,
+          username: userData.username || userData.Username || username
+        }
         mainMenus.value = response.data.main_menu || []
         localStorage.setItem('token', token.value)
         localStorage.setItem('user', JSON.stringify(user.value))
@@ -71,6 +75,25 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (error: any) {
       console.error('Login error:', error)
       const msg = error.response?.data?.error || error.message || 'Login failed'
+      throw new Error(msg)
+    }
+  }
+
+  async function changePassword(oldPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      const response = await axios.post(`${API_BASE}/v1/change-password`, {
+        username: user.value?.username,
+        old_password: oldPassword,
+        new_password: newPassword
+      }, {
+        headers: {
+          Authorization: `Bearer ${token.value}`
+        }
+      })
+      return response.status === 200
+    } catch (error: any) {
+      console.error('Change password error:', error)
+      const msg = error.response?.data?.error || error.message || 'Failed to change password'
       throw new Error(msg)
     }
   }
@@ -92,6 +115,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasMenu,
     hasSubMenu,
     login,
+    changePassword,
     logout
   }
 })

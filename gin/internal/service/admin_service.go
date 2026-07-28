@@ -118,11 +118,8 @@ func (s *AdminService) List(page int, filters map[string]string, limit int) ([]d
 }
 
 func (s *AdminService) Create(payload domain.Admin, c *gin.Context) (domain.Admin, error) {
-	if payload.Username == "" {
-		return domain.Admin{}, fmt.Errorf("username is required")
-	}
-	if payload.GroupId == 0 {
-		return domain.Admin{}, fmt.Errorf("group_id is required")
+	if err := ValidateStruct(payload); err != nil {
+		return domain.Admin{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
 	var maxID int32

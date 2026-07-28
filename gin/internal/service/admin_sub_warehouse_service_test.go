@@ -22,7 +22,7 @@ func TestAdminSubWarehouseService(t *testing.T) {
 	// 1. Create
 	subWh := domain.AdminSubWarehouse{
 		FullName:  "Central Warehouse",
-		SubWhType: "MAIN",
+		SubWhType: "WH1",
 		Pic:       "John Doe",
 		DocCode:   "WH001",
 	}

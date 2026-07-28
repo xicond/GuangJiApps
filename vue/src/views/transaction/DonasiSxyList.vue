@@ -36,6 +36,34 @@
             />
           </el-form-item>
         </el-col>
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Donatur" :label-position="isMobile? 'top' : 'right'">
+            <el-input
+              v-model="filters.donatur"
+              placeholder="Cari donatur..."
+              clearable
+              :prefix-icon="Search"
+              @input="onFilterChange"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :sm="12" :md="12">
+          <el-form-item label="Periode" :label-position="isMobile ? 'top' : 'right'">
+            <el-date-picker
+              v-model="filters.date_range"
+              type="daterange"
+              range-separator="s/d"
+              start-placeholder="Start Date"
+              end-placeholder="End Date"
+              value-format="YYYY-MM-DD"
+              :disabled-date="disabledDate"
+              @change="fetchData"
+              :clearable="false"
+              style="width: 100%"
+              :single-panel="isMobile"
+            />
+          </el-form-item>
+        </el-col>
       </el-row>
 
       <div class="filter-actions">
@@ -62,9 +90,27 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="tanggal" label="Tanggal"  min-width="140"  >
+        <el-table-column prop="tanggal" label="Tanggal Transfer"  min-width="140"  >
           <template #default="{ row }">
             <span>{{ row.tanggal || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="nama_donatur" label="Donatur"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.nama_donatur || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="atas_nama" label="Atas Nama"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.atas_nama || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="tipe_sumbangan_desc" label="Tipe Sumbangan"  min-width="140"  >
+          <template #default="{ row }">
+            <span>{{ row.tipe_sumbangan_desc || '-' }}</span>
           </template>
         </el-table-column>
 
@@ -74,25 +120,11 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="no_kupon" label="No. Kupon"  min-width="140"  >
+        <!-- <el-table-column prop="no_kupon" label="No. Kupon"  min-width="140"  >
           <template #default="{ row }">
             <span>{{ row.no_kupon || '-' }}</span>
           </template>
-        </el-table-column>
-
-        <el-table-column prop="keterangan" label="Keterangan"  min-width="200"  >
-          <template #default="{ row }">
-            <span>{{ row.keterangan || '-' }}</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="status" label="Status" width="110" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.status ? 'success' : 'info'" size="small">
-              {{ row.status ? 'Aktif' : 'Nonaktif' }}
-            </el-tag>
-          </template>
-        </el-table-column>
+        </el-table-column> -->
 
         <!-- Actions Column -->
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
@@ -148,7 +180,7 @@
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
   Search,
@@ -157,10 +189,11 @@ import {
   Edit,
   Delete
 } from '@element-plus/icons-vue'
+import dayjs from 'dayjs'
 import { donasiSxyApi } from '../../api/donasiSxy'
 import type { DonasiSxy, DonasiSxyQueryParams } from '../../types/donasiSxy'
 
-const router = useRouter()
+// const router = useRouter()
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -184,9 +217,20 @@ const getRowIndex = (index: number) => {
   return (pagination.page - 1) * pagination.limit + index + 1
 }
 
+const disabledDate = (time: Date) => {
+  return time.getTime() > Date.now()
+}
+
+const today = dayjs().format('YYYY-MM-DD')
+type DonasiSxyFilter = Omit<DonasiSxyQueryParams, 'start_date' | 'end_date'> & {
+  date_range?: string[] | null
+}
+
 // Search Filter state
-const filters = reactive<DonasiSxyQueryParams>({
-  no_kwitansi: ''
+const filters = reactive<DonasiSxyFilter>({
+  no_kwitansi: '',
+  date_range: [today, today] as [string, string],
+  donatur: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -198,13 +242,17 @@ async function fetchData() {
   }
   currentAbortController = new AbortController()
   loading.value = true
+  const [start_date, end_date] = filters.date_range || [null, null]
 
   try {
     const res = await donasiSxyApi.getDonasiSxys(
       {
         page: pagination.page,
         limit: pagination.limit,
-        no_kwitansi: filters.no_kwitansi?.trim()
+        no_kwitansi: filters.no_kwitansi?.trim(),
+        start_date: start_date?start_date:undefined,
+        end_date: end_date?end_date:undefined,
+        donatur: filters.donatur
       },
       currentAbortController.signal
     )

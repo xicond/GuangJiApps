@@ -15,6 +15,7 @@
               v-model="formData.kode_kelas"
               placeholder="Pilih Kelas..."
               :fetch-api="kelasApi.getKelasLookup"
+              :initial-option="formData.kelas_name"
             />
           </el-form-item>
         </el-col>
@@ -26,6 +27,7 @@
               v-model="formData.kode_fotang"
               placeholder="Pilih Fotang..."
               :fetch-api="fotangApi.getFotangLookup"
+              :initial-option="formData.fotang_name"
             />
           </el-form-item>
         </el-col>
@@ -221,7 +223,9 @@ const formData = reactive<Partial<Kelas>>({
   mc2: '',
   mc3: '',
   mc4: '',
-  mc5: ''
+  mc5: '',
+  kelas_name: undefined,
+  fotang_name: undefined
 })
 
 const formRules = reactive<FormRules>({
@@ -248,7 +252,9 @@ watch(
         mc2: newData.mc2 || '',
         mc3: newData.mc3 || '',
         mc4: newData.mc4 || '',
-        mc5: newData.mc5 || ''
+        mc5: newData.mc5 || '',
+        kelas_name: newData.kelas_name,
+        fotang_name: newData.fotang_name
       })
     }
   },
@@ -260,6 +266,9 @@ async function handleSubmit() {
   await formRef.value.validate((valid) => {
     if (valid) {
       const payload: Partial<Kelas> = { ...formData }
+      // Clean temporary preloaded lookup object fields before submitting
+      delete payload.kelas_name
+      delete payload.fotang_name
       emit('submit', payload)
     }
   })

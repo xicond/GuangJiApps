@@ -35,6 +35,18 @@ type Admin struct {
 
 func (Admin) TableName() string { return "T_Login_Mst" }
 
+type AdminMatrix struct {
+	CruID       int64  `gorm:"primaryKey;column:CRUID;type:bigint;not null" json:"cru_id"`
+	LoginId     *int64 `gorm:"column:LOGINID;type:bigint" json:"login_id,omitempty"`
+	WarehouseId *int64 `gorm:"column:WAREHOUSEID;type:bigint" json:"warehouse_id,omitempty"`
+	SubWhId     *int64 `gorm:"column:SUBWHID;type:bigint" json:"sub_wh_id,omitempty"`
+}
+
+// TableName menentukan nama tabel secara eksplisit di database
+func (AdminMatrix) TableName() string {
+	return "T_WH_USER_MATRIX_MST"
+}
+
 // SubMenuItem represents child menu items returned from SP_Login_View_Mapping_Group
 type SubMenuItem struct {
 	MenuID   int    `gorm:"column:MenuId" json:"menu_id"`
@@ -333,6 +345,104 @@ func (d DateOnly) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.Format("2006-01-02"))
 }
 
+// IntBool adalah tipe kustom untuk mengubah int/bit/string (0/1) dari DB menjadi bool di Go
+type IntBool bool
+
+// Scan mengonversi nilai dari database (bool/int/int64/uint8/[]byte/string/etc) ke bool
+func (ib *IntBool) Scan(value interface{}) error {
+	if value == nil {
+		*ib = false
+		return nil
+	}
+
+	switch v := value.(type) {
+	case bool:
+		*ib = IntBool(v)
+	case int64:
+		*ib = v != 0
+	case int32:
+		*ib = v != 0
+	case int16:
+		*ib = v != 0
+	case int8:
+		*ib = v != 0
+	case int:
+		*ib = v != 0
+	case uint64:
+		*ib = v != 0
+	case uint32:
+		*ib = v != 0
+	case uint16:
+		*ib = v != 0
+	case uint8:
+		*ib = v != 0
+	case uint:
+		*ib = v != 0
+	case float64:
+		*ib = v != 0
+	case float32:
+		*ib = v != 0
+	case []byte:
+		str := strings.TrimSpace(string(v))
+		*ib = IntBool(str == "1" || strings.EqualFold(str, "true") || strings.EqualFold(str, "t") || strings.EqualFold(str, "y") || strings.EqualFold(str, "ya"))
+	case string:
+		str := strings.TrimSpace(v)
+		*ib = IntBool(str == "1" || strings.EqualFold(str, "true") || strings.EqualFold(str, "t") || strings.EqualFold(str, "y") || strings.EqualFold(str, "ya"))
+	default:
+		return fmt.Errorf("cannot scan type %T into IntBool", value)
+	}
+	return nil
+}
+
+// Value mengonversi kembali bool ke database jika diperlukan
+func (ib IntBool) Value() (driver.Value, error) {
+	if ib {
+		return 1, nil
+	}
+	return 0, nil
+}
+
+// UnmarshalJSON mendeteksi format boolean (true/false), integer (1/0), string ("1"/"0"/"true"/"false"), atau null
+func (ib *IntBool) UnmarshalJSON(b []byte) error {
+	s := strings.TrimSpace(string(b))
+	if s == "" || s == "null" {
+		*ib = false
+		return nil
+	}
+	if s == "true" || s == "1" || s == `"1"` || s == `"true"` || s == `"t"` || s == `"y"` || s == `"ya"` {
+		*ib = true
+		return nil
+	}
+	if s == "false" || s == "0" || s == `"0"` || s == `"false"` || s == `"f"` || s == `"n"` || s == `"tidak"` {
+		*ib = false
+		return nil
+	}
+
+	var bVal bool
+	if err := json.Unmarshal(b, &bVal); err == nil {
+		*ib = IntBool(bVal)
+		return nil
+	}
+	var iVal int
+	if err := json.Unmarshal(b, &iVal); err == nil {
+		*ib = iVal != 0
+		return nil
+	}
+	var strVal string
+	if err := json.Unmarshal(b, &strVal); err == nil {
+		strVal = strings.TrimSpace(strVal)
+		*ib = IntBool(strVal == "1" || strings.EqualFold(strVal, "true") || strings.EqualFold(strVal, "t") || strings.EqualFold(strVal, "y") || strings.EqualFold(strVal, "ya"))
+		return nil
+	}
+	return fmt.Errorf("cannot unmarshal %s into IntBool", s)
+}
+
+// MarshalJSON mengembalikan boolean true/false untuk JSON output
+func (ib IntBool) MarshalJSON() ([]byte, error) {
+	return json.Marshal(bool(ib))
+}
+
+
 type TahunCiuTao struct {
 	TahunMandarin string    `gorm:"primaryKey;column:TahunMandarin" json:"tahun_mandarin" validate:"required,max=20"`
 	StartDate     DateOnly  `gorm:"column:StartDate" json:"start_date"`
@@ -446,16 +556,59 @@ type Kelas struct {
 }
 
 type KelasResponse struct {
-	TrxId      string   `gorm:"primaryKey;column:trxid" json:"trx_id"`
-	KodeKelas  string   `gorm:"primaryKey;column:kodekelas" json:"kode_kelas"`
-	StartDate  DateOnly `gorm:"primaryKey;column:startdate" json:"start_date"`
-	EndDate    DateOnly `gorm:"primaryKey;column:enddate" json:"end_date"`
-	KodeFotang string   `gorm:"primaryKey;column:kodefotang" json:"kode_fotang"`
-	Lokasi     string   `gorm:"primaryKey;column:lokasi" json:"lokasi"`
-	Pic        string   `gorm:"primaryKey;column:PIC" json:"pic"`
-	Keterangan string   `gorm:"primaryKey;column:keterangan" json:"keterangan"`
-	KelasDesc  string   `gorm:"primaryKey;column:KelasDesc" json:"kelas_desc"`
-	FotangDesc string   `gorm:"primaryKey;column:FotangDesc" json:"fotang_desc"`
+	TrxId      string   `gorm:"column:trxid" json:"trx_id"`
+	KodeKelas  string   `gorm:"column:kodekelas" json:"kode_kelas"`
+	StartDate  DateOnly `gorm:"column:startdate" json:"start_date"`
+	EndDate    DateOnly `gorm:"column:enddate" json:"end_date"`
+	KodeFotang string   `gorm:"column:kodefotang" json:"kode_fotang"`
+	Lokasi     string   `gorm:"column:lokasi" json:"lokasi"`
+	Pic        string   `gorm:"column:PIC" json:"pic"`
+	Keterangan string   `gorm:"column:keterangan" json:"keterangan"`
+	KelasDesc  string   `gorm:"column:KelasDesc" json:"kelas_desc"`
+	FotangDesc string   `gorm:"column:FotangDesc" json:"fotang_desc"`
+}
+
+type KelasPesertaList struct {
+	DetailId        string  `gorm:"column:detailid" json:"detailid"`
+	TrxId           string  `gorm:"column:trxid" json:"trx_id"`
+	Keterangan      string  `gorm:"column:keterangan" json:"keterangan"`
+	IdPeserta       string  `gorm:"column:idpeserta" json:"id_peserta"`
+	Sumbangan       float32 `gorm:"column:sumbangan" json:"sumbangan"`
+	Barang          string  `gorm:"column:barang" json:"barang"`
+	TimKerja        string  `gorm:"column:timkerja" json:"tim_kerja"`
+	ID              int64   `gorm:"column:id" json:"id"`
+	Kode            string  `gorm:"column:kode" json:"kode"`
+	Marga           string  `gorm:"column:marga" json:"marga"`
+	NamaIndonesia   string  `gorm:"column:namaindonesia" json:"nama_indonesia"`
+	NamaMandarin    string  `gorm:"column:namamandarin" json:"nama_mandarin"`
+	FotangAktifDesc string  `gorm:"column:FotangAktifDesc" json:"fotang_aktif_desc"`
+	Anak            string  `gorm:"column:Anak" json:"nak"`
+	Suster          string  `gorm:"column:Suster" json:"suster"`
+	Menginap        string  `gorm:"column:Menginap" json:"menginap"`
+	MakananPagi     string  `gorm:"column:MakananPagi" json:"makanan_pagi"`
+	MakananSiang    string  `gorm:"column:MakananSiang" json:"makanan_siang"`
+	MakananMalam    string  `gorm:"column:MakananMalam" json:"makanan_malam"`
+}
+
+type KelasPesertaResponse struct {
+	DetailId         string   `gorm:"column:detailid" json:"detailid"`
+	TrxId            string   `gorm:"column:trxid" json:"trx_id"`
+	IdPeserta        string   `gorm:"column:idpeserta" json:"id_peserta"`
+	NamaIndonesia    string   `gorm:"column:namaindonesia" json:"nama_indonesia"`
+	NamaMandarin     string   `gorm:"column:namamandarin" json:"nama_mandarin"`
+	FotangAktifDesc  string   `gorm:"column:FotangAktifDesc" json:"fotang_aktif_desc"`
+	FotangCiuTaoDesc string   `gorm:"column:FotangCiuTaoDesc" json:"fotang_ciutao_desc"`
+	TanggalCiuTaoInt DateOnly `gorm:"column:tanggalciutaoint" json:"tanggal_ciu_tao_int"`
+	Pengajak         string   `gorm:"column:pengajak" json:"pengajak"`
+	Penanggung       string   `gorm:"column:penanggung" json:"penanggung"`
+	Lulus            IntBool  `gorm:"column:lulus" json:"lulus"`
+	KeteranganLulus  string   `gorm:"column:keteranganlulus" json:"keterangan_lulus"`
+	Ikrar1           IntBool  `gorm:"column:ikrar1" json:"ikrar1"`
+	Ikrar2           IntBool  `gorm:"column:ikrar2" json:"ikrar2"`
+	Ikrar3           IntBool  `gorm:"column:ikrar3" json:"ikrar3"`
+	Ikrar4           IntBool  `gorm:"column:ikrar4" json:"ikrar4"`
+	Ikrar5           IntBool  `gorm:"column:ikrar5" json:"ikrar5"`
+	Ikrar6           IntBool  `gorm:"column:ikrar6" json:"ikrar6"`
 }
 
 func (Kelas) TableName() string { return "T_TRX_KELAS" } // DonasiSxy represents table [dbo].[T_SXY_TRANSAKSI]

@@ -378,6 +378,120 @@ func (s *KelasService) Get(id string) (domain.Kelas, error) {
 	return item, nil
 }
 
+func (s *KelasService) Peserta(id string, c *gin.Context, page int, limit int) ([]domain.KelasPesertaResponse, int64, error) {
+	var items []domain.KelasPesertaResponse
+
+	var subWhId int64
+
+	err := s.db.Model(&domain.AdminMatrix{}).
+		Where("LOGINID = ?", getUserID(c)).
+		Limit(1).
+		Pluck("SUBWHID", &subWhId).Error
+
+	if err != nil {
+		return items, 0, fmt.Errorf("database query error: %w", err)
+	}
+
+	var total int64
+
+	if limit <= 0 {
+		limit = 10
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	var findErr error
+
+	var trxID int64
+	if id != "" {
+		trxID, _ = strconv.ParseInt(id, 10, 64)
+	}
+
+	// before: SP_TRX_KELAS_GET_PESERTA, now: SP_TRX_KELAS_PESERTA_SEARCH_DATA
+	sortDirection := "ASCENDING"
+	rows, err := s.db.Raw("EXEC [dbo].[SP_TRX_KELAS_PESERTA_SEARCH_DATA] @PageSize = ?, @CurrentPage = ?, @SortDirection = ?, @TrxId = ?, @FotangId = ?",
+		limit,
+		page,
+		sortDirection,
+		trxID,
+		subWhId,
+	).Rows()
+
+	if err != nil {
+		return items, 0, fmt.Errorf("database query error: %w", err)
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			findErr = errors.New("kelas tidak ditemukan")
+		} else {
+			findErr = fmt.Errorf("database error: %w", err)
+		}
+		return items, 0, findErr
+	}
+
+	for rows.Next() {
+		var item domain.KelasPesertaResponse
+		v := reflect.ValueOf(&item).Elem()
+		t := v.Type()
+
+		valuePtrs := make([]interface{}, len(cols))
+		var totalRowScan int64
+
+		for i, colName := range cols {
+			cleanCol := strings.ToLower(strings.TrimSpace(colName))
+
+			switch cleanCol {
+			case "totalrow", "total_row", "totalcount", "total_count", "rowcount":
+				valuePtrs[i] = &totalRowScan
+			default:
+				matched := false
+				for j := 0; j < t.NumField(); j++ {
+					field := t.Field(j)
+					gormTag := field.Tag.Get("gorm")
+
+					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
+						strings.ToLower(field.Name) == cleanCol {
+						fieldVal := v.Field(j)
+						if fieldVal.Kind() == reflect.String {
+							valuePtrs[i] = &nullStringScanner{target: fieldVal.Addr().Interface().(*string)}
+						} else {
+							valuePtrs[i] = fieldVal.Addr().Interface()
+						}
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					var dummy interface{}
+					valuePtrs[i] = &dummy
+				}
+			}
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			fmt.Printf("kelas rows.Scan error: %v\n", err)
+			findErr = fmt.Errorf("scan error on row: %w", err)
+			continue
+		}
+
+		if totalRowScan != 0 {
+			total = totalRowScan
+		}
+
+		items = append(items, item)
+	}
+
+	if findErr != nil {
+		return []domain.KelasPesertaResponse{}, 0, findErr
+	}
+
+	return items, total, nil
+}
+
 func (s *KelasService) Update(id string, payload domain.Kelas, c *gin.Context) (domain.Kelas, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

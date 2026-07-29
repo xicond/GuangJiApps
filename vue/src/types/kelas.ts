@@ -1,3 +1,5 @@
+import type { AppLookup } from './lookup'
+
 export interface Kelas {
   trx_id?: number | string
   kode_kelas?: string
@@ -17,6 +19,29 @@ export interface Kelas {
   deadline?: string
   kelas_desc?: string
   fotang_desc?: string
+  kelas_name?: AppLookup
+  fotang_name?: AppLookup
+}
+
+export interface KelasPeserta {
+  detailid?: string
+  trx_id?: string
+  id_peserta?: string
+  nama_indonesia?: string
+  nama_mandarin?: string
+  fotang_aktif_desc?: string
+  fotang_ciutao_desc?: string
+  tanggal_ciu_tao_int?: string
+  pengajak?: string
+  penanggung?: string
+  lulus?: boolean
+  keterangan_lulus?: string
+  ikrar1?: boolean
+  ikrar2?: boolean
+  ikrar3?: boolean
+  ikrar4?: boolean
+  ikrar5?: boolean
+  ikrar6?: boolean
 }
 
 export interface KelasQueryParams {
@@ -45,5 +70,11 @@ export interface KelasListResponse {
 
 export interface KelasSingleResponse {
   data: Kelas
+  resource?: string
+}
+
+export interface KelasPesertaListResponse {
+  data: KelasPeserta[]
+  meta?: PaginatedMeta
   resource?: string
 }

@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import type { AppLookup, LookupListResponse, LookupQueryParams } from '../../types/lookup'
 
 const props = withDefaults(
@@ -56,6 +56,7 @@ const props = withDefaults(
     labelKey?: keyof AppLookup | string
     clearable?: boolean
     pageSize?: number
+    initialOption?: AppLookup
   }>(),
   {
     modelValue: '',
@@ -97,6 +98,26 @@ function getOptionLabel(item: AppLookup): string {
   return item.lookup_description || item.lookup_value || item.lookup_id
 }
 
+function ensureInitialOption(opt?: AppLookup) {
+  if (!opt) return
+  const val = getOptionValue(opt)
+  if (val === undefined || val === null || val === '') return
+  const exists = options.value.some((item) => getOptionValue(item) === val)
+  if (!exists) {
+    options.value = [opt, ...options.value]
+  }
+}
+
+watch(
+  () => props.initialOption,
+  (newOpt) => {
+    if (newOpt) {
+      ensureInitialOption(newOpt)
+    }
+  },
+  { immediate: true, deep: true }
+)
+
 async function loadData(targetPage = 1, query = '') {
   if (currentAbortController) {
     currentAbortController.abort()
@@ -118,6 +139,9 @@ async function loadData(targetPage = 1, query = '') {
     )
 
     options.value = res.data || []
+    if (props.initialOption) {
+      ensureInitialOption(props.initialOption)
+    }
     total.value = res.meta?.total || options.value.length
   } catch (err: any) {
     if (err.name === 'AbortError' || err.name === 'CanceledError') return

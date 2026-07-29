@@ -4,7 +4,7 @@
     <div class="page-header">
       <el-button :icon="Back" text @click="handleBack">Kembali ke Daftar</el-button>
       <h2 class="page-title">Edit Data Kelas #{{ kelasId }}</h2>
-      <p class="page-subtitle">Perbarui jadwal dan informasi kegiatan kelas di bawah ini</p>
+      <p class="page-subtitle">Perbarui jadwal, informasi kegiatan kelas, serta daftar peserta di bawah ini</p>
     </div>
 
     <!-- Loading Skeleton -->
@@ -12,15 +12,19 @@
       <el-skeleton :rows="8" animated />
     </el-card>
 
-    <!-- Form Component -->
-    <KelasForm
-      v-else
-      :initial-data="kelasData"
-      :submitting="submitting"
-      submit-text="Simpan Perubahan"
-      @submit="handleUpdate"
-      @cancel="handleBack"
-    />
+    <template v-else>
+      <!-- Form Component -->
+      <KelasForm
+        :initial-data="kelasData"
+        :submitting="submitting"
+        submit-text="Simpan Perubahan"
+        @submit="handleUpdate"
+        @cancel="handleBack"
+      />
+
+      <!-- Peserta List Component -->
+      <KelasPesertaTable :kelas-id="kelasId" />
+    </template>
   </div>
 </template>
 
@@ -30,6 +34,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import { Back } from '@element-plus/icons-vue'
 import KelasForm from '../../components/kelas/KelasForm.vue'
+import KelasPesertaTable from '../../components/kelas/KelasPesertaTable.vue'
 import { kelasApi } from '../../api/kelas'
 import type { Kelas } from '../../types/kelas'
 

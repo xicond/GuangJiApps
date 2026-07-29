@@ -2269,6 +2269,49 @@
           }
         },
         {
+          "name": "Kelas - Peserta List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:id/peserta",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kelas",
+                ":id",
+                "peserta"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "The unique numerical ID of the record"
+                }
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Kelas - Create",
           "request": {
             "method": "POST",

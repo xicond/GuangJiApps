@@ -134,6 +134,12 @@ const router = createRouter({
           meta: { title: 'Edit Kelas' }
         },
         {
+          path: 'transaction/kelas/view/:id',
+          name: 'kelas-view',
+          component: () => import('../views/transaction/KelasView.vue'),
+          meta: { title: 'Detail Kelas' }
+        },
+        {
           path: 'transaction/donasi-sxy',
           name: 'donasi-sxy',
           component: () => import('../views/transaction/DonasiSxyList.vue'),

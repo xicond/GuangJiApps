@@ -129,6 +129,15 @@
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
+                type="info"
+                size="small"
+                circle
+                :icon="View"
+                title="Lihat Detail Kelas & Peserta"
+                @click="handleView(row.trx_id)"
+              />
+
+              <el-button
                 type="primary"
                 size="small"
                 circle
@@ -185,6 +194,7 @@ import {
   Refresh,
   Plus,
   Edit,
+  View,
   Delete
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
@@ -249,7 +259,7 @@ async function fetchData() {
   const [start_date, end_date] = filters.date_range || [null, null]
 
   try {
-    const res = await kelasApi.getKelass(
+    const res = await kelasApi.getKelasList(
       {
         page: pagination.page,
         limit: pagination.limit,
@@ -296,6 +306,10 @@ function handleSizeChange(newLimit: number) {
 function handlePageChange(newPage: number) {
   pagination.page = newPage
   fetchData()
+}
+
+function handleView(id: string | number) {
+  router.push(`/transaction/kelas/view/${id}`)
 }
 
 function handleCreate() {

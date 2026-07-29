@@ -886,6 +886,16 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Kelas"})
 	})
+	protected.GET("/kelas/:id/peserta", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, _ := parsePaginationAndFilters(c)
+		items, total, err := kelasService.Peserta(c.Param("id"), c, page, limit)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "KelasPeserta"})
+	})
 	protected.POST("/kelas", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.Kelas

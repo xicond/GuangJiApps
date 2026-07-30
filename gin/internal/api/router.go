@@ -638,8 +638,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/tim-kerja/lookup/:id/sub", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		idInt, _ := strconv.Atoi(c.Param("id"))
-		items, total, err := timKerjaService.LookupSub(idInt, filters, page, limit)
+		items, total, err := timKerjaService.LookupSub(c.Param("id"), filters, page, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

@@ -19,7 +19,11 @@ type Config struct {
 
 func Load() Config {
 	_ = godotenv.Load()
-	_ = godotenv.Load(".env.local")
+	_ = godotenv.Load("../.env")
+	_ = godotenv.Load("../../.env")
+	_ = godotenv.Overload(".env.local")
+	_ = godotenv.Overload("../.env.local")
+	_ = godotenv.Overload("../../.env.local")
 
 	cfg := Config{
 		Port:          getenv("PORT", "8080"),

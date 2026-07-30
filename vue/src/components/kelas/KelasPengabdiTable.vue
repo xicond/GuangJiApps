@@ -104,7 +104,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogMode === 'add' ? 'Tambah Pengabdi Kelas' : 'Edit Pengabdi Kelas'"
-      width="640px"
+      width="720px"
       destroy-on-close
     >
       <el-alert
@@ -147,30 +147,30 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Tim Kerja" :error="hasFieldError('tim_kerja') ? ' ' : undefined">
-              <el-input v-model="form.tim_kerja" placeholder="Kode tim kerja" maxlength="3" />
+              <LookupSelect
+                v-model="form.tim_kerja"
+                :fetch-api="lookupApi.getLookupTimKerja"
+                value-key="lookup_value"
+                :initial-option="initialTimKerjaOption"
+                placeholder="Pilih Tim Kerja..."
+                @change="onTimKerjaChange"
+              />
               <FieldErrors :errors="getFieldErrors('tim_kerja')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="Sub Kerja" :error="hasFieldError('sub_kerja') ? ' ' : undefined">
-              <el-input v-model="form.sub_kerja" placeholder="Sub kerja" maxlength="3" />
+              <LookupSelect
+                ref="subKerjaSelectRef"
+                :key="String(form.tim_kerja)"
+                v-model="form.sub_kerja"
+                :fetch-api="fetchSubKerjaApi"
+                :disabled="!form.tim_kerja"
+                value-key="lookup_value"
+                :initial-option="initialSubKerjaOption"
+                placeholder="Pilih Sub Kerja..."
+              />
               <FieldErrors :errors="getFieldErrors('sub_kerja')" />
-            </el-form-item>
-          </el-col>
-
-          <!-- masuk ke Tim Kerja Selective -->
-          <!-- <el-col :span="12">
-            <el-form-item label="Tim Kerja Report">
-              <el-input v-model="form.tim_kerja_report" placeholder="Tim kerja report" maxlength="3" />
-            </el-form-item>
-          </el-col> -->
-        </el-row>
-
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="Hari" :error="hasFieldError('hari') ? ' ' : undefined">
-              <el-input v-model="form.hari" placeholder="Hari pengabdian" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('hari')" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -202,50 +202,73 @@
           <FieldErrors :errors="getFieldErrors('keterangan')" />
         </el-form-item>
 
-        <!-- Logistik Optional Fields -->
-        <el-divider content-position="left">Data Logistik / Kehadiran</el-divider>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="Anak" :error="hasFieldError('anak') ? ' ' : undefined">
-              <el-input v-model="form.anak" placeholder="Detail anak" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('anak')" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Suster" :error="hasFieldError('suster') ? ' ' : undefined">
-              <el-input v-model="form.suster" placeholder="Detail suster" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('suster')" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="Menginap" :error="hasFieldError('menginap') ? ' ' : undefined">
-              <el-input v-model="form.menginap" placeholder="Detail menginap" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('menginap')" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Makanan Pagi" :error="hasFieldError('makanan_pagi') ? ' ' : undefined">
-              <el-input v-model="form.makanan_pagi" placeholder="Makanan pagi" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('makanan_pagi')" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="Makanan Siang" :error="hasFieldError('makanan_siang') ? ' ' : undefined">
-              <el-input v-model="form.makanan_siang" placeholder="Makanan siang" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('makanan_siang')" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Makanan Malam" :error="hasFieldError('makanan_malam') ? ' ' : undefined">
-              <el-input v-model="form.makanan_malam" placeholder="Makanan malam" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('makanan_malam')" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <!-- Logistik Optional Fields (Multiply by Number of Days) -->
+        <el-divider content-position="left">Data Logistik / Kehadiran ({{ daysCount }} Hari)</el-divider>
+        <div class="logistik-table-wrapper mb-4">
+          <el-table :data="logistikRows" border size="small" style="width: 100%">
+            <el-table-column label="Hari" width="120" align="center">
+              <template #default="{ row }">
+                <span class="font-semibold">{{ row.label }}</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="Hari Pengabdian" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="hariDays[$index]" />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Anak" width="90" align="center">
+              <template #default="{ $index }">
+                <el-input-number
+                  v-model="anakDays[$index]"
+                  :min="0"
+                  :max="99"
+                  controls-position="right"
+                  size="small"
+                  style="width: 100%"
+                />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Suster" width="90" align="center">
+              <template #default="{ $index }">
+                <el-input-number
+                  v-model="susterDays[$index]"
+                  :min="0"
+                  :max="99"
+                  controls-position="right"
+                  size="small"
+                  style="width: 100%"
+                />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Menginap" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="menginapDays[$index]" />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Makan Pagi" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="makananPagiDays[$index]" />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Makan Siang" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="makananSiangDays[$index]" />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Makan Malam" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="makananMalamDays[$index]" />
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </el-form>
 
       <template #footer>
@@ -262,14 +285,20 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Avatar, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import dayjs from 'dayjs'
 import { kelasApi } from '../../api/kelas'
 import { umatApi } from '../../api/umat'
+import lookupApi from '../../api/lookup'
+import LookupSelect from '../common/LookupSelect.vue'
 import FieldErrors from '../common/FieldErrors.vue'
 import type { KelasPengabdi } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
+import type { LookupQueryParams } from '../../types/lookup'
 
 const props = defineProps<{
   kelasId: string | number
+  startDate?: string
+  endDate?: string
 }>()
 
 const activeNames = ref<string[]>([])
@@ -281,6 +310,107 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 let abortController: AbortController | null = null
+
+const kelasDetail = ref<{ start_date?: string; end_date?: string } | null>(null)
+
+async function fetchKelasDetail() {
+  if (!props.kelasId) return
+  try {
+    const res = await kelasApi.getKelasById(props.kelasId)
+    if (res.data) {
+      kelasDetail.value = res.data
+    }
+  } catch (err) {
+    console.error('Error fetching kelas detail for logistik days:', err)
+  }
+}
+
+const daysCount = computed(() => {
+  const start = props.startDate || kelasDetail.value?.start_date
+  const end = props.endDate || kelasDetail.value?.end_date
+  if (!start || !end) return 1
+  const dStart = dayjs(start)
+  const dEnd = dayjs(end)
+  if (!dStart.isValid() || !dEnd.isValid()) return 1
+  const diff = dEnd.diff(dStart, 'day') + 1
+  return diff > 0 ? diff : 1
+})
+
+const logistikRows = computed(() => {
+  const count = daysCount.value
+  const start = props.startDate || kelasDetail.value?.start_date
+  const rows = []
+  for (let i = 0; i < count; i++) {
+    let label = `Hari ${i + 1}`
+    if (start && dayjs(start).isValid()) {
+      label += ` (${dayjs(start).add(i, 'day').format('DD/MM')})`
+    }
+    rows.push({ index: i, label })
+  }
+  return rows
+})
+
+const hariDays = ref<boolean[]>([])
+const anakDays = ref<number[]>([])
+const susterDays = ref<number[]>([])
+const menginapDays = ref<boolean[]>([])
+const makananPagiDays = ref<boolean[]>([])
+const makananSiangDays = ref<boolean[]>([])
+const makananMalamDays = ref<boolean[]>([])
+
+function parseIntArray(strVal: string | undefined, count: number): number[] {
+  const result: number[] = new Array(count).fill(0)
+  if (!strVal) return result
+  const parts = strVal.split(',')
+  for (let i = 0; i < count; i++) {
+    if (i < parts.length && parts[i].trim() !== '') {
+      const parsed = parseInt(parts[i].trim(), 10)
+      result[i] = isNaN(parsed) ? 0 : parsed
+    }
+  }
+  return result
+}
+
+function parseBoolArray(strVal: string | undefined, count: number): boolean[] {
+  const result: boolean[] = new Array(count).fill(false)
+  if (!strVal) return result
+  const parts = strVal.split(',')
+  for (let i = 0; i < count; i++) {
+    if (i < parts.length && parts[i].trim() !== '') {
+      const val = parts[i].trim().toLowerCase()
+      result[i] = ['1', 'y', 'true', 'ya'].includes(val)
+    }
+  }
+  return result
+}
+
+function resizeIntArray(arr: number[], count: number): number[] {
+  const newArr = new Array(count).fill(0)
+  for (let i = 0; i < count; i++) {
+    if (i < arr.length) newArr[i] = arr[i]
+  }
+  return newArr
+}
+
+function resizeBoolArray(arr: boolean[], count: number): boolean[] {
+  const newArr = new Array(count).fill(false)
+  for (let i = 0; i < count; i++) {
+    if (i < arr.length) newArr[i] = arr[i]
+  }
+  return newArr
+}
+
+watch(daysCount, (newCount) => {
+  if (dialogVisible.value) {
+    hariDays.value = resizeBoolArray(hariDays.value, newCount)
+    anakDays.value = resizeIntArray(anakDays.value, newCount)
+    susterDays.value = resizeIntArray(susterDays.value, newCount)
+    menginapDays.value = resizeBoolArray(menginapDays.value, newCount)
+    makananPagiDays.value = resizeBoolArray(makananPagiDays.value, newCount)
+    makananSiangDays.value = resizeBoolArray(makananSiangDays.value, newCount)
+    makananMalamDays.value = resizeBoolArray(makananMalamDays.value, newCount)
+  }
+})
 
 // Dialog state
 const dialogVisible = ref(false)
@@ -301,19 +431,13 @@ interface PengabdiFormState {
   detail_id?: number | string
   trx_id?: number | string
   id_pengabdi?: number | string
-  tim_kerja: string
+  tim_kerja: string | number
   tim_kerja_report: string
   hari: string
   sub_kerja: string
   sumbangan?: number
   barang: string
   keterangan: string
-  anak: string
-  suster: string
-  menginap: string
-  makanan_pagi: string
-  makanan_siang: string
-  makanan_malam: string
 }
 
 const form = ref<PengabdiFormState>({
@@ -322,18 +446,57 @@ const form = ref<PengabdiFormState>({
   hari: '',
   sub_kerja: '',
   barang: '',
-  keterangan: '',
-  anak: '',
-  suster: '',
-  menginap: '',
-  makanan_pagi: '',
-  makanan_siang: '',
-  makanan_malam: ''
+  keterangan: ''
 })
 
 const formRules: FormRules = {
   id_pengabdi: [{ required: true, message: 'Harap pilih pengabdi / umat', trigger: 'change' }]
 }
+
+const subKerjaSelectRef = ref<InstanceType<typeof LookupSelect> | null>(null)
+
+function fetchSubKerjaApi(params: LookupQueryParams = {}, signal?: AbortSignal) {
+  if (!form.value.tim_kerja) {
+    return Promise.resolve({ data: [], meta: { page: 1, limit: 10, total: 0 } })
+  }
+  return lookupApi.getLookupSubKerja(form.value.tim_kerja, params, signal)
+}
+
+function onTimKerjaChange() {
+  form.value.sub_kerja = ''
+  if (subKerjaSelectRef.value) {
+    subKerjaSelectRef.value.loadData(1, '')
+  }
+}
+
+watch(
+  () => form.value.tim_kerja,
+  (newVal, oldVal) => {
+    if (newVal !== oldVal && oldVal !== undefined) {
+      form.value.sub_kerja = ''
+      if (subKerjaSelectRef.value) {
+        subKerjaSelectRef.value.loadData(1, '')
+      }
+    }
+  }
+)
+
+const initialTimKerjaOption = computed(() => {
+  if (!form.value.tim_kerja) return undefined
+  return {
+    lookup_value: String(form.value.tim_kerja),
+    lookup_description: String(form.value.tim_kerja)
+  }
+})
+
+const initialSubKerjaOption = computed(() => {
+  if (!form.value.sub_kerja) return undefined
+  return {
+    lookup_id: Number(form.value.sub_kerja),
+    lookup_value: String(form.value.sub_kerja),
+    lookup_description: String(form.value.sub_kerja)
+  }
+})
 
 const umatOptions = ref<Umat[]>([])
 const loadingUmat = ref(false)
@@ -414,14 +577,18 @@ function openAddDialog() {
     sub_kerja: '',
     sumbangan: undefined,
     barang: '',
-    keterangan: '',
-    anak: '',
-    suster: '',
-    menginap: '',
-    makanan_pagi: '',
-    makanan_siang: '',
-    makanan_malam: ''
+    keterangan: ''
   }
+
+  const count = daysCount.value
+  hariDays.value = new Array(count).fill(false)
+  anakDays.value = new Array(count).fill(0)
+  susterDays.value = new Array(count).fill(0)
+  menginapDays.value = new Array(count).fill(false)
+  makananPagiDays.value = new Array(count).fill(false)
+  makananSiangDays.value = new Array(count).fill(false)
+  makananMalamDays.value = new Array(count).fill(false)
+
   umatOptions.value = []
   dialogVisible.value = true
 }
@@ -442,14 +609,17 @@ function openEditDialog(row: KelasPengabdi) {
     sub_kerja: row.sub_kerja || '',
     sumbangan: row.sumbangan,
     barang: row.barang || '',
-    keterangan: row.keterangan || '',
-    anak: row.anak || '',
-    suster: row.suster || '',
-    menginap: row.menginap || '',
-    makanan_pagi: row.makanan_pagi || '',
-    makanan_siang: row.makanan_siang || '',
-    makanan_malam: row.makanan_malam || ''
+    keterangan: row.keterangan || ''
   }
+
+  const count = daysCount.value
+  hariDays.value = parseBoolArray(row.hari, count)
+  anakDays.value = parseIntArray(row.anak, count)
+  susterDays.value = parseIntArray(row.suster, count)
+  menginapDays.value = parseBoolArray(row.menginap, count)
+  makananPagiDays.value = parseBoolArray(row.makanan_pagi, count)
+  makananSiangDays.value = parseBoolArray(row.makanan_siang, count)
+  makananMalamDays.value = parseBoolArray(row.makanan_malam, count)
 
   if (rawIdPengabdi && row.nama_indonesia) {
     umatOptions.value = [
@@ -477,19 +647,19 @@ async function submitForm() {
       const payload: Partial<KelasPengabdi> = {
         trx_id: props.kelasId ? Number(props.kelasId) : undefined,
         id_pengabdi: form.value.id_pengabdi ? Number(form.value.id_pengabdi) : undefined,
-        tim_kerja: form.value.tim_kerja,
+        tim_kerja: String(form.value.tim_kerja || ''),
         tim_kerja_report: form.value.tim_kerja_report,
-        hari: form.value.hari,
+        hari: hariDays.value.map(v => v ? '1' : '0').join(','),
         sub_kerja: form.value.sub_kerja,
         sumbangan: form.value.sumbangan,
         barang: form.value.barang,
         keterangan: form.value.keterangan,
-        anak: form.value.anak,
-        suster: form.value.suster,
-        menginap: form.value.menginap,
-        makanan_pagi: form.value.makanan_pagi,
-        makanan_siang: form.value.makanan_siang,
-        makanan_malam: form.value.makanan_malam
+        anak: anakDays.value.map(v => v || 0).join(','),
+        suster: susterDays.value.map(v => v || 0).join(','),
+        menginap: menginapDays.value.map(v => v ? '1' : '0').join(','),
+        makanan_pagi: makananPagiDays.value.map(v => v ? '1' : '0').join(','),
+        makanan_siang: makananSiangDays.value.map(v => v ? '1' : '0').join(','),
+        makanan_malam: makananMalamDays.value.map(v => v ? '1' : '0').join(',')
       }
 
       if (dialogMode.value === 'add') {
@@ -536,6 +706,7 @@ watch(
   () => props.kelasId,
   (newId) => {
     if (newId) {
+      fetchKelasDetail()
       currentPage.value = 1
       if (isExpanded.value) {
         fetchPengabdi()
@@ -544,7 +715,8 @@ watch(
         total.value = 0
       }
     }
-  }
+  },
+  { immediate: true }
 )
 
 onMounted(() => {

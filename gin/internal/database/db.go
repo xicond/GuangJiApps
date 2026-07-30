@@ -1,8 +1,10 @@
 package database
 
 import (
+	"strings"
 	"time"
 
+	"guangjiapps/gin/internal/config"
 	"guangjiapps/gin/internal/domain"
 
 	"gorm.io/driver/sqlserver"
@@ -11,6 +13,9 @@ import (
 )
 
 func Open(dsn string) (*gorm.DB, error) {
+	if dsn == "" {
+		dsn = config.Load().DatabaseDSN
+	}
 	cfg := &gorm.Config{
 		Logger:                                   logger.Default.LogMode(logger.Silent),
 		DisableForeignKeyConstraintWhenMigrating: true,
@@ -18,6 +23,18 @@ func Open(dsn string) (*gorm.DB, error) {
 
 	// 1. Open the GORM connection with silent logging to save I/O overhead
 	db, err := gorm.Open(sqlserver.Open(dsn), cfg)
+	if err != nil && strings.Contains(err.Error(), "Cannot open database") {
+		masterDSN := strings.Replace(dsn, "database=guangji;", "database=master;", 1)
+		masterDB, masterErr := gorm.Open(sqlserver.Open(masterDSN), cfg)
+		if masterErr == nil {
+			_ = masterDB.Exec("CREATE DATABASE guangji").Error
+			sqlDB, _ := masterDB.DB()
+			if sqlDB != nil {
+				sqlDB.Close()
+			}
+			db, err = gorm.Open(sqlserver.Open(dsn), cfg)
+		}
+	}
 	if err != nil {
 		return nil, err
 	}

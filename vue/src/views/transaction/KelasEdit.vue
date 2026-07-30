@@ -24,8 +24,8 @@
       />
 
       <!-- Sub-model Lists -->
-      <KelasPesertaTable :kelas-id="kelasId" />
-      <KelasPengabdiTable :kelas-id="kelasId" />
+      <KelasPesertaTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
+      <KelasPengabdiTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
       <KelasTopikTable :kelas-id="kelasId" />
       <KelasDonasiTable :kelas-id="kelasId" />
       <KelasDonasiBarangTable :kelas-id="kelasId" />

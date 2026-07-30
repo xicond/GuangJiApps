@@ -192,8 +192,20 @@ function onVisibleChange(visible: boolean) {
   }
 }
 
+watch(
+  () => props.fetchApi,
+  () => {
+    loadData(1, '')
+  }
+)
+
 onMounted(() => {
   loadData(1, '')
+})
+
+defineExpose({
+  loadData,
+  reload: () => loadData(1, '')
 })
 </script>
 

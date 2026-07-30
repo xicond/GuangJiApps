@@ -243,6 +243,27 @@ export const lookupApi = {
   },
 
   /**
+   * Sub Kerja Lookup (/v1/tim-kerja/lookup/:id/sub)
+   */
+  async getLookupSubKerja(
+    timKerjaId: number | string,
+    params: LookupQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<LookupListResponse> {
+    const cleanParams: Record<string, any> = {
+      page: params.page || 1,
+      limit: params.limit || 10
+    }
+    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
+
+    const response = await apiClient.get<LookupListResponse>(`/v1/tim-kerja/lookup/${timKerjaId}/sub`, {
+      params: cleanParams,
+      signal
+    })
+    return response.data
+  },
+
+  /**
    * Dynamic Lookup by Category ID
    */
   async getLookupByCategory(

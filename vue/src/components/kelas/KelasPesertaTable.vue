@@ -131,7 +131,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogMode === 'add' ? 'Tambah Peserta Kelas' : 'Edit Peserta Kelas'"
-      width="640px"
+      width="720px"
       destroy-on-close
     >
       <el-alert
@@ -198,50 +198,67 @@
           </el-col>
         </el-row>
 
-        <!-- Logistik Optional Fields -->
-        <el-divider content-position="left">Data Logistik / Kehadiran</el-divider>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="Anak" :error="hasFieldError('anak') ? ' ' : undefined">
-              <el-input v-model="form.anak" placeholder="Detail anak" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('anak')" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Suster" :error="hasFieldError('suster') ? ' ' : undefined">
-              <el-input v-model="form.suster" placeholder="Detail suster" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('suster')" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="Menginap" :error="hasFieldError('menginap') ? ' ' : undefined">
-              <el-input v-model="form.menginap" placeholder="Detail menginap" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('menginap')" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Makanan Pagi" :error="hasFieldError('makanan_pagi') ? ' ' : undefined">
-              <el-input v-model="form.makanan_pagi" placeholder="Makanan pagi" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('makanan_pagi')" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="Makanan Siang" :error="hasFieldError('makanan_siang') ? ' ' : undefined">
-              <el-input v-model="form.makanan_siang" placeholder="Makanan siang" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('makanan_siang')" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Makanan Malam" :error="hasFieldError('makanan_malam') ? ' ' : undefined">
-              <el-input v-model="form.makanan_malam" placeholder="Makanan malam" maxlength="30" />
-              <FieldErrors :errors="getFieldErrors('makanan_malam')" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <!-- Logistik Optional Fields (Multiply by Number of Days) -->
+        <el-divider content-position="left">Data Logistik / Kehadiran ({{ daysCount }} Hari)</el-divider>
+        <div class="logistik-table-wrapper mb-4">
+          <el-table :data="logistikRows" border size="small" style="width: 100%">
+            <el-table-column label="Hari" width="120" align="center">
+              <template #default="{ row }">
+                <span class="font-semibold">{{ row.label }}</span>
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Anak" width="100" align="center">
+              <template #default="{ $index }">
+                <el-input-number
+                  v-model="anakDays[$index]"
+                  :min="0"
+                  :max="99"
+                  controls-position="right"
+                  size="small"
+                  style="width: 100%"
+                />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Suster" width="100" align="center">
+              <template #default="{ $index }">
+                <el-input-number
+                  v-model="susterDays[$index]"
+                  :min="0"
+                  :max="99"
+                  controls-position="right"
+                  size="small"
+                  style="width: 100%"
+                />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Menginap" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="menginapDays[$index]" />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Makan Pagi" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="makananPagiDays[$index]" />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Makan Siang" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="makananSiangDays[$index]" />
+              </template>
+            </el-table-column>
+            
+            <el-table-column label="Makan Malam" align="center">
+              <template #default="{ $index }">
+                <el-checkbox v-model="makananMalamDays[$index]" />
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
       </el-form>
 
       <template #footer>
@@ -258,6 +275,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { UserFilled, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import dayjs from 'dayjs'
 import { kelasApi } from '../../api/kelas'
 import { umatApi } from '../../api/umat'
 import FieldErrors from '../common/FieldErrors.vue'
@@ -266,6 +284,8 @@ import type { Umat } from '../../types/umat'
 
 const props = defineProps<{
   kelasId: string | number
+  startDate?: string
+  endDate?: string
 }>()
 
 // Accordion collapse state (empty array by default -> collapsed)
@@ -278,6 +298,105 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 let abortController: AbortController | null = null
+
+const kelasDetail = ref<{ start_date?: string; end_date?: string } | null>(null)
+
+async function fetchKelasDetail() {
+  if (!props.kelasId) return
+  try {
+    const res = await kelasApi.getKelasById(props.kelasId)
+    if (res.data) {
+      kelasDetail.value = res.data
+    }
+  } catch (err) {
+    console.error('Error fetching kelas detail for logistik days:', err)
+  }
+}
+
+const daysCount = computed(() => {
+  const start = props.startDate || kelasDetail.value?.start_date
+  const end = props.endDate || kelasDetail.value?.end_date
+  if (!start || !end) return 1
+  const dStart = dayjs(start)
+  const dEnd = dayjs(end)
+  if (!dStart.isValid() || !dEnd.isValid()) return 1
+  const diff = dEnd.diff(dStart, 'day') + 1
+  return diff > 0 ? diff : 1
+})
+
+const logistikRows = computed(() => {
+  const count = daysCount.value
+  const start = props.startDate || kelasDetail.value?.start_date
+  const rows = []
+  for (let i = 0; i < count; i++) {
+    let label = `Hari ${i + 1}`
+    if (start && dayjs(start).isValid()) {
+      label += ` (${dayjs(start).add(i, 'day').format('DD/MM')})`
+    }
+    rows.push({ index: i, label })
+  }
+  return rows
+})
+
+const anakDays = ref<number[]>([])
+const susterDays = ref<number[]>([])
+const menginapDays = ref<boolean[]>([])
+const makananPagiDays = ref<boolean[]>([])
+const makananSiangDays = ref<boolean[]>([])
+const makananMalamDays = ref<boolean[]>([])
+
+function parseIntArray(strVal: string | undefined, count: number): number[] {
+  const result: number[] = new Array(count).fill(0)
+  if (!strVal) return result
+  const parts = strVal.split(',')
+  for (let i = 0; i < count; i++) {
+    if (i < parts.length && parts[i].trim() !== '') {
+      const parsed = parseInt(parts[i].trim(), 10)
+      result[i] = isNaN(parsed) ? 0 : parsed
+    }
+  }
+  return result
+}
+
+function parseBoolArray(strVal: string | undefined, count: number): boolean[] {
+  const result: boolean[] = new Array(count).fill(false)
+  if (!strVal) return result
+  const parts = strVal.split(',')
+  for (let i = 0; i < count; i++) {
+    if (i < parts.length && parts[i].trim() !== '') {
+      const val = parts[i].trim().toLowerCase()
+      result[i] = ['1', 'y', 'true', 'ya'].includes(val)
+    }
+  }
+  return result
+}
+
+function resizeIntArray(arr: number[], count: number): number[] {
+  const newArr = new Array(count).fill(0)
+  for (let i = 0; i < count; i++) {
+    if (i < arr.length) newArr[i] = arr[i]
+  }
+  return newArr
+}
+
+function resizeBoolArray(arr: boolean[], count: number): boolean[] {
+  const newArr = new Array(count).fill(false)
+  for (let i = 0; i < count; i++) {
+    if (i < arr.length) newArr[i] = arr[i]
+  }
+  return newArr
+}
+
+watch(daysCount, (newCount) => {
+  if (dialogVisible.value) {
+    anakDays.value = resizeIntArray(anakDays.value, newCount)
+    susterDays.value = resizeIntArray(susterDays.value, newCount)
+    menginapDays.value = resizeBoolArray(menginapDays.value, newCount)
+    makananPagiDays.value = resizeBoolArray(makananPagiDays.value, newCount)
+    makananSiangDays.value = resizeBoolArray(makananSiangDays.value, newCount)
+    makananMalamDays.value = resizeBoolArray(makananMalamDays.value, newCount)
+  }
+})
 
 // Dialog state
 const dialogVisible = ref(false)
@@ -304,12 +423,6 @@ interface PesertaFormState {
   barang: string
   tim_kerja: string
   keterangan: string
-  anak: string
-  suster: string
-  menginap: string
-  makanan_pagi: string
-  makanan_siang: string
-  makanan_malam: string
 }
 
 const form = ref<PesertaFormState>({
@@ -318,13 +431,7 @@ const form = ref<PesertaFormState>({
   sumbangan: 0,
   barang: '',
   tim_kerja: '',
-  keterangan: '',
-  anak: '',
-  suster: '',
-  menginap: '',
-  makanan_pagi: '',
-  makanan_siang: '',
-  makanan_malam: ''
+  keterangan: ''
 })
 
 const formRules: FormRules = {
@@ -415,14 +522,17 @@ function openAddDialog() {
     sumbangan: 0,
     barang: '',
     tim_kerja: '',
-    keterangan: '',
-    anak: '',
-    suster: '',
-    menginap: '',
-    makanan_pagi: '',
-    makanan_siang: '',
-    makanan_malam: ''
+    keterangan: ''
   }
+
+  const count = daysCount.value
+  anakDays.value = new Array(count).fill(0)
+  susterDays.value = new Array(count).fill(0)
+  menginapDays.value = new Array(count).fill(false)
+  makananPagiDays.value = new Array(count).fill(false)
+  makananSiangDays.value = new Array(count).fill(false)
+  makananMalamDays.value = new Array(count).fill(false)
+
   umatOptions.value = []
   dialogVisible.value = true
 }
@@ -442,15 +552,17 @@ function openEditDialog(row: KelasPeserta) {
     sumbangan: row.sumbangan || 0,
     barang: row.barang || '',
     tim_kerja: row.tim_kerja || '',
-    keterangan: row.keterangan || '',
-    anak: row.anak || '',
-    suster: row.suster || '',
-    menginap: row.menginap || '',
-    makanan_pagi: row.makanan_pagi || '',
-    makanan_siang: row.makanan_siang || '',
-    makanan_malam: row.makanan_malam || ''
+    keterangan: row.keterangan || ''
   }
-  
+
+  const count = daysCount.value
+  anakDays.value = parseIntArray(row.anak, count)
+  susterDays.value = parseIntArray(row.suster, count)
+  menginapDays.value = parseBoolArray(row.menginap, count)
+  makananPagiDays.value = parseBoolArray(row.makanan_pagi, count)
+  makananSiangDays.value = parseBoolArray(row.makanan_siang, count)
+  makananMalamDays.value = parseBoolArray(row.makanan_malam, count)
+
   if (rawIdPeserta && row.nama_indonesia) {
     umatOptions.value = [
       {
@@ -480,12 +592,12 @@ async function submitForm() {
         barang: form.value.barang,
         tim_kerja: form.value.tim_kerja,
         keterangan: form.value.keterangan,
-        anak: form.value.anak,
-        suster: form.value.suster,
-        menginap: form.value.menginap,
-        makanan_pagi: form.value.makanan_pagi,
-        makanan_siang: form.value.makanan_siang,
-        makanan_malam: form.value.makanan_malam
+        anak: anakDays.value.map(v => v || 0).join(','),
+        suster: susterDays.value.map(v => v || 0).join(','),
+        menginap: menginapDays.value.map(v => v ? '1' : '0').join(','),
+        makanan_pagi: makananPagiDays.value.map(v => v ? '1' : '0').join(','),
+        makanan_siang: makananSiangDays.value.map(v => v ? '1' : '0').join(','),
+        makanan_malam: makananMalamDays.value.map(v => v ? '1' : '0').join(',')
       }
 
       if (dialogMode.value === 'add') {
@@ -533,6 +645,7 @@ watch(
   () => props.kelasId,
   (newId) => {
     if (newId) {
+      fetchKelasDetail()
       currentPage.value = 1
       if (isExpanded.value) {
         fetchPeserta()
@@ -541,7 +654,8 @@ watch(
         total.value = 0
       }
     }
-  }
+  },
+  { immediate: true }
 )
 
 onMounted(() => {

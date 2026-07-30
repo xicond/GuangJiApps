@@ -101,7 +101,7 @@ func TestTimKerjaService(t *testing.T) {
 	wm := domain.WorkMapping{Divisi: "0", SubDivisi: "V1", Status: true}
 	db.Create(&wm)
 
-	lSub, tSub, err := svc.LookupSub(0, map[string]string{}, 1, 10)
+	lSub, tSub, err := svc.LookupSub("0", map[string]string{}, 1, 10)
 	if err != nil || tSub != 1 || len(lSub) != 1 {
 		t.Fatalf("LookupSub B_SUBKERJA failed: %v, total=%d", err, tSub)
 	}

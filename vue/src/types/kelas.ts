@@ -97,6 +97,9 @@ export interface KelasPengabdi {
   id_pengabdi?: number | string
   nama_indonesia?: string
   nama_mandarin?: string
+  fotang_aktif_desc?: string
+  tim_kerja_desc?: string
+  sub_kerja_desc?: string
   sumbangan?: number
   barang?: string
   tim_kerja?: string
@@ -123,6 +126,9 @@ export interface KelasTopik {
   detail_id?: number | string
   trx_id?: number | string
   kode_topik?: string
+  nama_topik?: string
+  topic_category?: string
+  topic_desc?: string
   urutan?: number
   topik_date?: string
   penceramah?: number | string

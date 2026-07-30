@@ -203,6 +203,8 @@ type Umat struct {
 	KodeBuku            string    `gorm:"column:KodeBuku" json:"kode_buku" validate:"omitempty,max=50"`
 }
 
+func (Umat) TableName() string { return "T_BUS_UMAT" }
+
 type AppLookup struct {
 	LookupId          string     `gorm:"primaryKey;column:LookupId;type:varchar(25);not null" json:"lookup_id" validate:"omitempty,max=25"`
 	CategoryId        *string    `gorm:"column:CategoryId;type:varchar(25)" json:"category_id,omitempty" validate:"omitempty,max=25"`
@@ -235,8 +237,6 @@ type AppLookupCategory struct {
 func (AppLookupCategory) TableName() string {
 	return "T_APP_LOOKUPCATEGORY"
 }
-
-func (Umat) TableName() string { return "T_BUS_UMAT" }
 
 // Topic represents table [dbo].[T_BUS_TOPIC]
 type Topic struct {
@@ -663,6 +663,12 @@ type KelasPengabdi struct {
 	MakananSiang   *string    `gorm:"column:MakananSiang;type:varchar(30)" json:"makanan_siang" validate:"omitempty,max=30"`
 	MakananMalam   *string    `gorm:"column:MakananMalam;type:varchar(30)" json:"makanan_malam" validate:"omitempty,max=30"`
 
+	NamaIndonesia   *string `gorm:"column:nama_indonesia;->" json:"nama_indonesia,omitempty"`
+	NamaMandarin    *string `gorm:"column:nama_mandarin;->" json:"nama_mandarin,omitempty"`
+	FotangAktifDesc *string `gorm:"column:fotang_aktif_desc;->" json:"fotang_aktif_desc,omitempty"`
+	TimKerjaDesc    *string `gorm:"column:tim_kerja_desc;->" json:"tim_kerja_desc,omitempty"`
+	SubKerjaDesc    *string `gorm:"column:sub_kerja_desc;->" json:"sub_kerja_desc,omitempty"`
+
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
@@ -676,7 +682,7 @@ type KelasTopik struct {
 	TrxId         int32      `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
 	KodeTopik     *string    `gorm:"column:kodetopik;type:varchar(20)" json:"kode_topik" validate:"omitempty,max=20"`
 	Urutan        *int32     `gorm:"column:urutan;type:int" json:"urutan" validate:"omitempty"`
-	TopikDate     *time.Time `gorm:"column:topikdate;type:date" json:"topik_date" validate:"omitempty"`
+	TopikDate     *DateOnly  `gorm:"column:topikdate;type:date" json:"topik_date" validate:"omitempty"`
 	Penceramah    *int32     `gorm:"column:penceramah;type:int" json:"penceramah" validate:"omitempty"`
 	PenceramahExt *string    `gorm:"column:penceramahext;type:nvarchar(100)" json:"penceramah_ext" validate:"omitempty,max=100"`
 	Keterangan    *string    `gorm:"column:keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=200"`
@@ -686,6 +692,10 @@ type KelasTopik struct {
 	ModDate       *time.Time `gorm:"column:moddate;type:datetime" json:"mod_date" validate:"omitempty"`
 	Durasi        *int32     `gorm:"column:Durasi;type:int" json:"durasi" validate:"omitempty"`
 	Penterjemah   *string    `gorm:"column:Penterjemah;type:nvarchar(200)" json:"penterjemah" validate:"omitempty,max=200"`
+
+	NamaTopik     *string `gorm:"column:nama_topik;->" json:"nama_topik,omitempty"`
+	TopicCategory *string `gorm:"column:topic_category;->" json:"topic_category,omitempty"`
+	TopicDesc     *string `gorm:"column:topic_desc;->" json:"topic_desc,omitempty"`
 
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }

@@ -41,9 +41,15 @@
           >
             <el-table-column prop="urutan" label="Urutan" width="80" align="center" fixed="left" />
 
-            <el-table-column prop="kode_topik" label="Kode Topik" min-width="140">
+            <el-table-column prop="kode_topik" label="Kode Topik" min-width="160">
               <template #default="{ row }">
                 <span class="font-semibold">{{ row.kode_topik || '-' }}</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column prop="nama_topik" label="Nama Topik" min-width="160">
+              <template #default="{ row }">
+                <span class="font-semibold">{{ row.nama_topik || '-' }}</span>
               </template>
             </el-table-column>
 
@@ -56,13 +62,14 @@
             <el-table-column label="Penceramah" min-width="160">
               <template #default="{ row }">
                 <span v-if="row.penceramah_ext">{{ row.penceramah_ext }} <el-tag size="small" type="warning">Ext</el-tag></span>
-                <span v-else-if="row.penceramah_nama_indonesia">{{ row.penceramah_nama_indonesia }}</span>
                 <span v-else-if="row.penceramah">Umat #{{ row.penceramah }}</span>
                 <span v-else>-</span>
               </template>
             </el-table-column>
 
-            <el-table-column prop="penterjemah" label="Penterjemah" min-width="140" />
+            <el-table-column prop="topik_date" label="Tanggal" min-width="140" />
+
+            <el-table-column prop="urutan" label="Urutan" min-width="140" />
 
             <el-table-column prop="durasi" label="Durasi" width="100" align="center">
               <template #default="{ row }">
@@ -70,6 +77,8 @@
                 <span v-else>-</span>
               </template>
             </el-table-column>
+
+            <el-table-column prop="penterjemah" label="Penterjemah" min-width="140" />
 
             <el-table-column prop="keterangan" label="Keterangan" min-width="160" />
 

@@ -36,11 +36,22 @@ func (s *KelasPengabdiService) List(trxID string, page int, limit int) ([]domain
 		page = 1
 	}
 
-	query := s.db.Model(&domain.KelasPengabdi{}).Where("status = ?", true)
+	query := s.db.Table("T_TRX_KELAS_PENGABDI").
+		Select(`T_TRX_KELAS_PENGABDI.*, 
+			u.namaindonesia AS nama_indonesia, 
+			u.namamandarin AS nama_mandarin, 
+			lf.LookupDescription AS fotang_aktif_desc, 
+			lt.LookupDescription AS tim_kerja_desc, 
+			ls.LookupDescription AS sub_kerja_desc`).
+		Joins("LEFT JOIN T_BUS_UMAT u ON T_TRX_KELAS_PENGABDI.idpengabdi = u.id").
+		Joins("LEFT JOIN T_APP_LOOKUP lf ON (u.fotangaktif = lf.LookupValue OR u.fotangaktif = lf.LookupId) AND lf.CategoryId = 'B_FOTANG'").
+		Joins("LEFT JOIN T_APP_LOOKUP lt ON (T_TRX_KELAS_PENGABDI.timkerja = lt.LookupValue OR T_TRX_KELAS_PENGABDI.timkerja = lt.LookupId) AND lt.CategoryId = 'B_TIMKERJA'").
+		Joins("LEFT JOIN T_APP_LOOKUP ls ON (T_TRX_KELAS_PENGABDI.SubKerja = ls.LookupValue OR T_TRX_KELAS_PENGABDI.SubKerja = ls.LookupId) AND ls.CategoryId = 'B_SUBKERJA'").
+		Where("T_TRX_KELAS_PENGABDI.status = ?", true)
 
 	if trxID != "" {
 		if parsedID, err := strconv.Atoi(trxID); err == nil {
-			query = query.Where("trxid = ?", parsedID)
+			query = query.Where("T_TRX_KELAS_PENGABDI.trxid = ?", parsedID)
 		}
 	}
 

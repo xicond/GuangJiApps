@@ -337,6 +337,16 @@ function handleCancel() {
   margin-bottom: 1.5rem;
 }
 
+:deep(.mc-collapse .el-collapse-item__header) {
+  padding: 0 1rem;
+  min-height: 48px;
+  background-color: var(--el-bg-color-overlay);
+}
+
+:deep(.mc-collapse .el-collapse-item__content) {
+  padding: 0 1.25rem 0 1.25rem;
+}
+
 .mc-collapse-title {
   display: flex;
   align-items: center;

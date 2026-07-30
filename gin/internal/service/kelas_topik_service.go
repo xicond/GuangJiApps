@@ -36,11 +36,14 @@ func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.Ke
 		page = 1
 	}
 
-	query := s.db.Model(&domain.KelasTopik{}).Where("status = ?", true)
+	query := s.db.Table("T_TRX_KELAS_TOPIK").
+		Select("T_TRX_KELAS_TOPIK.*, T_BUS_TOPIC.TopicName AS nama_topik, T_BUS_TOPIC.TopicCategory AS topic_category, T_BUS_TOPIC.Description AS topic_desc").
+		Joins("LEFT JOIN T_BUS_TOPIC ON T_TRX_KELAS_TOPIK.kodetopik = T_BUS_TOPIC.TopicCode").
+		Where("T_TRX_KELAS_TOPIK.status = ?", true)
 
 	if trxID != "" {
 		if parsedID, err := strconv.Atoi(trxID); err == nil {
-			query = query.Where("trxid = ?", parsedID)
+			query = query.Where("T_TRX_KELAS_TOPIK.trxid = ?", parsedID)
 		}
 	}
 
@@ -49,7 +52,7 @@ func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.Ke
 	}
 
 	offset := (page - 1) * limit
-	if err := query.Offset(offset).Limit(limit).Find(&items).Error; err != nil {
+	if err := query.Offset(offset).Limit(limit).Order("T_TRX_KELAS_TOPIK.topikdate asc, T_TRX_KELAS_TOPIK.urutan asc").Find(&items).Error; err != nil {
 		return items, 0, fmt.Errorf("failed to list records: %w", err)
 	}
 

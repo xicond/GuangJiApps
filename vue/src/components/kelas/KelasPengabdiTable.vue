@@ -41,23 +41,35 @@
           >
             <el-table-column type="index" label="No." width="60" align="center" fixed="left" />
 
-            <el-table-column prop="id_pengabdi" label="ID / Pengabdi" min-width="160">
+            <el-table-column prop="nama_indonesia" label="Nama Ciu Tao" min-width="160">
               <template #default="{ row }">
-                <span class="font-semibold">{{ row.nama_indonesia || row.id_pengabdi || '-' }}</span>
-                <span v-if="row.nama_mandarin" class="sub-text"> ({{ row.nama_mandarin }})</span>
+                <span class="font-semibold">{{ row.nama_indonesia || '-' }}</span>
               </template>
             </el-table-column>
 
-            <el-table-column prop="tim_kerja" label="Tim Kerja" width="120" align="center">
+            <el-table-column prop="nama_mandarin" label="Nama Lain" min-width="160">
               <template #default="{ row }">
-                <el-tag v-if="row.tim_kerja" size="small" type="primary">{{ row.tim_kerja }}</el-tag>
+                <span class="font-semibold">{{ row.nama_mandarin || '-' }}</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column prop="hari" label="Hari" width="120" align="center" />
+
+            <el-table-column prop="tim_kerja" label="Tim Kerja" min-width="130" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.tim_kerja_desc || row.tim_kerja" size="small" type="primary">{{ row.tim_kerja_desc || row.tim_kerja }}</el-tag>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column prop="sub_kerja" label="Sub Kerja" min-width="130" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.sub_kerja_desc || row.sub_kerja" size="small" type="info">{{ row.sub_kerja_desc || row.sub_kerja }}</el-tag>
                 <span v-else>-</span>
               </template>
             </el-table-column>
 
             <el-table-column prop="tim_kerja_report" label="Tim Kerja Report" width="140" align="center" />
-
-            <el-table-column prop="hari" label="Hari" width="120" align="center" />
 
             <el-table-column prop="keterangan" label="Keterangan" min-width="160" />
 
@@ -153,6 +165,7 @@
                 value-key="lookup_value"
                 :initial-option="initialTimKerjaOption"
                 placeholder="Pilih Tim Kerja..."
+                :clearable="false"
                 @change="onTimKerjaChange"
               />
               <FieldErrors :errors="getFieldErrors('tim_kerja')" />

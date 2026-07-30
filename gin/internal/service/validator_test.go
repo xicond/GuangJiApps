@@ -17,8 +17,8 @@ func TestValidateStruct(t *testing.T) {
 		if !strings.Contains(err.Error(), "required") {
 			t.Errorf("expected error message to contain 'required', got: %v", err)
 		}
-		if !strings.Contains(err.Error(), "Username") {
-			t.Errorf("expected error message to mention 'Username', got: %v", err)
+		if !strings.Contains(strings.ToLower(err.Error()), "username") {
+			t.Errorf("expected error message to mention 'username', got: %v", err)
 		}
 	})
 
@@ -38,8 +38,8 @@ func TestValidateStruct(t *testing.T) {
 		if err == nil {
 			t.Fatalf("expected validation error for empty Kelas, got nil")
 		}
-		if !strings.Contains(err.Error(), "KodeKelas") {
-			t.Errorf("expected error message to mention 'KodeKelas', got: %v", err)
+		if !strings.Contains(strings.ToLower(err.Error()), "kode_kelas") {
+			t.Errorf("expected error message to mention 'kode_kelas', got: %v", err)
 		}
 	})
 

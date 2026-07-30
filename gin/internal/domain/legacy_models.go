@@ -29,8 +29,8 @@ type Admin struct {
 	DepartmentId int32     `gorm:"column:DepartmentId" json:"department_id"`
 	IsWarehouse  bool      `gorm:"column:IsWarehouse" json:"is_warehouse"`
 
-	AdminGroup AdminGroup     `gorm:"foreignKey:GroupId;references:GroupId" json:"admin_group" validate:"-"`
-	Department *DepartmentMst `gorm:"foreignKey:DepartmentId;references:DepartmentId" json:"department,omitempty" validate:"-"`
+	AdminGroup AdminGroup     `gorm:"foreignKey:GroupId;references:GroupId;constraint:false" json:"admin_group" validate:"-"`
+	Department *DepartmentMst `gorm:"foreignKey:DepartmentId;references:DepartmentId;constraint:false" json:"department,omitempty" validate:"-"`
 }
 
 func (Admin) TableName() string { return "T_Login_Mst" }
@@ -143,8 +143,8 @@ type Umat struct {
 	TanggalLahir         time.Time  `gorm:"column:tanggallahir" json:"tanggal_lahir"`
 	Usia                 int32      `gorm:"column:usia" json:"usia" validate:"omitempty,gte=0,lte=150"`
 	Wilayah              string     `gorm:"column:wilayah" json:"wilayah" validate:"omitempty,max=100"`
-	JenisKelamin         string     `gorm:"column:jeniskelamin" json:"jenis_kelamin" validate:"omitempty,max=3"`
-	JenisKelaminInfo     *AppLookup `gorm:"foreignKey:JenisKelamin;references:LookupValue" json:"jenis_kelamin_info,omitempty" validate:"-"`
+	JenisKelamin         string     `gorm:"column:jeniskelamin" json:"jenis_kelamin" validate:"required,omitempty,max=3"`
+	JenisKelaminInfo     *AppLookup `gorm:"foreignKey:JenisKelamin;references:LookupValue;constraint:false" json:"jenis_kelamin_info,omitempty" validate:"-"`
 	Pekerjaan            string     `gorm:"column:pekerjaan" json:"pekerjaan" validate:"omitempty,max=3"`
 	Pendidikan           string     `gorm:"column:pendidikan" json:"pendidikan" validate:"omitempty,max=3"`
 	TanggalChiutaoInt    time.Time  `gorm:"column:tanggalchiutaoint" json:"tanggal_chiutao_int"`
@@ -213,7 +213,7 @@ type AppLookup struct {
 	ModBy             *string    `gorm:"column:ModBy;type:varchar(25)" json:"mod_by,omitempty" validate:"omitempty,max=25"`
 	ModDate           *time.Time `gorm:"column:ModDate;type:datetime" json:"mod_date,omitempty"`
 
-	Category *AppLookupCategory `gorm:"foreignKey:CategoryId;references:CategoryId" json:"category,omitempty" validate:"-"`
+	Category *AppLookupCategory `gorm:"foreignKey:CategoryId;references:CategoryId;constraint:false" json:"category,omitempty" validate:"-"`
 }
 
 // TableName menentukan nama tabel secara eksplisit di database
@@ -249,7 +249,7 @@ type Topic struct {
 	ModBy         string    `gorm:"column:ModBy" json:"mod_by" validate:"omitempty,max=25"`
 	ModDate       time.Time `gorm:"column:ModDate" json:"mod_date"`
 
-	TopicCategoryInfo *AppLookup `gorm:"foreignKey:TopicCategory;references:LookupValue" json:"topic_category_info,omitempty" validate:"-"`
+	TopicCategoryInfo *AppLookup `gorm:"foreignKey:TopicCategory;references:LookupValue;constraint:false" json:"topic_category_info,omitempty" validate:"-"`
 }
 
 func (Topic) TableName() string { return "T_BUS_TOPIC" }
@@ -442,7 +442,6 @@ func (ib IntBool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(bool(ib))
 }
 
-
 type TahunCiuTao struct {
 	TahunMandarin string    `gorm:"primaryKey;column:TahunMandarin" json:"tahun_mandarin" validate:"required,max=20"`
 	StartDate     DateOnly  `gorm:"column:StartDate" json:"start_date"`
@@ -531,7 +530,7 @@ func (SxyDonatur) TableName() string { return "T_SXY_MST_DONATUR" }
 // ==========================================// 3. SPECIAL CUSTOM TYPE & DONATION MODELS// ==========================================// Kelas represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_KELASKHUSUS'
 
 type Kelas struct {
-	TrxId      int32      `gorm:"primaryKey;column:trxid;type:int;not null" json:"trx_id"`
+	TrxId      int32      `gorm:"primaryKey;column:trxid;type:int;not null" json:"trx_id,omitempty"`
 	KodeKelas  *string    `gorm:"column:kodekelas;type:varchar(3)" json:"kode_kelas,omitempty" validate:"required,max=3"`
 	StartDate  *time.Time `gorm:"column:startdate;type:date" json:"start_date,omitempty"`
 	EndDate    *time.Time `gorm:"column:enddate;type:date" json:"end_date,omitempty"`
@@ -551,9 +550,11 @@ type Kelas struct {
 	Mc5        *string    `gorm:"column:Mc5;type:nvarchar(100)" json:"mc5,omitempty" validate:"omitempty,max=100"`
 	Deadline   *time.Time `gorm:"column:deadline;type:date" json:"deadline,omitempty"`
 
-	KelasName  *AppLookup `gorm:"foreignKey:KodeKelas;references:LookupValue" json:"kelas_name,omitempty" validate:"-"`   // CategoryId = B_KELASKHUSUS
-	FotangName *AppLookup `gorm:"foreignKey:KodeFotang;references:LookupValue" json:"fotang_name,omitempty" validate:"-"` // CategoryId = B_FOTHANG
+	KelasName  *AppLookup `gorm:"foreignKey:KodeKelas;references:LookupValue;constraint:false" json:"kelas_name,omitempty" validate:"-"`   // CategoryId = B_KELASKHUSUS
+	FotangName *AppLookup `gorm:"foreignKey:KodeFotang;references:LookupValue;constraint:false" json:"fotang_name,omitempty" validate:"-"` // CategoryId = B_FOTHANG
 }
+
+func (Kelas) TableName() string { return "T_TRX_KELAS" } // DonasiSxy represents table [dbo].[T_SXY_TRANSAKSI]
 
 type KelasResponse struct {
 	TrxId      string   `gorm:"column:trxid" json:"trx_id"`
@@ -566,6 +567,35 @@ type KelasResponse struct {
 	Keterangan string   `gorm:"column:keterangan" json:"keterangan"`
 	KelasDesc  string   `gorm:"column:KelasDesc" json:"kelas_desc"`
 	FotangDesc string   `gorm:"column:FotangDesc" json:"fotang_desc"`
+}
+
+type KelasPeserta struct {
+	DetailId        int32      `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	TrxId           int32      `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
+	IdPeserta       *int32     `gorm:"column:idpeserta;type:int" json:"id_peserta" validate:"required"`
+	Sumbangan       *float64   `gorm:"column:sumbangan;type:decimal(13,2)" json:"sumbangan" validate:"omitempty"`
+	Barang          *string    `gorm:"column:barang;type:varchar(100)" json:"barang" validate:"omitempty,max=100"`
+	TimKerja        *string    `gorm:"column:timkerja;type:varchar(3)" json:"tim_kerja" validate:"omitempty,max=3"`
+	Keterangan      *string    `gorm:"column:keterangan;type:nvarchar(200)" json:"keterangan" validate:"omitempty,max=200"`
+	Status          *bool      `gorm:"column:status;type:bit" json:"status" validate:"omitempty"`
+	ModAct          *string    `gorm:"column:modact;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy           *int32     `gorm:"column:modby;type:int" json:"mod_by" validate:"omitempty"`
+	ModDate         *time.Time `gorm:"column:moddate;type:datetime" json:"mod_date" validate:"omitempty"`
+	Lulus           *bool      `gorm:"column:lulus;type:bit" json:"lulus" validate:"omitempty"`
+	KeteranganLulus *string    `gorm:"column:keteranganlulus;type:varchar(200)" json:"keterangan_lulus" validate:"omitempty,max=200"`
+	Anak            *string    `gorm:"column:Anak;type:varchar(30)" json:"anak" validate:"omitempty,max=30"`
+	Suster          *string    `gorm:"column:Suster;type:varchar(30)" json:"suster" validate:"omitempty,max=30"`
+	Menginap        *string    `gorm:"column:Menginap;type:varchar(30)" json:"menginap" validate:"omitempty,max=30"`
+	MakananPagi     *string    `gorm:"column:MakananPagi;type:varchar(30)" json:"makanan_pagi" validate:"omitempty,max=30"`
+	MakananSiang    *string    `gorm:"column:MakananSiang;type:varchar(30)" json:"makanan_siang" validate:"omitempty,max=30"`
+	MakananMalam    *string    `gorm:"column:MakananMalam;type:varchar(30)" json:"makanan_malam" validate:"omitempty,max=30"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+// TableName menentukan nama tabel secara eksplisit di database
+func (KelasPeserta) TableName() string {
+	return "T_TRX_KELAS_PESERTA"
 }
 
 type KelasPesertaList struct {
@@ -611,7 +641,167 @@ type KelasPesertaResponse struct {
 	Ikrar6           IntBool  `gorm:"column:ikrar6" json:"ikrar6"`
 }
 
-func (Kelas) TableName() string { return "T_TRX_KELAS" } // DonasiSxy represents table [dbo].[T_SXY_TRANSAKSI]
+type KelasPengabdi struct {
+	DetailId       int32      `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	TrxId          int32      `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
+	IdPengabdi     *int32     `gorm:"column:idpengabdi;type:int" json:"id_pengabdi" validate:"required"`
+	Sumbangan      *float64   `gorm:"column:sumbangan;type:decimal(13,2)" json:"sumbangan" validate:"omitempty"`
+	Barang         *string    `gorm:"column:barang;type:varchar(100)" json:"barang" validate:"omitempty,max=100"`
+	TimKerja       *string    `gorm:"column:timkerja;type:varchar(3)" json:"tim_kerja" validate:"omitempty,max=3"`
+	TimKerjaReport *string    `gorm:"column:timkerjareport;type:varchar(3)" json:"tim_kerja_report" validate:"omitempty,max=3"`
+	Keterangan     *string    `gorm:"column:keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=500"`
+	Status         *bool      `gorm:"column:status;type:bit" json:"status" validate:"omitempty"`
+	ModAct         *string    `gorm:"column:modact;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy          *int32     `gorm:"column:modby;type:int" json:"mod_by" validate:"omitempty"`
+	ModDate        *time.Time `gorm:"column:moddate;type:datetime" json:"mod_date" validate:"omitempty"`
+	Hari           *string    `gorm:"column:hari;type:varchar(30)" json:"hari" validate:"omitempty,max=30"`
+	SubKerja       *string    `gorm:"column:SubKerja;type:varchar(3)" json:"sub_kerja" validate:"omitempty,max=3"`
+	Anak           *string    `gorm:"column:Anak;type:varchar(30)" json:"anak" validate:"omitempty,max=30"`
+	Suster         *string    `gorm:"column:Suster;type:varchar(30)" json:"suster" validate:"omitempty,max=30"`
+	Menginap       *string    `gorm:"column:Menginap;type:varchar(30)" json:"menginap" validate:"omitempty,max=30"`
+	MakananPagi    *string    `gorm:"column:MakananPagi;type:varchar(30)" json:"makanan_pagi" validate:"omitempty,max=30"`
+	MakananSiang   *string    `gorm:"column:MakananSiang;type:varchar(30)" json:"makanan_siang" validate:"omitempty,max=30"`
+	MakananMalam   *string    `gorm:"column:MakananMalam;type:varchar(30)" json:"makanan_malam" validate:"omitempty,max=30"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+// TableName menentukan nama tabel secara eksplisit di database
+func (KelasPengabdi) TableName() string {
+	return "T_TRX_KELAS_PENGABDI"
+}
+
+type KelasTopik struct {
+	DetailId      int32      `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	TrxId         int32      `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
+	KodeTopik     *string    `gorm:"column:kodetopik;type:varchar(20)" json:"kode_topik" validate:"omitempty,max=20"`
+	Urutan        *int32     `gorm:"column:urutan;type:int" json:"urutan" validate:"omitempty"`
+	TopikDate     *time.Time `gorm:"column:topikdate;type:date" json:"topik_date" validate:"omitempty"`
+	Penceramah    *int32     `gorm:"column:penceramah;type:int" json:"penceramah" validate:"omitempty"`
+	PenceramahExt *string    `gorm:"column:penceramahext;type:nvarchar(100)" json:"penceramah_ext" validate:"omitempty,max=100"`
+	Keterangan    *string    `gorm:"column:keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=200"`
+	Status        *bool      `gorm:"column:status;type:bit" json:"status" validate:"omitempty"`
+	ModAct        *string    `gorm:"column:modact;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy         *int32     `gorm:"column:modby;type:int" json:"mod_by" validate:"omitempty"`
+	ModDate       *time.Time `gorm:"column:moddate;type:datetime" json:"mod_date" validate:"omitempty"`
+	Durasi        *int32     `gorm:"column:Durasi;type:int" json:"durasi" validate:"omitempty"`
+	Penterjemah   *string    `gorm:"column:Penterjemah;type:nvarchar(200)" json:"penterjemah" validate:"omitempty,max=200"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+func (KelasTopik) TableName() string {
+	return "T_TRX_KELAS_TOPIK"
+}
+
+type KelasKendaraan struct {
+	DetailId      int32      `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	TrxId         int32      `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
+	NoPolisi      *string    `gorm:"column:nopolisi;type:varchar(15)" json:"no_polisi" validate:"omitempty,max=15"`
+	Pengendara    *string    `gorm:"column:pengendara;type:nvarchar(100)" json:"pengendara" validate:"omitempty,max=100"`
+	TipeKendaraan *string    `gorm:"column:tipekendaraan;type:varchar(50)" json:"tipe_kendaraan" validate:"omitempty,max=50"`
+	Fotang        *string    `gorm:"column:fotang;type:char(3)" json:"fotang" validate:"omitempty,len=3"`
+	Hari          *string    `gorm:"column:hari;type:varchar(30)" json:"hari" validate:"omitempty,max=30"`
+	Keterangan    *string    `gorm:"column:keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=200"`
+	Status        *bool      `gorm:"column:status;type:bit" json:"status" validate:"omitempty"`
+	ModAct        *string    `gorm:"column:modact;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy         *int32     `gorm:"column:modby;type:int" json:"mod_by" validate:"omitempty"`
+	ModDate       *time.Time `gorm:"column:moddate;type:datetime" json:"mod_date" validate:"omitempty"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+func (KelasKendaraan) TableName() string {
+	return "T_TRX_KELAS_KENDARAAN"
+}
+
+type KelasDonasi struct {
+	DetailId int32      `gorm:"primaryKey;column:DetailId;type:int;not null" json:"detail_id"`
+	TrxId    int32      `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
+	Donatur  string     `gorm:"column:Donatur;type:nvarchar(100);not null" json:"donatur" validate:"required,max=100"`
+	Donasi   float64    `gorm:"column:Donasi;type:decimal(15,2);not null" json:"donasi" validate:"required"`
+	Status   *bool      `gorm:"column:Status;type:bit" json:"status" validate:"omitempty"`
+	ModAct   *string    `gorm:"column:ModAct;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy    *string    `gorm:"column:ModBy;type:varchar(25)" json:"mod_by" validate:"omitempty,max=25"`
+	ModDate  *time.Time `gorm:"column:ModDate;type:datetime" json:"mod_date" validate:"omitempty"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+func (KelasDonasi) TableName() string {
+	return "T_TRX_KELAS_DONASI"
+}
+
+type KelasDonasiBarang struct {
+	DetailId int32      `gorm:"primaryKey;column:DetailId;type:int;not null" json:"detail_id"`
+	TrxId    int32      `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
+	Donatur  string     `gorm:"column:Donatur;type:nvarchar(100);not null" json:"donatur" validate:"required,max=100"`
+	Barang   string     `gorm:"column:Barang;type:varchar(100);not null" json:"barang" validate:"required,max=100"`
+	Status   *bool      `gorm:"column:Status;type:bit" json:"status" validate:"omitempty"`
+	ModAct   *string    `gorm:"column:ModAct;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy    *string    `gorm:"column:ModBy;type:varchar(25)" json:"mod_by" validate:"omitempty,max=25"`
+	ModDate  *time.Time `gorm:"column:ModDate;type:datetime" json:"mod_date" validate:"omitempty"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+func (KelasDonasiBarang) TableName() string {
+	return "T_TRX_KELAS_DONASI_BARANG"
+}
+
+type KelasPengeluaran struct {
+	DetailId   int32      `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	TrxId      int32      `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
+	TimKerja   *string    `gorm:"column:timkerja;type:varchar(3)" json:"tim_kerja" validate:"omitempty,max=3"`
+	Keterangan *string    `gorm:"column:keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=200"`
+	Biaya      *float64   `gorm:"column:biaya;type:decimal(13,2)" json:"biaya" validate:"omitempty"`
+	Status     *bool      `gorm:"column:status;type:bit" json:"status" validate:"omitempty"`
+	ModAct     *string    `gorm:"column:modact;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy      *int32     `gorm:"column:modby;type:int" json:"mod_by" validate:"omitempty"`
+	ModDate    *time.Time `gorm:"column:moddate;type:datetime" json:"mod_date" validate:"omitempty"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+func (KelasPengeluaran) TableName() string {
+	return "T_TRX_KELAS_PENGELUARAN"
+}
+
+type KelasMusik struct {
+	DetailId   int32      `gorm:"primaryKey;column:DetailId;type:int;not null" json:"detail_id"`
+	TrxId      int32      `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
+	MusicId    int32      `gorm:"column:MusicId;type:int;not null" json:"music_id" validate:"required"`
+	Urutan     *int32     `gorm:"column:Urutan;type:int" json:"urutan" validate:"omitempty"`
+	MusicDate  *time.Time `gorm:"column:MusicDate;type:date" json:"music_date" validate:"omitempty"`
+	Keterangan *string    `gorm:"column:Keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=200"`
+	Status     *bool      `gorm:"column:status;type:bit" json:"status" validate:"omitempty"`
+	ModAct     *string    `gorm:"column:ModAct;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy      *int32     `gorm:"column:ModBy;type:int" json:"mod_by" validate:"omitempty"`
+	ModDate    *time.Time `gorm:"column:ModDate;type:datetime" json:"mod_date" validate:"omitempty"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+func (KelasMusik) TableName() string {
+	return "T_TRX_MUSIK"
+}
+
+type KelasAbsensi struct {
+	Id        int32      `gorm:"primaryKey;column:Id;type:int;not null" json:"id"`
+	TrxId     int32      `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
+	TrxDate   time.Time  `gorm:"column:TrxDate;type:date;not null" json:"trx_date" validate:"required"`
+	IdPeserta int32      `gorm:"column:IdPeserta;type:int;not null" json:"id_peserta" validate:"required"`
+	Status    *bool      `gorm:"column:Status;type:bit;not null" json:"status" validate:"required"`
+	ModAct    *string    `gorm:"column:ModAct;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModBy     *int32     `gorm:"column:ModBy;type:int" json:"mod_by" validate:"omitempty"`
+	ModDate   *time.Time `gorm:"column:ModDate;type:datetime" json:"mod_date" validate:"omitempty"`
+
+	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+}
+
+func (KelasAbsensi) TableName() string {
+	return "T_TRX_KELAS_ABSENSI"
+}
 
 type DonasiSxy struct {
 	ID              int32     `gorm:"primaryKey;column:id" json:"id"`
@@ -652,3 +842,12 @@ type DonasiSxyResponse struct {
 }
 
 func (DonasiSxy) TableName() string { return "T_SXY_TRANSAKSI" }
+
+type WorkMapping struct {
+	ID        int64  `gorm:"primaryKey;column:Id;autoIncrement" json:"id"`
+	Divisi    string `gorm:"column:Divisi;type:varchar(50)" json:"divisi"`
+	SubDivisi string `gorm:"column:SubDivisi;type:varchar(50)" json:"sub_divisi"`
+	Status    bool   `gorm:"column:Status;type:bit;default:1" json:"status"`
+}
+
+func (WorkMapping) TableName() string { return "T_BUS_WORK_MAPPING" }

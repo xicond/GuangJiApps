@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -39,17 +38,12 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 		page = 1
 	}
 	allowedFilters := map[string]bool{
-		"kelas": true,
-		// "kwitansi":     true,
+		"kelas":      true,
 		"start_date": true,
-		// "startdate":    true,
-		"end_date": true,
-		// "enddate":      true,
-		// "tanggal":      true,
-		// "date":         true,
-		"fotang": true,
-		// "nama":         true,
-		// "donatur_nama": true,
+		"startdate":  true,
+		"end_date":   true,
+		"enddate":    true,
+		"fotang":     true,
 	}
 
 	var kelas string = "0"
@@ -85,19 +79,19 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 	sortDirection := "ASCENDING"
 	var userID int32
 	if userIDVal, exists := c.Get("userID"); exists {
-		userID = toInt32(userIDVal)
+		userID = ToInt32(userIDVal)
 	}
 
-	rows, err := s.db.Raw("EXEC SP_TRX_KELAS_SEARCH_DATA ?, ?, ?, ?, ?, ?, ?, ?",
+	rows, err := s.db.Raw("EXEC SP_TRX_KELAS_SEARCH_DATA ?, ?, ?, ?, ?, ?, ?, ?, ?",
 		limit,         // @PageSize
 		page,          // @CurrentPage
 		nil,           // @SortExpression (selalu null)
 		sortDirection, // @SortDirection (selalu ASCENDING)
-		kelas,         // @NoKwitansi (nvarchar)
+		kelas,         // @Kelas (nvarchar)
 		start_date,    // @StartDate (Date)
 		end_date,      // @EndDate (Date)
-		fotang,        // @fotang (int)
-		userID,        // @Donatur (int32)
+		fotang,        // @Fotang (nvarchar)
+		userID,        // @LoginId (int32)
 	).Rows()
 
 	if err != nil {
@@ -175,110 +169,7 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 }
 
 func (s *KelasService) Lookup(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
-	var items []domain.AppLookup
-	var total int64
-
-	if limit <= 0 {
-		limit = 10
-	}
-	if page <= 0 {
-		page = 1
-	}
-	offset := (page - 1) * limit
-
-	subQuery := s.db.Table("T_APP_LOOKUPCATEGORY").
-		Where("T_APP_LOOKUPCATEGORY.CategoryId = T_APP_LOOKUP.CategoryId")
-
-	query := s.db.Model(&domain.AppLookup{}).
-		Where("CategoryId = ?", "B_KELASKHUSUS").
-		Where("EXISTS (?)", subQuery)
-
-	type FilterRule struct {
-		Column string
-		IsLike bool
-	}
-
-	allowedFilters := map[string]bool{
-		"lookup_description": true,
-		// "lookup_value":       true,
-		// "lookup_id":          true,
-	}
-
-	for field, value := range filters {
-		if value == "" {
-			continue
-		}
-		if _, exists := allowedFilters[field]; exists {
-			if field == "lookup_description" {
-				query = query.Where("LookupDescription LIKE ?", "%"+value+"%")
-			} /*  else if field == "lookup_value" {
-				query = query.Where("LookupValue LIKE ?", "%"+value+"%")
-			} else if field == "lookup_id" {
-				query = query.Where("LookupId = ?", value)
-			} */
-		}
-	}
-
-	var (
-		countErr error
-		findErr  error
-		wg       sync.WaitGroup
-	)
-
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("database count error: %w", err)
-		}
-	}()
-
-	go func() {
-		defer wg.Done()
-		if err := query.Session(&gorm.Session{}).
-			Limit(limit).
-			Offset(offset).
-			Order("LookupValue ASC").
-			Find(&items).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				findErr = errors.New("activity tidak ditemukan")
-			} else {
-				findErr = fmt.Errorf("database error: %w", err)
-			}
-		}
-	}()
-
-	wg.Wait()
-
-	if countErr != nil {
-		return nil, 0, countErr
-	}
-	if findErr != nil {
-		return []domain.AppLookup{}, 0, findErr
-	}
-
-	return items, total, nil
-}
-
-func toInt32(val interface{}) int32 {
-	if val == nil {
-		return 0
-	}
-
-	switch v := val.(type) {
-	case int32:
-		return v
-	case []byte:
-		n, _ := strconv.ParseInt(string(v), 10, 32)
-		return int32(n)
-	case string:
-		n, _ := strconv.ParseInt(v, 10, 32)
-		return int32(n)
-	default:
-		n, _ := strconv.ParseInt(fmt.Sprintf("%v", v), 10, 32)
-		return int32(n)
-	}
+	return Lookup(s.db, "B_KELASKHUSUS", page, limit, filters)
 }
 
 func getUserID(c *gin.Context) int32 {
@@ -376,120 +267,6 @@ func (s *KelasService) Get(id string) (domain.Kelas, error) {
 		return domain.Kelas{}, err
 	}
 	return item, nil
-}
-
-func (s *KelasService) Peserta(id string, c *gin.Context, page int, limit int) ([]domain.KelasPesertaResponse, int64, error) {
-	var items []domain.KelasPesertaResponse
-
-	var subWhId int64
-
-	err := s.db.Model(&domain.AdminMatrix{}).
-		Where("LOGINID = ?", getUserID(c)).
-		Limit(1).
-		Pluck("SUBWHID", &subWhId).Error
-
-	if err != nil {
-		return items, 0, fmt.Errorf("database query error: %w", err)
-	}
-
-	var total int64
-
-	if limit <= 0 {
-		limit = 10
-	}
-	if page <= 0 {
-		page = 1
-	}
-
-	var findErr error
-
-	var trxID int64
-	if id != "" {
-		trxID, _ = strconv.ParseInt(id, 10, 64)
-	}
-
-	// before: SP_TRX_KELAS_GET_PESERTA, now: SP_TRX_KELAS_PESERTA_SEARCH_DATA
-	sortDirection := "ASCENDING"
-	rows, err := s.db.Raw("EXEC [dbo].[SP_TRX_KELAS_PESERTA_SEARCH_DATA] @PageSize = ?, @CurrentPage = ?, @SortDirection = ?, @TrxId = ?, @FotangId = ?",
-		limit,
-		page,
-		sortDirection,
-		trxID,
-		subWhId,
-	).Rows()
-
-	if err != nil {
-		return items, 0, fmt.Errorf("database query error: %w", err)
-	}
-	defer rows.Close()
-
-	cols, err := rows.Columns()
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			findErr = errors.New("kelas tidak ditemukan")
-		} else {
-			findErr = fmt.Errorf("database error: %w", err)
-		}
-		return items, 0, findErr
-	}
-
-	for rows.Next() {
-		var item domain.KelasPesertaResponse
-		v := reflect.ValueOf(&item).Elem()
-		t := v.Type()
-
-		valuePtrs := make([]interface{}, len(cols))
-		var totalRowScan int64
-
-		for i, colName := range cols {
-			cleanCol := strings.ToLower(strings.TrimSpace(colName))
-
-			switch cleanCol {
-			case "totalrow", "total_row", "totalcount", "total_count", "rowcount":
-				valuePtrs[i] = &totalRowScan
-			default:
-				matched := false
-				for j := 0; j < t.NumField(); j++ {
-					field := t.Field(j)
-					gormTag := field.Tag.Get("gorm")
-
-					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
-						strings.ToLower(field.Name) == cleanCol {
-						fieldVal := v.Field(j)
-						if fieldVal.Kind() == reflect.String {
-							valuePtrs[i] = &nullStringScanner{target: fieldVal.Addr().Interface().(*string)}
-						} else {
-							valuePtrs[i] = fieldVal.Addr().Interface()
-						}
-						matched = true
-						break
-					}
-				}
-				if !matched {
-					var dummy interface{}
-					valuePtrs[i] = &dummy
-				}
-			}
-		}
-
-		if err := rows.Scan(valuePtrs...); err != nil {
-			fmt.Printf("kelas rows.Scan error: %v\n", err)
-			findErr = fmt.Errorf("scan error on row: %w", err)
-			continue
-		}
-
-		if totalRowScan != 0 {
-			total = totalRowScan
-		}
-
-		items = append(items, item)
-	}
-
-	if findErr != nil {
-		return []domain.KelasPesertaResponse{}, 0, findErr
-	}
-
-	return items, total, nil
 }
 
 func (s *KelasService) Update(id string, payload domain.Kelas, c *gin.Context) (domain.Kelas, error) {
@@ -618,4 +395,24 @@ func (s *KelasService) Delete(id string, c *gin.Context) error {
 		return fmt.Errorf("failed to delete record: %w", err)
 	}
 	return nil
+}
+
+func ToInt32(val interface{}) int32 {
+	if val == nil {
+		return 0
+	}
+
+	switch v := val.(type) {
+	case int32:
+		return v
+	case []byte:
+		n, _ := strconv.ParseInt(string(v), 10, 32)
+		return int32(n)
+	case string:
+		n, _ := strconv.ParseInt(v, 10, 32)
+		return int32(n)
+	default:
+		n, _ := strconv.ParseInt(fmt.Sprintf("%v", v), 10, 32)
+		return int32(n)
+	}
 }

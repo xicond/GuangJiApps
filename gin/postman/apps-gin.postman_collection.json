@@ -1578,6 +1578,77 @@
           }
         },
         {
+          "name": "Tim Kerja - Lookup",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tim-kerja/lookup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tim-kerja",
+                "lookup"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tim Kerja - Lookup Sub",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tim-kerja/lookup/1/sub",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tim-kerja",
+                "lookup",
+                "1",
+                "sub"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tim Kerja - Lookup Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tim-kerja/lookup-report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tim-kerja",
+                "lookup-report"
+              ]
+            }
+          }
+        },
+        {
           "name": "Tahun Ciu Tao - List",
           "request": {
             "method": "GET",
@@ -2191,6 +2262,265 @@
       ]
     },
     {
+      "name": "Lookup Service",
+      "item": [
+        {
+          "name": "Lookup - Waktu Ciu Tao",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/waktu-ciu-tao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "waktu-ciu-tao"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - Gender",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/gender",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "gender"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - TCS",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/tcs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "tcs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - Fotang",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/fotang",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "fotang"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - Kelas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/kelas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "kelas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - Pendidikan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/pendidikan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "pendidikan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - Kelas Umum",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/kelas-umum",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "kelas-umum"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - Pekerjaan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/pekerjaan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "pekerjaan"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - Keluarga",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/keluarga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "keluarga"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lookup - By Category",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/lookup/category/B_STATUS",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "lookup",
+                "category",
+                "B_STATUS"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Transactions",
       "item": [
         {
@@ -2445,6 +2775,261 @@
                   "value": "12",
                   "description": "The unique numerical ID of the record"
                 }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Peserta - Get",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/peserta/:resourceId",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "peserta", ":resourceId"],
+              "variable": [
+                { "key": "trx_id", "value": "26160003" },
+                { "key": "resourceId", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Peserta - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_peserta\": 101,\n  \"sumbangan\": 500000,\n  \"barang\": \"Buku\",\n  \"keterangan\": \"Peserta Baru\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/peserta",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "peserta"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }]
+            }
+          }
+        },
+        {
+          "name": "Kelas Peserta - Update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sumbangan\": 750000,\n  \"keterangan\": \"Peserta Updated\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/peserta/:resourceId",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "peserta", ":resourceId"],
+              "variable": [
+                { "key": "trx_id", "value": "26160003" },
+                { "key": "resourceId", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Peserta - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/peserta/:resourceId",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "peserta", ":resourceId"],
+              "variable": [
+                { "key": "trx_id", "value": "26160003" },
+                { "key": "resourceId", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Pengabdi - List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/pengabdi?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "pengabdi"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Pengabdi - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_pengabdi\": 201,\n  \"sumbangan\": 250000,\n  \"keterangan\": \"Pengabdi Baru\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/pengabdi",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "pengabdi"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }]
+            }
+          }
+        },
+        {
+          "name": "Kelas Topik - List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/topik?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "topik"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Topik - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kode_topik\": \"TP001\",\n  \"keterangan\": \"Topik Utama\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/topik",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "topik"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }]
+            }
+          }
+        },
+        {
+          "name": "Kelas Kendaraan - List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/kendaraan?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "kendaraan"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Donasi - List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/donasi?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "donasi"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Donasi Barang - List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/donasi-barang?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "donasi-barang"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Pengeluaran - List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/pengeluaran?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "pengeluaran"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Musik - List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/musik?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "musik"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Kelas Absensi - List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/:trx_id/absensi?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "kelas", ":trx_id", "absensi"],
+              "variable": [{ "key": "trx_id", "value": "26160003" }],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
               ]
             }
           }

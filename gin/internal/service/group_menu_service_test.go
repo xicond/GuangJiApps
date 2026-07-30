@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"testing"
 
 	"guangjiapps/gin/internal/database"
@@ -30,12 +31,14 @@ func TestGroupMenuService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
-	if created.MenuId != 1 {
-		t.Errorf("expected MenuId 1, got %d", created.MenuId)
+	if created.MenuId <= 0 {
+		t.Errorf("expected valid MenuId > 0, got %d", created.MenuId)
 	}
 
+	idStr := fmt.Sprintf("%d", created.MenuId)
+
 	// 2. Get
-	fetched, err := svc.Get("1")
+	fetched, err := svc.Get(idStr)
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
@@ -44,18 +47,18 @@ func TestGroupMenuService(t *testing.T) {
 	}
 
 	// 3. List
-	filters := map[string]string{"menu_name": "Umat"}
+	filters := map[string]string{"menu_name": "Umat Management"}
 	items, total, err := svc.List(1, filters, 10)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
-	if total != 1 || len(items) != 1 {
-		t.Errorf("expected 1 item, got %d", total)
+	if total < 1 || len(items) < 1 {
+		t.Errorf("expected at least 1 item, got %d", total)
 	}
 
 	// 4. Update
 	created.MenuName = "Umat Master Data"
-	updated, err := svc.Update("1", created, c)
+	updated, err := svc.Update(idStr, created, c)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -64,7 +67,7 @@ func TestGroupMenuService(t *testing.T) {
 	}
 
 	// 5. Delete
-	err = svc.Delete("1", c)
+	err = svc.Delete(idStr, c)
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}

@@ -10,6 +10,7 @@
     <!-- Form -->
     <UmatForm
       :submitting="submitting"
+      :field-errors="fieldErrors"
       submit-text="Tambah Umat"
       @submit="handleCreate"
       @cancel="handleBack"
@@ -28,6 +29,7 @@ import type { Umat } from '../../types/umat'
 
 const router = useRouter()
 const submitting = ref(false)
+const fieldErrors = ref<Record<string, string[]>>({})
 
 function handleBack() {
   router.push('/master-data/umat')
@@ -35,6 +37,7 @@ function handleBack() {
 
 async function handleCreate(payload: Partial<Umat>) {
   submitting.value = true
+  fieldErrors.value = {}
   try {
     const res = await umatApi.createUmat(payload)
     ElNotification({
@@ -45,7 +48,12 @@ async function handleCreate(payload: Partial<Umat>) {
     router.push('/master-data/umat')
   } catch (err: any) {
     console.error('Failed to create umat:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menambahkan data umat')
+    if (err.response?.data?.details) {
+      fieldErrors.value = err.response.data.details
+      ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
+    } else {
+      ElMessage.error(err.response?.data?.error || err.message || 'Gagal menambahkan data umat')
+    }
   } finally {
     submitting.value = false
   }

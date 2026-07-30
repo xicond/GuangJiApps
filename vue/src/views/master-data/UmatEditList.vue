@@ -17,6 +17,7 @@
       v-else
       :initial-data="umatData"
       :submitting="submitting"
+      :field-errors="fieldErrors"
       submit-text="Simpan Perubahan"
       @submit="handleUpdate"
       @cancel="handleBack"
@@ -40,6 +41,7 @@ const umatId = route.params.id as string
 const umatData = ref<Partial<Umat>>({})
 const fetching = ref(true)
 const submitting = ref(false)
+const fieldErrors = ref<Record<string, string[]>>({})
 
 let abortController: AbortController | null = null
 
@@ -67,6 +69,7 @@ async function loadUmat() {
 
 async function handleUpdate(payload: Partial<Umat>) {
   submitting.value = true
+  fieldErrors.value = {}
   try {
     await umatApi.updateUmat(umatId, payload)
     ElNotification({
@@ -77,7 +80,12 @@ async function handleUpdate(payload: Partial<Umat>) {
     router.push('/master-data/umat')
   } catch (err: any) {
     console.error('Failed to update umat:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal memperbarui data umat')
+    if (err.response?.data?.details) {
+      fieldErrors.value = err.response.data.details
+      ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
+    } else {
+      ElMessage.error(err.response?.data?.error || err.message || 'Gagal memperbarui data umat')
+    }
   } finally {
     submitting.value = false
   }

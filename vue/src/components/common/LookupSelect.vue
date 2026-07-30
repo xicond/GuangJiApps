@@ -45,18 +45,19 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import type { AppLookup, LookupListResponse, LookupQueryParams } from '../../types/lookup'
+import type { AppLookup, LookupQueryParams } from '../../types/lookup'
 
 const props = withDefaults(
   defineProps<{
     modelValue?: string | number
     placeholder?: string
-    fetchApi: (params: LookupQueryParams, signal?: AbortSignal) => Promise<LookupListResponse>
-    valueKey?: keyof AppLookup | string
-    labelKey?: keyof AppLookup | string
+    fetchApi: (params: LookupQueryParams | any, signal?: AbortSignal) => Promise<any>
+    valueKey?: string
+    labelKey?: string
+    labelFormatter?: (item: any) => string
     clearable?: boolean
     pageSize?: number
-    initialOption?: AppLookup
+    initialOption?: any
   }>(),
   {
     modelValue: '',
@@ -73,7 +74,7 @@ const emit = defineEmits<{
   (e: 'change', value: string | number | undefined): void
 }>()
 
-const options = ref<AppLookup[]>([])
+const options = ref<any[]>([])
 const loading = ref(false)
 const page = ref(1)
 const total = ref(0)
@@ -87,15 +88,20 @@ const maxPage = computed(() => {
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 let currentAbortController: AbortController | null = null
 
-function getOptionValue(item: AppLookup): string {
-  const val = (item as any)[props.valueKey]
-  return val !== undefined && val !== null ? val : item.lookup_value
+function getOptionValue(item: any): string | number {
+  if (!item) return ''
+  const val = item[props.valueKey]
+  return val !== undefined && val !== null ? val : item.lookup_value || item.id || ''
 }
 
-function getOptionLabel(item: AppLookup): string {
-  const label = (item as any)[props.labelKey]
+function getOptionLabel(item: any): string {
+  if (!item) return ''
+  if (props.labelFormatter) {
+    return props.labelFormatter(item)
+  }
+  const label = item[props.labelKey]
   if (label !== undefined && label !== null && label !== '') return String(label)
-  return item.lookup_description || item.lookup_value || item.lookup_id
+  return item.lookup_description || item.lookup_value || item.lookup_id || item.nama_indonesia || ''
 }
 
 function ensureInitialOption(opt?: AppLookup) {

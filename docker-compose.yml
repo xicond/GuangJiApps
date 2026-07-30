@@ -30,20 +30,27 @@ services:
       context: ./gin
       dockerfile: Dockerfile
     container_name: gin_app
+    env_file:
+      - ./gin/.env
     environment:
       - PORT=8080
       - GIN_MODE=debug
-      - BASE_URL=http://localhost:8080
+      - BASE_URL=/
       - JWT_SECRET=/app/certs/dev-private-key.pem
       - REFRESH_SECRET=/app/certs/dev-private-key.pem
       - DATABASE_DSN=sqlserver://sa:YourStrong@Passw0rd123@mssql:1433?database=master
     volumes:
       - ./gin/certs:/app/certs:ro
+      - go-compiler-cache:/go-cache
+      - go-modules-cache:/go-mod-cache
     ports:
       - "8080:8080"
     depends_on:
       - mssql
     restart: unless-stopped
+    # environment:
+    #   - BASE_URL=/
+    #   - DATABASE_DSN="server=mssql;port=1433;user id=sa;password=YourStrong@Passw0rd123;database=guangji;encrypt=disable;"
 
   gin-build:
     profiles: [ "build" ]

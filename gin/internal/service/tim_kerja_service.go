@@ -201,3 +201,19 @@ func (s *TimKerjaService) Delete(id string, c *gin.Context) error {
 	}
 	return nil
 }
+
+func (s *TimKerjaService) Lookup(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
+	return Lookup(s.db, "B_TIMKERJA", page, limit, filters)
+}
+
+func (s *TimKerjaService) LookupSub(timkerja_id int, filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
+	subQuery := s.db.Table("T_BUS_WORK_MAPPING").
+		Where("T_BUS_WORK_MAPPING.SubDivisi = T_APP_LOOKUP.LookupValue").
+		Where("divisi = ?", timkerja_id).
+		Where("T_BUS_WORK_MAPPING.Status = 1")
+	return Lookup(s.db, "B_SUBKERJA", page, limit, filters, subQuery)
+}
+
+func (s *TimKerjaService) LookupReport(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
+	return Lookup(s.db, "B_TIMKERJA_REPORT", page, limit, filters)
+}

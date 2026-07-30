@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,6 +25,75 @@ func NewUmatService(db *gorm.DB) *UmatService {
 		db = database.MustOpen("")
 	}
 	return &UmatService{db: db, resource: "umats"}
+}
+
+func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
+	type lookupCheck struct {
+		fieldName  string
+		categoryID string
+		val        string
+	}
+
+	checks := [...]lookupCheck{
+		{fieldName: "status_umat", categoryID: "B_STATUS", val: payload.StatusUmat},
+		{fieldName: "tim_kerja", categoryID: "B_TIMKERJA", val: payload.TimKerja},
+		{fieldName: "kelas_khusus", categoryID: "B_KELAS", val: payload.KelasKhusus},
+		{fieldName: "kelas_umum", categoryID: "B_KELASUMUM", val: payload.KelasUmum},
+		{fieldName: "tempat_sd2", categoryID: "B_FOTANG", val: payload.TempatSd2},
+		{fieldName: "tempat_sd3", categoryID: "B_FOTANG", val: payload.TempatSd3},
+		{fieldName: "fotang_aktif", categoryID: "B_FOTANG", val: payload.FotangAktif},
+		{fieldName: "fotang_chiutao", categoryID: "B_FOTANG", val: payload.FotangChiutao},
+		{fieldName: "tcs", categoryID: "B_TCS", val: payload.Tcs},
+		{fieldName: "waktu_chiutao_mandarin", categoryID: "B_WAKTUCIUTAO", val: payload.WaktuChiutaoMandarin},
+		{fieldName: "pendidikan", categoryID: "B_PENDIDIKAN", val: payload.Pendidikan},
+		{fieldName: "pekerjaan", categoryID: "B_PEKERJAAN", val: payload.Pekerjaan},
+	}
+
+	activeChecks := make([]lookupCheck, 0, len(checks))
+	for _, c := range checks {
+		if strings.TrimSpace(c.val) != "" {
+			activeChecks = append(activeChecks, c)
+		}
+	}
+
+	if len(activeChecks) == 0 {
+		return nil
+	}
+
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		details = make(map[string][]string)
+	)
+
+	wg.Add(len(activeChecks))
+	for _, check := range activeChecks {
+		go func(c lookupCheck) {
+			defer wg.Done()
+			var count int64
+			if err := db.Session(&gorm.Session{}).Model(&domain.AppLookup{}).
+				Where("CategoryId = ? AND (LookupValue = ? OR LookupId = ?) AND Status = ?", c.categoryID, c.val, c.val, true).
+				Count(&count).Error; err != nil {
+				mu.Lock()
+				details[c.fieldName] = append(details[c.fieldName], fmt.Sprintf("gagal memvalidasi %s: %v", c.fieldName, err))
+				mu.Unlock()
+				return
+			}
+			if count == 0 {
+				mu.Lock()
+				details[c.fieldName] = append(details[c.fieldName], fmt.Sprintf("nilai '%s' tidak ditemukan di lookup category %s", c.val, c.categoryID))
+				mu.Unlock()
+			}
+		}(check)
+	}
+
+	wg.Wait()
+
+	if len(details) > 0 {
+		return &ValidationError{Details: details}
+	}
+
+	return nil
 }
 
 func (s *UmatService) List(page int, filters map[string]string, limit int) ([]domain.Umat, int64, error) { //[]domain.Umat {
@@ -131,12 +201,24 @@ func (s *UmatService) Create(payload domain.Umat, c *gin.Context) (domain.Umat, 
 		return domain.Umat{}, fmt.Errorf("validasi gagal: %w", err)
 	}
 
+	if err := validateUmatLookups(s.db, &payload); err != nil {
+		return domain.Umat{}, err
+	}
+
+	// item.Id = int.Parse(DalBrand.GenerateId_UmatId(DateTime.Now, 1)[0]);
+	//item.Kode = DalBrand.GenerateId_UmatId(DateTime.Now, 1)[0];
+	// item.Kode = CurrentLogin.SubWhName + "-" + item.Id.ToString();
+
 	// 2. IMPORTANT: Do NOT generate a random UnixNano string for ID!
 	// Your SQL Server schema defines [id] INT NOT NULL.
 	// If it is NOT an IDENTITY column, we calculate the next integer sequence manually.
 	var maxID int32
 	s.db.Table("T_BUS_UMAT").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
 	payload.ID = maxID + 1
+
+	// item.Id = int.Parse(DalBrand.GenerateId_UmatId(DateTime.Now, 1)[0]);
+	//item.Kode = DalBrand.GenerateId_UmatId(DateTime.Now, 1)[0];
+	// item.Kode = CurrentLogin.SubWhName + "-" + item.Id.ToString();
 
 	// 3. Populate matching schema structural constraints
 	payload.Status = true                            // Active status mapping
@@ -166,6 +248,14 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 }
 
 func (s *UmatService) Update(id string, payload domain.Umat, c *gin.Context) (domain.Umat, error) {
+	if err := ValidateStruct(payload); err != nil {
+		return domain.Umat{}, fmt.Errorf("validasi gagal: %w", err)
+	}
+
+	if err := validateUmatLookups(s.db, &payload); err != nil {
+		return domain.Umat{}, err
+	}
+
 	// 1. Cast string ID parameter safely to int32 to prevent MSSQL query crashes
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -184,14 +274,55 @@ func (s *UmatService) Update(id string, payload domain.Umat, c *gin.Context) (do
 
 	// 3. Map values onto the actual field variables present in your legacy schema
 	item.Kode = payload.Kode
+	item.Alias = payload.Alias
 	item.NamaIndonesia = payload.NamaIndonesia
+	item.Marga = payload.Marga
 	item.NamaMandarin = payload.NamaMandarin
 	item.Alamat = payload.Alamat
+	item.Alamat2 = payload.Alamat2
 	item.Telepon = payload.Telepon
 	item.Mobile = payload.Mobile
+	item.TempatLahir = payload.TempatLahir
+	item.TanggalLahir = payload.TanggalLahir
+	item.Usia = payload.Usia
+	item.Wilayah = payload.Wilayah
+	item.JenisKelamin = payload.JenisKelamin
+	item.Pekerjaan = payload.Pekerjaan
+	item.Pendidikan = payload.Pendidikan
+	item.TanggalChiutaoInt = payload.TanggalChiutaoInt
+	item.TanggalChiutaoMan = payload.TanggalChiutaoMan
+	item.TahunChiutaoMandarin = payload.TahunChiutaoMandarin
+	item.WaktuChiutaoMandarin = payload.WaktuChiutaoMandarin
+	item.Pengajak = payload.Pengajak
+	item.PengajakManual = payload.PengajakManual
+	item.Penanggung = payload.Penanggung
+	item.PenanggungManual = payload.PenanggungManual
+	item.Tcs = payload.Tcs
+	item.UangPahala = payload.UangPahala
+	item.FotangChiutao = payload.FotangChiutao
+	item.FotangAktif = payload.FotangAktif
+	item.Sd2 = payload.Sd2
+	item.TempatSd2 = payload.TempatSd2
+	item.TanggalSd2 = payload.TanggalSd2
+	item.Sd3 = payload.Sd3
+	item.TempatSd3 = payload.TempatSd3
+	item.TanggalSd3 = payload.TanggalSd3
+	item.KelasUmum = payload.KelasUmum
+	item.KelasKhusus = payload.KelasKhusus
+	item.ChingKhou = payload.ChingKhou
+	item.TanggalChingKhou = payload.TanggalChingKhou
+	item.TanggalAncuo = payload.TanggalAncuo
+	item.NamaCetyaRumah = payload.NamaCetyaRumah
+	item.Meninggal = payload.Meninggal
+	item.TanggalMeninggal = payload.TanggalMeninggal
+	item.TimKerja = payload.TimKerja
+	item.Posisi = payload.Posisi
+	item.StatusUmat = payload.StatusUmat
+	item.Keterangan = payload.Keterangan
+	item.Email = payload.Email
+	item.ImagePath = payload.ImagePath
 
 	// Legacy metadata mappings
-	// item.Status = payload.Status // Maps to legacy [STATUS] BIT flag
 	item.ModAct = "U"                             // 'U' standard legacy flag for Update
 	item.ModBy = int32(c.MustGet("userID").(int)) // System user ID (int32)
 	item.ModDate = time.Now()                     // Actual time.Time object expected by DATETIME column

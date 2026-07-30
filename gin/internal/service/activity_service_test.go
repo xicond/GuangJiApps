@@ -19,6 +19,8 @@ func TestActivityService(t *testing.T) {
 	svc := NewActivityService(db)
 	c := setupTestContext()
 
+	db.Exec("DELETE FROM T_BUS_EVENT WHERE EventCode = 'EV001'")
+
 	// 1. Create
 	act := domain.Activity{
 		EventCode:     "EV001",

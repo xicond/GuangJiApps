@@ -24,9 +24,10 @@ export interface Kelas {
 }
 
 export interface KelasPeserta {
-  detailid?: string
-  trx_id?: string
-  id_peserta?: string
+  detailid?: string | number
+  detail_id?: string | number
+  trx_id?: string | number
+  id_peserta?: string | number
   nama_indonesia?: string
   nama_mandarin?: string
   fotang_aktif_desc?: string
@@ -42,6 +43,16 @@ export interface KelasPeserta {
   ikrar4?: boolean
   ikrar5?: boolean
   ikrar6?: boolean
+  sumbangan?: number
+  barang?: string
+  tim_kerja?: string
+  keterangan?: string
+  anak?: string
+  suster?: string
+  menginap?: string
+  makanan_pagi?: string
+  makanan_siang?: string
+  makanan_malam?: string
 }
 
 export interface KelasQueryParams {
@@ -75,6 +86,83 @@ export interface KelasSingleResponse {
 
 export interface KelasPesertaListResponse {
   data: KelasPeserta[]
+  meta?: PaginatedMeta
+  resource?: string
+}
+
+export interface KelasPengabdi {
+  detailid?: number | string
+  detail_id?: number | string
+  trx_id?: number | string
+  id_pengabdi?: number | string
+  nama_indonesia?: string
+  nama_mandarin?: string
+  sumbangan?: number
+  barang?: string
+  tim_kerja?: string
+  tim_kerja_report?: string
+  keterangan?: string
+  hari?: string
+  sub_kerja?: string
+  anak?: string
+  suster?: string
+  menginap?: string
+  makanan_pagi?: string
+  makanan_siang?: string
+  makanan_malam?: string
+}
+
+export interface KelasPengabdiListResponse {
+  data: KelasPengabdi[]
+  meta?: PaginatedMeta
+  resource?: string
+}
+
+export interface KelasTopik {
+  detailid?: number | string
+  detail_id?: number | string
+  trx_id?: number | string
+  kode_topik?: string
+  urutan?: number
+  topik_date?: string
+  penceramah?: number | string
+  penceramah_ext?: string
+  penterjemah?: string
+  durasi?: number
+  keterangan?: string
+  penceramah_nama_indonesia?: string
+}
+
+export interface KelasTopikListResponse {
+  data: KelasTopik[]
+  meta?: PaginatedMeta
+  resource?: string
+}
+
+export interface KelasDonasi {
+  detailid?: number | string
+  detail_id?: number | string
+  trx_id?: number | string
+  donatur?: string
+  donasi?: number
+}
+
+export interface KelasDonasiListResponse {
+  data: KelasDonasi[]
+  meta?: PaginatedMeta
+  resource?: string
+}
+
+export interface KelasDonasiBarang {
+  detailid?: number | string
+  detail_id?: number | string
+  trx_id?: number | string
+  donatur?: string
+  barang?: string
+}
+
+export interface KelasDonasiBarangListResponse {
+  data: KelasDonasiBarang[]
   meta?: PaginatedMeta
   resource?: string
 }

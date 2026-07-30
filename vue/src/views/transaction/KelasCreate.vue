@@ -10,6 +10,7 @@
     <!-- Form Component -->
     <KelasForm
       :submitting="submitting"
+      :field-errors="fieldErrors"
       submit-text="Tambah Kelas"
       @submit="handleCreate"
       @cancel="handleBack"
@@ -28,6 +29,7 @@ import type { Kelas } from '../../types/kelas'
 
 const router = useRouter()
 const submitting = ref(false)
+const fieldErrors = ref<Record<string, string[]>>({})
 
 function handleBack() {
   router.push('/transaction/kelas')
@@ -35,6 +37,7 @@ function handleBack() {
 
 async function handleCreate(payload: Partial<Kelas>) {
   submitting.value = true
+  fieldErrors.value = {}
   try {
     await kelasApi.createKelas(payload)
     ElNotification({
@@ -45,7 +48,12 @@ async function handleCreate(payload: Partial<Kelas>) {
     router.push('/transaction/kelas')
   } catch (err: any) {
     console.error('Failed to create kelas:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menambahkan data kelas')
+    if (err.response?.data?.details) {
+      fieldErrors.value = err.response.data.details
+      ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
+    } else {
+      ElMessage.error(err.response?.data?.error || err.message || 'Gagal menambahkan data kelas')
+    }
   } finally {
     submitting.value = false
   }

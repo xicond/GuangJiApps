@@ -30,13 +30,37 @@ func TestUmatService(t *testing.T) {
 	svc := NewUmatService(db)
 	c := setupTestContext()
 
-	// 1. Create
+	// Clean up existing test umat records to ensure test isolation
+	db.Exec("DELETE FROM T_BUS_UMAT WHERE Kode = 'UM001' OR NamaIndonesia = 'Test Invalid'")
+
+	// Seed lookup category and values for validation testing safely using FirstOrCreate
+	catStatus := domain.AppLookupCategory{CategoryId: "B_STATUS", Status: true}
+	db.FirstOrCreate(&catStatus, domain.AppLookupCategory{CategoryId: "B_STATUS"})
+	valStatus := "001"
+	statusTrue := true
+	lookupItem := domain.AppLookup{LookupId: "L001", CategoryId: &catStatus.CategoryId, LookupValue: &valStatus, Status: &statusTrue}
+	db.FirstOrCreate(&lookupItem, domain.AppLookup{LookupId: "L001"})
+
+	// Test Invalid Lookup Rejection
+	invalidUmat := domain.Umat{
+		NamaIndonesia: "Test Invalid",
+		JenisKelamin:  "L",
+		StatusUmat:    "INVALID_STATUS",
+	}
+	_, err = svc.Create(invalidUmat, c)
+	if err == nil {
+		t.Fatalf("expected error when creating umat with invalid StatusUmat, got nil")
+	}
+
+	// 1. Create with Valid Lookup
 	umat := domain.Umat{
 		Kode:                 "UM001",
 		NamaIndonesia:        "Budi Santoso",
 		NamaMandarin:         "武帝",
 		Alias:                "Budi",
 		TahunChiutaoMandarin: "2024",
+		JenisKelamin:         "L",
+		StatusUmat:           "001",
 	}
 
 	created, err := svc.Create(umat, c)

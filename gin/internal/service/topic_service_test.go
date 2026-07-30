@@ -19,6 +19,8 @@ func TestTopicService(t *testing.T) {
 	svc := NewTopicService(db)
 	c := setupTestContext()
 
+	db.Exec("DELETE FROM T_BUS_TOPIC WHERE TopicCode = 'TP001'")
+
 	// 1. Create
 	topic := domain.Topic{
 		TopicCode:     "TP001",

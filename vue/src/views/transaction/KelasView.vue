@@ -77,8 +77,12 @@
         </el-descriptions>
       </el-card>
 
-      <!-- Peserta List Table -->
+      <!-- Sub-model Lists -->
       <KelasPesertaTable :kelas-id="kelasId" />
+      <KelasPengabdiTable :kelas-id="kelasId" />
+      <KelasTopikTable :kelas-id="kelasId" />
+      <KelasDonasiTable :kelas-id="kelasId" />
+      <KelasDonasiBarangTable :kelas-id="kelasId" />
     </template>
   </div>
 </template>
@@ -90,6 +94,10 @@ import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { Back, Edit } from '@element-plus/icons-vue'
 import KelasPesertaTable from '../../components/kelas/KelasPesertaTable.vue'
+import KelasPengabdiTable from '../../components/kelas/KelasPengabdiTable.vue'
+import KelasTopikTable from '../../components/kelas/KelasTopikTable.vue'
+import KelasDonasiTable from '../../components/kelas/KelasDonasiTable.vue'
+import KelasDonasiBarangTable from '../../components/kelas/KelasDonasiBarangTable.vue'
 import { kelasApi } from '../../api/kelas'
 import type { Kelas } from '../../types/kelas'
 

@@ -19,6 +19,9 @@ func TestTimKerjaService(t *testing.T) {
 	svc := NewTimKerjaService(db)
 	c := setupTestContext()
 
+	db.Exec("DELETE FROM T_APP_LOOKUP WHERE LookupId IN ('TK001', 'L_TK1', 'L_SK1', 'L_TR1')")
+	db.Exec("DELETE FROM T_APP_LOOKUPCATEGORY WHERE CategoryId IN ('B_TIMKERJA', 'B_SUBKERJA', 'B_TIMKERJA_REPORT')")
+
 	// 1. Create
 	tim := domain.TimKerja{
 		LookupId:          "TK001",
@@ -67,5 +70,45 @@ func TestTimKerjaService(t *testing.T) {
 	err = svc.Delete("TK001", c)
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)
+	}
+
+	// 6. Test Lookup, LookupSub, LookupReport
+	catTim := domain.AppLookupCategory{CategoryId: "B_TIMKERJA", Status: true}
+	catSub := domain.AppLookupCategory{CategoryId: "B_SUBKERJA", Status: true}
+	catRep := domain.AppLookupCategory{CategoryId: "B_TIMKERJA_REPORT", Status: true}
+	db.Create(&catTim)
+	db.Create(&catSub)
+	db.Create(&catRep)
+
+	v1, d1 := "V1", "D1"
+	statusTrue := true
+	db.Create(&domain.AppLookup{LookupId: "L_TK1", CategoryId: &catTim.CategoryId, LookupValue: &v1, LookupDescription: &d1, Status: &statusTrue})
+	db.Create(&domain.AppLookup{LookupId: "L_SK1", CategoryId: &catSub.CategoryId, LookupValue: &v1, LookupDescription: &d1, Status: &statusTrue})
+	db.Create(&domain.AppLookup{LookupId: "L_TR1", CategoryId: &catRep.CategoryId, LookupValue: &v1, LookupDescription: &d1, Status: &statusTrue})
+
+	// Lookup (B_TIMKERJA)
+	lTim, tTim, err := svc.Lookup(map[string]string{}, 1, 10)
+	if err != nil || tTim != 1 || len(lTim) != 1 {
+		t.Fatalf("Lookup B_TIMKERJA failed: %v, total=%d", err, tTim)
+	}
+	lTimAll, tTimAll, err := svc.Lookup(map[string]string{}, 0, 0)
+	if err != nil || tTimAll != 1 || len(lTimAll) != 1 {
+		t.Fatalf("Lookup B_TIMKERJA limit=0 failed: %v, total=%d", err, tTimAll)
+	}
+
+	// LookupSub (B_SUBKERJA)
+	db.Exec("DELETE FROM T_BUS_WORK_MAPPING WHERE SubDivisi = 'V1'")
+	wm := domain.WorkMapping{Divisi: "0", SubDivisi: "V1", Status: true}
+	db.Create(&wm)
+
+	lSub, tSub, err := svc.LookupSub(0, map[string]string{}, 1, 10)
+	if err != nil || tSub != 1 || len(lSub) != 1 {
+		t.Fatalf("LookupSub B_SUBKERJA failed: %v, total=%d", err, tSub)
+	}
+
+	// LookupReport (B_TIMKERJA_REPORT)
+	lRep, tRep, err := svc.LookupReport(map[string]string{}, 1, 10)
+	if err != nil || tRep != 1 || len(lRep) != 1 {
+		t.Fatalf("LookupReport B_TIMKERJA_REPORT failed: %v, total=%d", err, tRep)
 	}
 }

@@ -17,13 +17,18 @@
       <KelasForm
         :initial-data="kelasData"
         :submitting="submitting"
+        :field-errors="fieldErrors"
         submit-text="Simpan Perubahan"
         @submit="handleUpdate"
         @cancel="handleBack"
       />
 
-      <!-- Peserta List Component -->
+      <!-- Sub-model Lists -->
       <KelasPesertaTable :kelas-id="kelasId" />
+      <KelasPengabdiTable :kelas-id="kelasId" />
+      <KelasTopikTable :kelas-id="kelasId" />
+      <KelasDonasiTable :kelas-id="kelasId" />
+      <KelasDonasiBarangTable :kelas-id="kelasId" />
     </template>
   </div>
 </template>
@@ -35,6 +40,10 @@ import { ElMessage, ElNotification } from 'element-plus'
 import { Back } from '@element-plus/icons-vue'
 import KelasForm from '../../components/kelas/KelasForm.vue'
 import KelasPesertaTable from '../../components/kelas/KelasPesertaTable.vue'
+import KelasPengabdiTable from '../../components/kelas/KelasPengabdiTable.vue'
+import KelasTopikTable from '../../components/kelas/KelasTopikTable.vue'
+import KelasDonasiTable from '../../components/kelas/KelasDonasiTable.vue'
+import KelasDonasiBarangTable from '../../components/kelas/KelasDonasiBarangTable.vue'
 import { kelasApi } from '../../api/kelas'
 import type { Kelas } from '../../types/kelas'
 
@@ -45,6 +54,7 @@ const kelasId = route.params.id as string
 const kelasData = ref<Partial<Kelas>>({})
 const fetching = ref(true)
 const submitting = ref(false)
+const fieldErrors = ref<Record<string, string[]>>({})
 
 let abortController: AbortController | null = null
 
@@ -72,6 +82,7 @@ async function loadKelas() {
 
 async function handleUpdate(payload: Partial<Kelas>) {
   submitting.value = true
+  fieldErrors.value = {}
   try {
     await kelasApi.updateKelas(kelasId, payload)
     ElNotification({
@@ -82,7 +93,12 @@ async function handleUpdate(payload: Partial<Kelas>) {
     router.push('/transaction/kelas')
   } catch (err: any) {
     console.error('Failed to update kelas:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal memperbarui data kelas')
+    if (err.response?.data?.details) {
+      fieldErrors.value = err.response.data.details
+      ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
+    } else {
+      ElMessage.error(err.response?.data?.error || err.message || 'Gagal memperbarui data kelas')
+    }
   } finally {
     submitting.value = false
   }

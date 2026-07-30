@@ -1,5 +1,14 @@
 <template>
   <el-card shadow="never" class="form-card">
+    <el-alert
+      v-if="props.fieldErrors && Object.keys(props.fieldErrors).length > 0"
+      type="error"
+      show-icon
+      title="Validasi Gagal"
+      description="Terdapat kesalahan pengisian form pada beberapa kolom di bawah ini. Silahkan periksa pesan kesalahan berwarna merah."
+      class="validation-alert mb-4"
+    />
+
     <el-form
       ref="formRef"
       :model="formData"
@@ -10,25 +19,27 @@
       <el-row :gutter="20">
         <!-- Kelas Selection (Required) -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="Kelas" prop="kode_kelas">
+          <el-form-item label="Kelas" prop="kode_kelas" :error="hasFieldError('kode_kelas') ? ' ' : undefined">
             <LookupSelect
               v-model="formData.kode_kelas"
               placeholder="Pilih Kelas..."
               :fetch-api="kelasApi.getKelasLookup"
               :initial-option="formData.kelas_name"
             />
+            <FieldErrors :errors="getFieldErrors('kode_kelas')" />
           </el-form-item>
         </el-col>
 
         <!-- Fotang Selection -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="Fotang" prop="kode_fotang">
+          <el-form-item label="Fotang" prop="kode_fotang" :error="hasFieldError('kode_fotang') ? ' ' : undefined">
             <LookupSelect
               v-model="formData.kode_fotang"
               placeholder="Pilih Fotang..."
               :fetch-api="fotangApi.getFotangLookup"
               :initial-option="formData.fotang_name"
             />
+            <FieldErrors :errors="getFieldErrors('kode_fotang')" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -36,7 +47,7 @@
       <el-row :gutter="20">
         <!-- Start Date -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="Tanggal Mulai (Start Date)" prop="start_date">
+          <el-form-item label="Tanggal Mulai (Start Date)" prop="start_date" :error="hasFieldError('start_date') ? ' ' : undefined">
             <el-date-picker
               v-model="formData.start_date"
               type="date"
@@ -44,12 +55,13 @@
               value-format="YYYY-MM-DD"
               style="width: 100%"
             />
+            <FieldErrors :errors="getFieldErrors('start_date')" />
           </el-form-item>
         </el-col>
 
         <!-- End Date -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="Tanggal Selesai (End Date)" prop="end_date">
+          <el-form-item label="Tanggal Selesai (End Date)" prop="end_date" :error="hasFieldError('end_date') ? ' ' : undefined">
             <el-date-picker
               v-model="formData.end_date"
               type="date"
@@ -57,6 +69,7 @@
               value-format="YYYY-MM-DD"
               style="width: 100%"
             />
+            <FieldErrors :errors="getFieldErrors('end_date')" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -64,25 +77,27 @@
       <el-row :gutter="20">
         <!-- Lokasi -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="Lokasi Pelaksanaan" prop="lokasi">
+          <el-form-item label="Lokasi Pelaksanaan" prop="lokasi" :error="hasFieldError('lokasi') ? ' ' : undefined">
             <el-input
               v-model="formData.lokasi"
               placeholder="Contoh: Gedung Utama Lt. 2"
               maxlength="50"
               show-word-limit
             />
+            <FieldErrors :errors="getFieldErrors('lokasi')" />
           </el-form-item>
         </el-col>
 
         <!-- PIC -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="PIC / Penanggung Jawab" prop="pic">
+          <el-form-item label="PIC / Penanggung Jawab" prop="pic" :error="hasFieldError('pic') ? ' ' : undefined">
             <el-input
               v-model="formData.pic"
               placeholder="Nama Penanggung Jawab"
               maxlength="100"
               show-word-limit
             />
+            <FieldErrors :errors="getFieldErrors('pic')" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -90,18 +105,19 @@
       <el-row :gutter="20">
         <!-- Level -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="Tingkat / Level" prop="level">
+          <el-form-item label="Tingkat / Level" prop="level" :error="hasFieldError('level') ? ' ' : undefined">
             <el-input
               v-model="formData.level"
               placeholder="Level kelas (max 3 karakter)"
               maxlength="3"
             />
+            <FieldErrors :errors="getFieldErrors('level')" />
           </el-form-item>
         </el-col>
 
         <!-- Deadline -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="Batas Pendaftaran (Deadline)" prop="deadline">
+          <el-form-item label="Batas Pendaftaran (Deadline)" prop="deadline" :error="hasFieldError('deadline') ? ' ' : undefined">
             <el-date-picker
               v-model="formData.deadline"
               type="date"
@@ -109,12 +125,13 @@
               value-format="YYYY-MM-DD"
               style="width: 100%"
             />
+            <FieldErrors :errors="getFieldErrors('deadline')" />
           </el-form-item>
         </el-col>
       </el-row>
 
       <!-- Keterangan -->
-      <el-form-item label="Keterangan" prop="keterangan">
+      <el-form-item label="Keterangan" prop="keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
         <el-input
           v-model="formData.keterangan"
           type="textarea"
@@ -123,6 +140,7 @@
           maxlength="200"
           show-word-limit
         />
+        <FieldErrors :errors="getFieldErrors('keterangan')" />
       </el-form-item>
 
       <!-- Optional MC Details Collapsible Section -->
@@ -137,28 +155,33 @@
 
           <el-row :gutter="16">
             <el-col :xs="24" :sm="12" :md="8">
-              <el-form-item label="MC 1" prop="mc1">
+              <el-form-item label="MC 1" prop="mc1" :error="hasFieldError('mc1') ? ' ' : undefined">
                 <el-input v-model="formData.mc1" placeholder="Nama MC 1" maxlength="100" />
+                <FieldErrors :errors="getFieldErrors('mc1')" />
               </el-form-item>
             </el-col>
             <el-col :xs="24" :sm="12" :md="8">
-              <el-form-item label="MC 2" prop="mc2">
+              <el-form-item label="MC 2" prop="mc2" :error="hasFieldError('mc2') ? ' ' : undefined">
                 <el-input v-model="formData.mc2" placeholder="Nama MC 2" maxlength="100" />
+                <FieldErrors :errors="getFieldErrors('mc2')" />
               </el-form-item>
             </el-col>
             <el-col :xs="24" :sm="12" :md="8">
-              <el-form-item label="MC 3" prop="mc3">
+              <el-form-item label="MC 3" prop="mc3" :error="hasFieldError('mc3') ? ' ' : undefined">
                 <el-input v-model="formData.mc3" placeholder="Nama MC 3" maxlength="100" />
+                <FieldErrors :errors="getFieldErrors('mc3')" />
               </el-form-item>
             </el-col>
             <el-col :xs="24" :sm="12" :md="8">
-              <el-form-item label="MC 4" prop="mc4">
+              <el-form-item label="MC 4" prop="mc4" :error="hasFieldError('mc4') ? ' ' : undefined">
                 <el-input v-model="formData.mc4" placeholder="Nama MC 4" maxlength="100" />
+                <FieldErrors :errors="getFieldErrors('mc4')" />
               </el-form-item>
             </el-col>
             <el-col :xs="24" :sm="12" :md="8">
-              <el-form-item label="MC 5" prop="mc5">
+              <el-form-item label="MC 5" prop="mc5" :error="hasFieldError('mc5') ? ' ' : undefined">
                 <el-input v-model="formData.mc5" placeholder="Nama MC 5" maxlength="100" />
+                <FieldErrors :errors="getFieldErrors('mc5')" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -187,6 +210,7 @@ import { User } from '@element-plus/icons-vue'
 import { kelasApi } from '../../api/kelas'
 import { fotangApi } from '../../api/fotang'
 import LookupSelect from '../common/LookupSelect.vue'
+import FieldErrors from '../common/FieldErrors.vue'
 import type { Kelas } from '../../types/kelas'
 
 const props = withDefaults(
@@ -194,11 +218,13 @@ const props = withDefaults(
     initialData?: Partial<Kelas>
     submitting?: boolean
     submitText?: string
+    fieldErrors?: Record<string, string[]>
   }>(),
   {
     initialData: () => ({}),
     submitting: false,
-    submitText: 'Simpan'
+    submitText: 'Simpan',
+    fieldErrors: () => ({})
   }
 )
 
@@ -208,6 +234,15 @@ const emit = defineEmits<{
 }>()
 
 const formRef = ref<FormInstance>()
+
+function getFieldErrors(fieldName: string): string[] {
+  if (!props.fieldErrors) return []
+  return props.fieldErrors[fieldName] || []
+}
+
+function hasFieldError(fieldName: string): boolean {
+  return getFieldErrors(fieldName).length > 0
+}
 
 const formData = reactive<Partial<Kelas>>({
   kode_kelas: '',
@@ -230,7 +265,7 @@ const formData = reactive<Partial<Kelas>>({
 
 const formRules = reactive<FormRules>({
   kode_kelas: [
-    { required: true, message: 'Silakan pilih Kode Kelas', trigger: 'change' }
+    { required: true, message: 'Silahkan pilih Kode Kelas', trigger: 'change' }
   ]
 })
 
@@ -304,10 +339,12 @@ function handleCancel() {
   color: var(--el-text-color-regular);
 }
 
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  margin-top: 1rem;
-}
 </style>

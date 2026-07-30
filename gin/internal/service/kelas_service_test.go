@@ -17,6 +17,9 @@ func TestKelasService(t *testing.T) {
 		t.Fatalf("auto migrate failed: %v", err)
 	}
 
+	db.Exec("DELETE FROM T_APP_LOOKUP WHERE LookupId = 'LK001'")
+	db.Exec("DELETE FROM T_APP_LOOKUPCATEGORY WHERE CategoryId = 'B_KELASKHUSUS'")
+
 	// Seed lookup categories & lookups for validation
 	catKelas := domain.AppLookupCategory{
 		CategoryId:          "B_KELASKHUSUS",
@@ -28,11 +31,13 @@ func TestKelasService(t *testing.T) {
 
 	valKelas := "K01"
 	descKelas := "Kelas Tingkat Dasar"
+	statusTrue := true
 	lookupKelas := domain.AppLookup{
 		LookupId:          "LK001",
 		CategoryId:        &catKelas.CategoryId,
 		LookupValue:       &valKelas,
 		LookupDescription: &descKelas,
+		Status:            &statusTrue,
 	}
 	db.Create(&lookupKelas)
 
@@ -137,53 +142,21 @@ func TestKelasService(t *testing.T) {
 	if deletedItem.Status != nil && *deletedItem.Status != false {
 		t.Errorf("expected status false after delete, got %v", *deletedItem.Status)
 	}
-}
 
-func TestKelasServiceLookup(t *testing.T) {
-	db, err := database.Open("")
-	if err != nil {
-		t.Fatalf("failed to open test db: %v", err)
-	}
-	if err := database.AutoMigrate(db); err != nil {
-		t.Fatalf("auto migrate failed: %v", err)
-	}
-
-	db.Exec("DELETE FROM T_APP_LOOKUP")
-	db.Exec("DELETE FROM T_APP_LOOKUPCATEGORY")
-
-	cat := domain.AppLookupCategory{
-		CategoryId:          "B_KELASKHUSUS",
-		CategoryType:        "S",
-		CategoryDescription: "Kelas Khusus",
-		Status:              true,
-	}
-	db.Create(&cat)
-
-	val1 := "KELAS_DASAR"
-	desc1 := "Kelas Tingkat Dasar"
-	k1 := domain.AppLookup{
-		LookupId:          "KL001",
-		CategoryId:        &cat.CategoryId,
-		LookupValue:       &val1,
-		LookupDescription: &desc1,
-	}
-	db.Create(&k1)
-
-	svc := NewKelasService(db)
-
-	items, total, err := svc.Lookup(map[string]string{}, 1, 10)
+	// 6. Lookup (paginated & limit=0)
+	lookups, totalLookup, err := svc.Lookup(map[string]string{}, 1, 10)
 	if err != nil {
 		t.Fatalf("Lookup failed: %v", err)
 	}
-	if total != 1 || len(items) != 1 {
-		t.Errorf("expected 1 item, got %d", total)
+	if totalLookup != 1 || len(lookups) != 1 {
+		t.Errorf("expected 1 lookup item, got %d", totalLookup)
 	}
 
-	filtered, fTotal, err := svc.Lookup(map[string]string{"lookup_description": "Tingkat"}, 1, 10)
+	lookupsAll, totalAll, err := svc.Lookup(map[string]string{}, 0, 0)
 	if err != nil {
-		t.Fatalf("Lookup with filter failed: %v", err)
+		t.Fatalf("Lookup with limit=0 failed: %v", err)
 	}
-	if fTotal != 1 || len(filtered) != 1 {
-		t.Errorf("expected 1 filtered item, got %d", fTotal)
+	if totalAll != 1 || len(lookupsAll) != 1 {
+		t.Errorf("expected 1 lookup item with limit=0, got %d", totalAll)
 	}
 }

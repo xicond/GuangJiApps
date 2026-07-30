@@ -1,13 +1,13 @@
 <template>
-  <div class="peserta-accordion-container">
+  <div class="pengabdi-accordion-container">
     <el-collapse v-model="activeNames" class="custom-accordion" @change="handleAccordionChange">
-      <el-collapse-item name="peserta">
+      <el-collapse-item name="pengabdi">
         <template #title>
           <div class="accordion-header" @click.stop>
             <div class="header-title">
-              <el-icon class="header-icon"><UserFilled /></el-icon>
-              <span>Daftar Peserta Kelas</span>
-              <el-tag size="small" type="info" class="ml-2">{{ total }} Peserta</el-tag>
+              <el-icon class="header-icon"><Avatar /></el-icon>
+              <span>Daftar Pengabdi Kelas</span>
+              <el-tag size="small" type="info" class="ml-2">{{ total }} Pengabdi</el-tag>
             </div>
             <div class="header-actions" @click.stop>
               <el-button
@@ -16,14 +16,14 @@
                 :icon="Plus"
                 @click.stop="openAddDialog"
               >
-                Tambah Peserta
+                Tambah Pengabdi
               </el-button>
               <el-button
                 :icon="Refresh"
                 circle
                 size="small"
-                title="Refresh Peserta"
-                @click.stop="fetchPeserta"
+                title="Refresh Pengabdi"
+                @click.stop="fetchPengabdi"
               />
             </div>
           </div>
@@ -32,61 +32,34 @@
         <div class="accordion-content">
           <el-table
             v-loading="loading"
-            :data="pesertaList"
+            :data="pengabdiList"
             stripe
             border
             max-height="450"
             style="width: 100%"
-            empty-text="Belum ada peserta yang terdaftar pada kelas ini"
+            empty-text="Belum ada pengabdi yang terdaftar pada kelas ini"
           >
             <el-table-column type="index" label="No." width="60" align="center" fixed="left" />
 
-            <el-table-column prop="nama_indonesia" label="Nama Ciu Tao" min-width="160">
+            <el-table-column prop="id_pengabdi" label="ID / Pengabdi" min-width="160">
               <template #default="{ row }">
-                <span class="font-semibold">{{ row.nama_indonesia || '-' }}</span>
+                <span class="font-semibold">{{ row.nama_indonesia || row.id_pengabdi || '-' }}</span>
+                <span v-if="row.nama_mandarin" class="sub-text"> ({{ row.nama_mandarin }})</span>
               </template>
             </el-table-column>
 
-            <el-table-column prop="nama_mandarin" label="Nama Lain" min-width="140">
+            <el-table-column prop="tim_kerja" label="Tim Kerja" width="120" align="center">
               <template #default="{ row }">
-                <span>{{ row.nama_mandarin || '-' }}</span>
+                <el-tag v-if="row.tim_kerja" size="small" type="primary">{{ row.tim_kerja }}</el-tag>
+                <span v-else>-</span>
               </template>
             </el-table-column>
 
-            <el-table-column prop="fotang_ciutao_desc" label="Fotang Ciu Tao" min-width="150" />
+            <el-table-column prop="tim_kerja_report" label="Tim Kerja Report" width="140" align="center" />
 
-            <el-table-column prop="fotang_aktif_desc" label="Fotang Aktif" min-width="150" />
+            <el-table-column prop="hari" label="Hari" width="120" align="center" />
 
-            <el-table-column prop="tanggal_ciu_tao_int" label="Tgl Ciu Tao" width="120" align="center" />
-
-            <el-table-column prop="pengajak" label="Pengajak" min-width="140" />
-
-            <el-table-column prop="penanggung" label="Penanggung" min-width="140" />
-
-            <el-table-column label="Status Lulus" width="140" align="center">
-              <template #default="{ row }">
-                <el-tag :type="row.lulus ? 'success' : 'info'" size="small">
-                  {{ row.lulus ? 'Lulus' : 'Belum' }}
-                </el-tag>
-                <div v-if="row.keterangan_lulus" class="lulus-note">
-                  {{ row.keterangan_lulus }}
-                </div>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="Status Ikrar" min-width="180" align="center">
-              <template #default="{ row }">
-                <div class="ikrar-tags">
-                  <el-tag v-if="row.ikrar1" size="small" type="success">I-1</el-tag>
-                  <el-tag v-if="row.ikrar2" size="small" type="success">I-2</el-tag>
-                  <el-tag v-if="row.ikrar3" size="small" type="success">I-3</el-tag>
-                  <el-tag v-if="row.ikrar4" size="small" type="success">I-4</el-tag>
-                  <el-tag v-if="row.ikrar5" size="small" type="success">I-5</el-tag>
-                  <el-tag v-if="row.ikrar6" size="small" type="success">I-6</el-tag>
-                  <span v-if="!row.ikrar1 && !row.ikrar2 && !row.ikrar3 && !row.ikrar4 && !row.ikrar5 && !row.ikrar6" class="no-ikrar">-</span>
-                </div>
-              </template>
-            </el-table-column>
+            <el-table-column prop="keterangan" label="Keterangan" min-width="160" />
 
             <el-table-column label="Aksi" width="140" align="center" fixed="right">
               <template #default="{ row }">
@@ -97,7 +70,7 @@
                   :icon="Edit"
                   @click="openEditDialog(row)" />
                 <el-popconfirm
-                  title="Yakin ingin menghapus peserta ini?"
+                  title="Yakin ingin menghapus pengabdi ini?"
                   confirm-button-text="Ya, Hapus"
                   cancel-button-text="Batal"
                   confirm-button-type="danger"
@@ -127,10 +100,10 @@
       </el-collapse-item>
     </el-collapse>
 
-    <!-- Dialog Popup Add / Edit Peserta -->
+    <!-- Dialog Popup Add / Edit Pengabdi -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'add' ? 'Tambah Peserta Kelas' : 'Edit Peserta Kelas'"
+      :title="dialogMode === 'add' ? 'Tambah Pengabdi Kelas' : 'Edit Pengabdi Kelas'"
       width="640px"
       destroy-on-close
     >
@@ -150,9 +123,9 @@
         label-width="140px"
         size="default"
       >
-        <el-form-item label="Peserta (Umat)" prop="id_peserta" :error="hasFieldError('id_peserta') ? ' ' : undefined">
+        <el-form-item label="Pengabdi (Umat)" prop="id_pengabdi" :error="hasFieldError('id_pengabdi') ? ' ' : undefined">
           <el-select
-            v-model="form.id_peserta"
+            v-model="form.id_pengabdi"
             filterable
             remote
             reserve-keyword
@@ -168,35 +141,66 @@
               :value="item.id"
             />
           </el-select>
-          <FieldErrors :errors="getFieldErrors('id_peserta')" />
-        </el-form-item>
-
-        <el-form-item label="Status Lulus" :error="hasFieldError('lulus') ? ' ' : undefined">
-          <el-switch
-            v-model="form.lulus"
-            active-text="Lulus"
-            inactive-text="Belum Lulus"
-          />
-          <FieldErrors :errors="getFieldErrors('lulus')" />
-        </el-form-item>
-
-        <el-form-item label="Keterangan Lulus" :error="hasFieldError('keterangan_lulus') ? ' ' : undefined">
-          <el-input
-            v-model="form.keterangan_lulus"
-            placeholder="Catatan / keterangan kelulusan"
-            maxlength="200"
-          />
-          <FieldErrors :errors="getFieldErrors('keterangan_lulus')" />
+          <FieldErrors :errors="getFieldErrors('id_pengabdi')" />
         </el-form-item>
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="Keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
-              <el-input v-model="form.keterangan" placeholder="Keterangan tambahan" maxlength="200" />
-              <FieldErrors :errors="getFieldErrors('keterangan')" />
+            <el-form-item label="Tim Kerja" :error="hasFieldError('tim_kerja') ? ' ' : undefined">
+              <el-input v-model="form.tim_kerja" placeholder="Kode tim kerja" maxlength="3" />
+              <FieldErrors :errors="getFieldErrors('tim_kerja')" />
+            </el-form-item>
+          </el-col>
+
+          <!-- masuk ke Tim Kerja Selective -->
+          <!-- <el-col :span="12">
+            <el-form-item label="Tim Kerja Report">
+              <el-input v-model="form.tim_kerja_report" placeholder="Tim kerja report" maxlength="3" />
+            </el-form-item>
+          </el-col> -->
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="Hari" :error="hasFieldError('hari') ? ' ' : undefined">
+              <el-input v-model="form.hari" placeholder="Hari pengabdian" maxlength="30" />
+              <FieldErrors :errors="getFieldErrors('hari')" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Sub Kerja" :error="hasFieldError('sub_kerja') ? ' ' : undefined">
+              <el-input v-model="form.sub_kerja" placeholder="Sub kerja" maxlength="3" />
+              <FieldErrors :errors="getFieldErrors('sub_kerja')" />
             </el-form-item>
           </el-col>
         </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="Sumbangan" :error="hasFieldError('sumbangan') ? ' ' : undefined">
+              <el-input-number
+                v-model="form.sumbangan"
+                :min="0"
+                :precision="2"
+                :step="10000"
+                controls-position="right"
+                style="width: 100%"
+              />
+              <FieldErrors :errors="getFieldErrors('sumbangan')" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Barang" :error="hasFieldError('barang') ? ' ' : undefined">
+              <el-input v-model="form.barang" placeholder="Barang sumbangan" maxlength="100" />
+              <FieldErrors :errors="getFieldErrors('barang')" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="Keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
+          <el-input v-model="form.keterangan" placeholder="Keterangan pengabdi" maxlength="200" />
+          <FieldErrors :errors="getFieldErrors('keterangan')" />
+        </el-form-item>
 
         <!-- Logistik Optional Fields -->
         <el-divider content-position="left">Data Logistik / Kehadiran</el-divider>
@@ -256,23 +260,22 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { UserFilled, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Avatar, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { kelasApi } from '../../api/kelas'
 import { umatApi } from '../../api/umat'
 import FieldErrors from '../common/FieldErrors.vue'
-import type { KelasPeserta } from '../../types/kelas'
+import type { KelasPengabdi } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
 
 const props = defineProps<{
   kelasId: string | number
 }>()
 
-// Accordion collapse state (empty array by default -> collapsed)
 const activeNames = ref<string[]>([])
-const isExpanded = computed(() => activeNames.value.includes('peserta'))
+const isExpanded = computed(() => activeNames.value.includes('pengabdi'))
 
-const pesertaList = ref<KelasPeserta[]>([])
+const pengabdiList = ref<KelasPengabdi[]>([])
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -294,15 +297,16 @@ function hasFieldError(fieldName: string): boolean {
   return getFieldErrors(fieldName).length > 0
 }
 
-interface PesertaFormState {
+interface PengabdiFormState {
   detail_id?: number | string
   trx_id?: number | string
-  id_peserta?: number | string
-  lulus: boolean
-  keterangan_lulus: string
+  id_pengabdi?: number | string
+  tim_kerja: string
+  tim_kerja_report: string
+  hari: string
+  sub_kerja: string
   sumbangan?: number
   barang: string
-  tim_kerja: string
   keterangan: string
   anak: string
   suster: string
@@ -312,12 +316,12 @@ interface PesertaFormState {
   makanan_malam: string
 }
 
-const form = ref<PesertaFormState>({
-  lulus: false,
-  keterangan_lulus: '',
-  sumbangan: 0,
-  barang: '',
+const form = ref<PengabdiFormState>({
   tim_kerja: '',
+  tim_kerja_report: '',
+  hari: '',
+  sub_kerja: '',
+  barang: '',
   keterangan: '',
   anak: '',
   suster: '',
@@ -328,67 +332,60 @@ const form = ref<PesertaFormState>({
 })
 
 const formRules: FormRules = {
-  id_peserta: [
-    { required: true, message: 'Peserta (Umat) wajib dipilih', trigger: 'change' }
-  ]
+  id_pengabdi: [{ required: true, message: 'Harap pilih pengabdi / umat', trigger: 'change' }]
 }
 
-// Search Umat dropdown
 const umatOptions = ref<Umat[]>([])
 const loadingUmat = ref(false)
 
 async function searchUmat(query: string) {
-  if (!query || query.trim().length < 2) {
+  if (!query || query.trim() === '') {
     umatOptions.value = []
     return
   }
   loadingUmat.value = true
   try {
-    const res = await umatApi.getUmats({ page: 1, limit: 20, namaindonesia: query })
+    const res = await umatApi.getUmats({ namaindonesia: query.trim(), limit: 20 })
     umatOptions.value = res.data || []
   } catch (err) {
-    console.error('Failed searching umat:', err)
+    console.error('Error searching umat:', err)
   } finally {
     loadingUmat.value = false
   }
 }
 
 function getUmatOptionLabel(item: Umat): string {
-  const parts = []
-  if (item.nama_indonesia) parts.push(item.nama_indonesia)
-  if (item.alias) parts.push(item.alias)
-  if (item.nama_mandarin) parts.push(item.nama_mandarin)
-  const names = parts.join(' / ')
-  return names ? `${names} (${item.kode || item.id || ''})` : String(item.kode || item.id || '')
+  let label = item.nama_indonesia || item.kode || `ID #${item.id}`
+  if (item.nama_mandarin) label += ` (${item.nama_mandarin})`
+  if (item.alias) label += ` - ${item.alias}`
+  return label
 }
 
-// Accordion change listener: fetch data ONLY when expanded
 function handleAccordionChange(val: string[] | string) {
   const activeList = Array.isArray(val) ? val : [val]
-  if (activeList.includes('peserta')) {
-    fetchPeserta()
+  if (activeList.includes('pengabdi')) {
+    fetchPengabdi()
   }
 }
 
-async function fetchPeserta() {
-  if (!props.kelasId) return
-  if (!isExpanded.value) return
+async function fetchPengabdi() {
+  if (!props.kelasId || !isExpanded.value) return
 
   if (abortController) abortController.abort()
   abortController = new AbortController()
 
   loading.value = true
   try {
-    const res = await kelasApi.getKelasPeserta(
+    const res = await kelasApi.getKelasPengabdi(
       props.kelasId,
       { page: currentPage.value, limit: pageSize.value },
       abortController.signal
     )
-    pesertaList.value = res.data || []
-    total.value = res.meta?.total ?? pesertaList.value.length
+    pengabdiList.value = res.data || []
+    total.value = res.meta?.total ?? pengabdiList.value.length
   } catch (err: any) {
     if (err.name === 'AbortError' || err.name === 'CanceledError') return
-    console.error('Error fetching kelas peserta:', err)
+    console.error('Error fetching kelas pengabdi:', err)
   } finally {
     loading.value = false
   }
@@ -397,24 +394,26 @@ async function fetchPeserta() {
 function handleSizeChange(newSize: number) {
   pageSize.value = newSize
   currentPage.value = 1
-  if (isExpanded.value) fetchPeserta()
+  if (isExpanded.value) fetchPengabdi()
 }
 
 function handleCurrentChange(newPage: number) {
   currentPage.value = newPage
-  if (isExpanded.value) fetchPeserta()
+  if (isExpanded.value) fetchPengabdi()
 }
 
-// Open Dialog in Add Mode
 function openAddDialog() {
   dialogMode.value = 'add'
   dialogFieldErrors.value = {}
   form.value = {
-    lulus: false,
-    keterangan_lulus: '',
-    sumbangan: 0,
-    barang: '',
+    trx_id: props.kelasId,
+    id_pengabdi: undefined,
     tim_kerja: '',
+    tim_kerja_report: '',
+    hari: '',
+    sub_kerja: '',
+    sumbangan: undefined,
+    barang: '',
     keterangan: '',
     anak: '',
     suster: '',
@@ -427,21 +426,22 @@ function openAddDialog() {
   dialogVisible.value = true
 }
 
-// Open Dialog in Edit Mode
-function openEditDialog(row: KelasPeserta) {
+function openEditDialog(row: KelasPengabdi) {
   dialogMode.value = 'edit'
   dialogFieldErrors.value = {}
-  const rawIdPeserta = row.id_peserta ? Number(row.id_peserta) : undefined
+  const detailId = row.detailid || row.detail_id
+  const rawIdPengabdi = row.id_pengabdi ? Number(row.id_pengabdi) : undefined
 
   form.value = {
-    detail_id: row.detail_id || row.detailid,
-    trx_id: row.trx_id,
-    id_peserta: rawIdPeserta,
-    lulus: Boolean(row.lulus),
-    keterangan_lulus: row.keterangan_lulus || '',
-    sumbangan: row.sumbangan || 0,
-    barang: row.barang || '',
+    detail_id: detailId,
+    trx_id: props.kelasId,
+    id_pengabdi: rawIdPengabdi,
     tim_kerja: row.tim_kerja || '',
+    tim_kerja_report: row.tim_kerja_report || '',
+    hari: row.hari || '',
+    sub_kerja: row.sub_kerja || '',
+    sumbangan: row.sumbangan,
+    barang: row.barang || '',
     keterangan: row.keterangan || '',
     anak: row.anak || '',
     suster: row.suster || '',
@@ -450,20 +450,23 @@ function openEditDialog(row: KelasPeserta) {
     makanan_siang: row.makanan_siang || '',
     makanan_malam: row.makanan_malam || ''
   }
-  
-  if (rawIdPeserta && row.nama_indonesia) {
+
+  if (rawIdPengabdi && row.nama_indonesia) {
     umatOptions.value = [
       {
-        id: rawIdPeserta,
+        id: rawIdPengabdi,
+        kode: '',
         nama_indonesia: row.nama_indonesia,
         nama_mandarin: row.nama_mandarin
       } as Umat
     ]
+  } else {
+    umatOptions.value = []
   }
+
   dialogVisible.value = true
 }
 
-// Submit Create or Edit Form
 async function submitForm() {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
@@ -471,14 +474,15 @@ async function submitForm() {
     submitting.value = true
     dialogFieldErrors.value = {}
     try {
-      const payload: Partial<KelasPeserta> = {
+      const payload: Partial<KelasPengabdi> = {
         trx_id: props.kelasId ? Number(props.kelasId) : undefined,
-        id_peserta: form.value.id_peserta ? Number(form.value.id_peserta) : undefined,
-        lulus: form.value.lulus,
-        keterangan_lulus: form.value.keterangan_lulus,
+        id_pengabdi: form.value.id_pengabdi ? Number(form.value.id_pengabdi) : undefined,
+        tim_kerja: form.value.tim_kerja,
+        tim_kerja_report: form.value.tim_kerja_report,
+        hari: form.value.hari,
+        sub_kerja: form.value.sub_kerja,
         sumbangan: form.value.sumbangan,
         barang: form.value.barang,
-        tim_kerja: form.value.tim_kerja,
         keterangan: form.value.keterangan,
         anak: form.value.anak,
         suster: form.value.suster,
@@ -489,24 +493,24 @@ async function submitForm() {
       }
 
       if (dialogMode.value === 'add') {
-        await kelasApi.createKelasPeserta(payload)
-        ElMessage.success('Peserta kelas berhasil ditambahkan')
+        await kelasApi.createKelasPengabdi(payload)
+        ElMessage.success('Pengabdi kelas berhasil ditambahkan')
       } else {
         const detailId = form.value.detail_id
         if (!detailId) return
-        await kelasApi.updateKelasPeserta(detailId, payload)
-        ElMessage.success('Data peserta kelas berhasil diperbarui')
+        await kelasApi.updateKelasPengabdi(detailId, payload)
+        ElMessage.success('Data pengabdi kelas berhasil diperbarui')
       }
 
       dialogVisible.value = false
-      if (isExpanded.value) fetchPeserta()
+      if (isExpanded.value) fetchPengabdi()
     } catch (err: any) {
-      console.error('Error submitting peserta form:', err)
+      console.error('Error submitting pengabdi form:', err)
       if (err.response?.data?.details) {
         dialogFieldErrors.value = err.response.data.details
         ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
       } else {
-        ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data peserta')
+        ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data pengabdi')
       }
     } finally {
       submitting.value = false
@@ -514,18 +518,17 @@ async function submitForm() {
   })
 }
 
-// Handle Delete Participant
-async function handleDelete(row: KelasPeserta) {
+async function handleDelete(row: KelasPengabdi) {
   const detailId = row.detailid || row.detail_id
   if (!detailId) return
 
   try {
-    await kelasApi.deleteKelasPeserta(detailId, props.kelasId)
-    ElMessage.success('Peserta kelas berhasil dihapus')
-    if (isExpanded.value) fetchPeserta()
+    await kelasApi.deleteKelasPengabdi(detailId, props.kelasId)
+    ElMessage.success('Pengabdi kelas berhasil dihapus')
+    if (isExpanded.value) fetchPengabdi()
   } catch (err: any) {
-    console.error('Error deleting peserta:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data peserta')
+    console.error('Error deleting pengabdi:', err)
+    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data pengabdi')
   }
 }
 
@@ -535,9 +538,9 @@ watch(
     if (newId) {
       currentPage.value = 1
       if (isExpanded.value) {
-        fetchPeserta()
+        fetchPengabdi()
       } else {
-        pesertaList.value = []
+        pengabdiList.value = []
         total.value = 0
       }
     }
@@ -545,10 +548,7 @@ watch(
 )
 
 onMounted(() => {
-  // Only fetch if accordion is expanded on mount
-  if (isExpanded.value) {
-    fetchPeserta()
-  }
+  if (isExpanded.value) fetchPengabdi()
 })
 
 onUnmounted(() => {
@@ -557,7 +557,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.peserta-accordion-container {
+.pengabdi-accordion-container {
   margin-top: 1.25rem;
 }
 
@@ -612,29 +612,13 @@ onUnmounted(() => {
   gap: 0.5rem;
 }
 
-.font-mono {
-  font-family: monospace;
-}
-
 .font-semibold {
   font-weight: 600;
 }
 
-.lulus-note {
-  font-size: 11px;
+.sub-text {
+  font-size: 12px;
   color: var(--el-text-color-secondary);
-  margin-top: 2px;
-}
-
-.ikrar-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  justify-content: center;
-}
-
-.no-ikrar {
-  color: var(--el-text-color-placeholder);
 }
 
 .pagination-container {

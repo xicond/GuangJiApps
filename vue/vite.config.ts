@@ -18,7 +18,10 @@ export default defineConfig(({ mode }) => {
         srcDir: 'src',
         filename: 'sw.ts',
         devOptions: {
-          enabled: false
+          enabled: true,
+          type: 'module',
+          suppressWarnings: false, 
+          navigateFallbackAllowlist: [/^\//], // Allows caching navigation routes
         },
         workbox: {
           navigateFallback: 'index.html',

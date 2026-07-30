@@ -10,9 +10,7 @@ import './style.css'
 import { registerSW } from 'virtual:pwa-register'
 
 // Register Workbox PWA service worker (Production build only)
-if (import.meta.env.PROD) {
-  registerSW({ immediate: true })
-}
+registerSW({ immediate: true })
 
 const app = createApp(App)
 

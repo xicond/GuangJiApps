@@ -11,14 +11,10 @@ import (
 )
 
 func Open(dsn string) (*gorm.DB, error) {
-	cfg := &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)}
-
-	// var dialector gorm.Dialector
-	// if dsn == "" || dsn == ":memory:" || strings.HasPrefix(dsn, "file:") {
-	// 	dialector = sqlite.Open("file::memory:?cache=shared")
-	// } else {
-	// 	dialector = sqlserver.Open(dsn)
-	// }
+	cfg := &gorm.Config{
+		Logger:                                   logger.Default.LogMode(logger.Silent),
+		DisableForeignKeyConstraintWhenMigrating: true,
+	}
 
 	// 1. Open the GORM connection with silent logging to save I/O overhead
 	db, err := gorm.Open(sqlserver.Open(dsn), cfg)
@@ -78,9 +74,19 @@ func AutoMigrate(db *gorm.DB) error {
 		&domain.PenggalangDana{},
 		&domain.SxyDonatur{},
 		&domain.Kelas{},
+		&domain.KelasPeserta{},
+		&domain.KelasPengabdi{},
+		&domain.KelasTopik{},
+		&domain.KelasKendaraan{},
+		&domain.KelasDonasi{},
+		&domain.KelasDonasiBarang{},
+		&domain.KelasPengeluaran{},
+		&domain.KelasMusik{},
+		&domain.KelasAbsensi{},
 		&domain.DonasiSxy{},
 		&domain.AppLookupCategory{},
 		&domain.AppLookup{},
+		&domain.WorkMapping{},
 		&domain.DepartmentMst{},
 	}
 	return db.AutoMigrate(models...)

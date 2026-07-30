@@ -6,7 +6,7 @@
     remote
     :remote-method="handleRemoteSearch"
     :loading="loading"
-    clearable
+    :clearable="props.clearable"
     class="w-full"
     @update:model-value="onValueChange"
     @clear="onClear"
@@ -19,7 +19,7 @@
       :value="getOptionValue(item)"
     />
 
-    <template #footer>
+    <template v-if="maxPage>1" #footer>
       <div v-if="total > 0" class="lookup-pagination-footer">
         <el-button
           size="small"

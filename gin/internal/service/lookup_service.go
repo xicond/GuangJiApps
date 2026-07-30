@@ -63,6 +63,10 @@ func (s *LookupService) LookupKeluarga(filters map[string]string, page int, limi
 	return Lookup(s.db, "B_KELUARGA", page, limit, filters)
 }
 
+func (s *LookupService) LookupKelasLevel(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
+	return Lookup(s.db, "B_KLS_LEVEL", page, limit, filters)
+}
+
 func (s *LookupService) LookupStatus(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_STATUS", page, limit, filters)
 }

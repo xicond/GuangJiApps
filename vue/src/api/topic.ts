@@ -31,6 +31,29 @@ export const topicApi = {
   },
 
   /**
+   * Fetch topics for lookup from GET /v1/topics
+   */
+  async getTopikLookup(
+    params: TopicQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<TopicListResponse> {
+    const cleanParams: Record<string, any> = {
+      page: params.page || 1,
+      limit: params.limit || 10
+    }
+
+    if (params.topic_code) cleanParams.topic_code = params.topic_code
+    if (params.topic_name) cleanParams.topic_name = params.topic_name
+    if (params.topic_category) cleanParams.topic_category = params.topic_category
+
+    const response = await apiClient.get<TopicListResponse>('/v1/topics', {
+      params: cleanParams,
+      signal
+    })
+    return response.data
+  },
+
+  /**
    * Fetch single Topic details by ID.
    */
   async getTopicById(

@@ -137,20 +137,46 @@
       >
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="Kode Topik" prop="kode_topik" :error="hasFieldError('kode_topik') ? ' ' : undefined">
-              <el-input v-model="form.kode_topik" placeholder="Kode / nama topik" maxlength="20" />
+            <el-form-item label="Nama Topik" prop="kode_topik" :error="hasFieldError('kode_topik') ? ' ' : undefined">
+              <LookupSelect
+                v-model="form.kode_topik"
+                placeholder="Pilih Nama Topik..."
+                :fetch-api="fetchTopicLookup"
+                value-key="topic_code"
+                label-key="topic_name"
+                :initial-option="initialTopicOption"
+              />
               <FieldErrors :errors="getFieldErrors('kode_topik')" />
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="Kategori">
+              <span class="static-text">{{ selectedTopic?.topic_category || '-' }}</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="Keterangan">
+              <span class="static-text">{{ selectedTopic?.description || form.keterangan || '-' }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="Durasi (Menit)" :error="hasFieldError('durasi') ? ' ' : undefined">
+              <el-input-number v-model="form.durasi" :min="0" :step="15" controls-position="right" style="width: 100%" />
+              <FieldErrors :errors="getFieldErrors('durasi')" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Urutan" :error="hasFieldError('urutan') ? ' ' : undefined">
               <el-input-number v-model="form.urutan" :min="1" controls-position="right" style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('urutan')" />
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Tanggal Topik" :error="hasFieldError('topik_date') ? ' ' : undefined">
               <el-date-picker
@@ -162,12 +188,6 @@
                 style="width: 100%"
               />
               <FieldErrors :errors="getFieldErrors('topik_date')" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Durasi (Menit)" :error="hasFieldError('durasi') ? ' ' : undefined">
-              <el-input-number v-model="form.durasi" :min="0" :step="15" controls-position="right" style="width: 100%" />
-              <FieldErrors :errors="getFieldErrors('durasi')" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -227,9 +247,12 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import dayjs from 'dayjs'
 import { kelasApi } from '../../api/kelas'
 import { umatApi } from '../../api/umat'
+import { topicApi } from '../../api/topic'
+import LookupSelect from '../common/LookupSelect.vue'
 import FieldErrors from '../common/FieldErrors.vue'
 import type { KelasTopik } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
+import type { Topic } from '../../types/topic'
 
 const props = defineProps<{
   kelasId: string | number
@@ -281,8 +304,58 @@ const form = ref<TopikFormState>({
   keterangan: ''
 })
 
+const topicsMap = ref<Map<string, Topic>>(new Map())
+const selectedTopic = ref<Topic | null>(null)
+
+async function fetchTopicLookup(params: any, signal?: AbortSignal) {
+  const query = params.lookup_description || ''
+  const res = await topicApi.getTopikLookup(
+    { page: params.page || 1, limit: params.limit || 10, topic_name: query },
+    signal
+  )
+  if (res.data) {
+    res.data.forEach((t) => {
+      if (t.topic_code) {
+        topicsMap.value.set(t.topic_code, t)
+      }
+    })
+  }
+  return res
+}
+
+watch(
+  () => form.value.kode_topik,
+  async (newCode) => {
+    if (!newCode) {
+      selectedTopic.value = null
+      return
+    }
+    if (topicsMap.value.has(newCode)) {
+      selectedTopic.value = topicsMap.value.get(newCode) || null
+    } else {
+      try {
+        const res = await topicApi.getTopicById(newCode)
+        if (res.data) {
+          topicsMap.value.set(res.data.topic_code, res.data)
+          selectedTopic.value = res.data
+        }
+      } catch (err) {
+        console.error('Error fetching topic detail:', err)
+        selectedTopic.value = null
+      }
+    }
+  },
+  { immediate: true }
+)
+
+const initialTopicOption = computed(() => {
+  if (!form.value.kode_topik) return undefined
+  if (selectedTopic.value) return selectedTopic.value
+  return { topic_code: form.value.kode_topik, topic_name: form.value.kode_topik }
+})
+
 const formRules: FormRules = {
-  kode_topik: [{ required: true, message: 'Harap isi kode / nama topik', trigger: 'blur' }]
+  kode_topik: [{ required: true, message: 'Harap pilih Nama Topik', trigger: 'change' }]
 }
 
 const umatOptions = ref<Umat[]>([])
@@ -419,11 +492,12 @@ async function submitForm() {
         trx_id: props.kelasId ? Number(props.kelasId) : undefined,
         kode_topik: form.value.kode_topik,
         urutan: form.value.urutan,
+        topik_date: form.value.topik_date,
         penceramah: form.value.penceramah ? Number(form.value.penceramah) : undefined,
         penceramah_ext: form.value.penceramah_ext,
         penterjemah: form.value.penterjemah,
         durasi: form.value.durasi,
-        keterangan: form.value.keterangan
+        keterangan: selectedTopic.value?.description || form.value.keterangan
       }
 
       if (dialogMode.value === 'add') {
@@ -554,5 +628,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+.static-text {
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+  line-height: 32px;
 }
 </style>

@@ -502,6 +502,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Topic"})
 	})
+	// protected.GET("/topik", topicHandler)
 	protected.GET("/topic/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		item, err := topicService.Get(c.Param("id"))
@@ -924,6 +925,16 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupTcs(filters, page, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupTcs"})
+	})
+	protected.GET("/lookup/kelas-level", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := lookupService.LookupKelasLevel(filters, page, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

@@ -151,6 +151,12 @@
               <FieldErrors :errors="getFieldErrors('tim_kerja')" />
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="Sub Kerja" :error="hasFieldError('sub_kerja') ? ' ' : undefined">
+              <el-input v-model="form.sub_kerja" placeholder="Sub kerja" maxlength="3" />
+              <FieldErrors :errors="getFieldErrors('sub_kerja')" />
+            </el-form-item>
+          </el-col>
 
           <!-- masuk ke Tim Kerja Selective -->
           <!-- <el-col :span="12">
@@ -165,12 +171,6 @@
             <el-form-item label="Hari" :error="hasFieldError('hari') ? ' ' : undefined">
               <el-input v-model="form.hari" placeholder="Hari pengabdian" maxlength="30" />
               <FieldErrors :errors="getFieldErrors('hari')" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Sub Kerja" :error="hasFieldError('sub_kerja') ? ' ' : undefined">
-              <el-input v-model="form.sub_kerja" placeholder="Sub kerja" maxlength="3" />
-              <FieldErrors :errors="getFieldErrors('sub_kerja')" />
             </el-form-item>
           </el-col>
         </el-row>

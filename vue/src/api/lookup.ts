@@ -203,6 +203,26 @@ export const lookupApi = {
   },
 
   /**
+   * Kelas Level Lookup (Category B_KLS_LEVEL)
+   */
+  async getLookupKelasLevel(
+    params: LookupQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<LookupListResponse> {
+    const cleanParams: Record<string, any> = {
+      page: params.page || 1,
+      limit: params.limit || 10
+    }
+    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
+
+    const response = await apiClient.get<LookupListResponse>('/v1/lookup/kelas-level', {
+      params: cleanParams,
+      signal
+    })
+    return response.data
+  },
+
+  /**
    * Tim Kerja Lookup (/v1/tim-kerja/lookup)
    */
   async getLookupTimKerja(

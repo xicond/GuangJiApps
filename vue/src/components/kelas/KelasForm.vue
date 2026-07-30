@@ -25,6 +25,7 @@
               placeholder="Pilih Kelas..."
               :fetch-api="kelasApi.getKelasLookup"
               :initial-option="formData.kelas_name"
+              :clearable="false"
             />
             <FieldErrors :errors="getFieldErrors('kode_kelas')" />
           </el-form-item>
@@ -38,6 +39,7 @@
               placeholder="Pilih Fotang..."
               :fetch-api="fotangApi.getFotangLookup"
               :initial-option="formData.fotang_name"
+              :clearable="false"
             />
             <FieldErrors :errors="getFieldErrors('kode_fotang')" />
           </el-form-item>
@@ -54,6 +56,7 @@
               placeholder="Pilih Tanggal Mulai"
               value-format="YYYY-MM-DD"
               style="width: 100%"
+              :clearable="false"
             />
             <FieldErrors :errors="getFieldErrors('start_date')" />
           </el-form-item>
@@ -68,6 +71,7 @@
               placeholder="Pilih Tanggal Selesai"
               value-format="YYYY-MM-DD"
               style="width: 100%"
+              :clearable="false"
             />
             <FieldErrors :errors="getFieldErrors('end_date')" />
           </el-form-item>
@@ -106,10 +110,11 @@
         <!-- Level -->
         <el-col :xs="24" :sm="12">
           <el-form-item label="Tingkat / Level" prop="level" :error="hasFieldError('level') ? ' ' : undefined">
-            <el-input
+            <LookupSelect
               v-model="formData.level"
-              placeholder="Level kelas (max 3 karakter)"
-              maxlength="3"
+              placeholder="Pilih Level..."
+              :fetch-api="lookupApi.getLookupKelasLevel"
+              :clearable="false"
             />
             <FieldErrors :errors="getFieldErrors('level')" />
           </el-form-item>
@@ -209,6 +214,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { User } from '@element-plus/icons-vue'
 import { kelasApi } from '../../api/kelas'
 import { fotangApi } from '../../api/fotang'
+import lookupApi from '../../api/lookup'
 import LookupSelect from '../common/LookupSelect.vue'
 import FieldErrors from '../common/FieldErrors.vue'
 import type { Kelas } from '../../types/kelas'
@@ -347,4 +353,5 @@ function handleCancel() {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+}
 </style>

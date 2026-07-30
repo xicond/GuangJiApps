@@ -160,6 +160,18 @@
           </el-form-item>
         </el-col>
 
+        <el-col :xs="24" :md="12">
+          <el-form-item label="Alamat Tambahan" prop="alamat2" :error="hasFieldError('alamat2') ? ' ' : undefined">
+            <el-input
+              v-model="formData.alamat2"
+              type="textarea"
+              :rows="2"
+              placeholder="Alamat kedua (opsional)"
+            />
+            <FieldErrors :errors="getFieldErrors('alamat2')" />
+          </el-form-item>
+        </el-col>
+
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Fotang Aktif" prop="fotang_aktif" :error="hasFieldError('fotang_aktif') ? ' ' : undefined">
             <LookupSelect
@@ -178,17 +190,6 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :md="12">
-          <el-form-item label="Alamat Tambahan" prop="alamat2" :error="hasFieldError('alamat2') ? ' ' : undefined">
-            <el-input
-              v-model="formData.alamat2"
-              type="textarea"
-              :rows="2"
-              placeholder="Alamat kedua (opsional)"
-            />
-            <FieldErrors :errors="getFieldErrors('alamat2')" />
-          </el-form-item>
-        </el-col>
       </el-row>
     </el-card>
 
@@ -304,12 +305,12 @@
       </el-row>
     </el-card>
 
-    <!-- Section 4: Kelas & San Tao (Sd2 / Sd3) -->
+    <!-- Section 4: Kelas & Sidang Dharma (Sd2 / Sd3) -->
     <el-card shadow="never" class="form-section-card">
       <template #header>
         <div class="section-title">
           <el-icon><Notebook /></el-icon>
-          <span>Kelas & Tempat San Tao</span>
+          <span>Kelas & Tempat Sidang Dharma</span>
         </div>
       </template>
 
@@ -337,7 +338,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Tempat San Tao 2 (Sd2)" prop="tempat_sd2" :error="hasFieldError('tempat_sd2') ? ' ' : undefined">
+          <el-form-item label="Tempat Sidang Dharma 2 (Sd2)" prop="tempat_sd2" :error="hasFieldError('tempat_sd2') ? ' ' : undefined">
             <LookupSelect
               v-model="formData.tempat_sd2"
               placeholder="Pilih tempat Sd2"
@@ -348,7 +349,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Tempat San Tao 3 (Sd3)" prop="tempat_sd3" :error="hasFieldError('tempat_sd3') ? ' ' : undefined">
+          <el-form-item label="Tempat Sidang Dharma 3 (Sd3)" prop="tempat_sd3" :error="hasFieldError('tempat_sd3') ? ' ' : undefined">
             <LookupSelect
               v-model="formData.tempat_sd3"
               placeholder="Pilih tempat Sd3"
@@ -410,7 +411,7 @@
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Ren Chai Pan" prop="ren_chai_pan" :error="hasFieldError('ren_chai_pan') || hasFieldError('tanggal_ren_chai_pan') ? ' ' : undefined">
             <div class="status-date-container">
-              <el-checkbox v-model="formData.ren_chai_pan" label="Ya" />
+              <el-checkbox v-model="formData.ren_chai_pan" />
               <el-date-picker
                 v-model="formData.tanggal_ren_chai_pan"
                 type="date"
@@ -429,7 +430,7 @@
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Lien Ciang Pan" prop="lien_ciang_pan" :error="hasFieldError('lien_ciang_pan') || hasFieldError('tanggal_lien_ciang_pan') ? ' ' : undefined">
             <div class="status-date-container">
-              <el-checkbox v-model="formData.lien_ciang_pan" label="Ya" />
+              <el-checkbox v-model="formData.lien_ciang_pan" />
               <el-date-picker
                 v-model="formData.tanggal_lien_ciang_pan"
                 type="date"
@@ -448,7 +449,7 @@
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Ciang Yen Pan" prop="ciang_yen_pan" :error="hasFieldError('ciang_yen_pan') || hasFieldError('tanggal_ciang_yen_pan') ? ' ' : undefined">
             <div class="status-date-container">
-              <el-checkbox v-model="formData.ciang_yen_pan" label="Ya" />
+              <el-checkbox v-model="formData.ciang_yen_pan" />
               <el-date-picker
                 v-model="formData.tanggal_ciang_yen_pan"
                 type="date"
@@ -467,7 +468,7 @@
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Ching Khou" prop="ching_khou" :error="hasFieldError('ching_khou') || hasFieldError('tanggal_ching_khou') ? ' ' : undefined">
             <div class="status-date-container">
-              <el-checkbox v-model="formData.ching_khou" label="Ya" />
+              <el-checkbox v-model="formData.ching_khou" />
               <el-date-picker
                 v-model="formData.tanggal_ching_khou"
                 type="date"
@@ -484,9 +485,9 @@
 
         <!-- Meninggal -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Meninggal" prop="meninggal" :error="hasFieldError('meninggal') || hasFieldError('tanggal_meninggal') ? ' ' : undefined">
+          <el-form-item label="Sudah Meninggal" prop="meninggal" :error="hasFieldError('meninggal') || hasFieldError('tanggal_meninggal') ? ' ' : undefined">
             <div class="status-date-container">
-              <el-checkbox v-model="formData.meninggal" label="Ya" />
+              <el-checkbox v-model="formData.meninggal" />
               <el-date-picker
                 v-model="formData.tanggal_meninggal"
                 type="date"

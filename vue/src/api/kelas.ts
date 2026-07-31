@@ -78,6 +78,16 @@ export const kelasApi = {
   },
 
   /**
+   * Download Excel report for a specific Kelas by ID.
+   */
+  async downloadReport(id: string | number): Promise<Blob> {
+    const response = await apiClient.get(`/v1/kelas/${id}/report`, {
+      responseType: 'blob'
+    })
+    return response.data
+  },
+
+  /**
    * Fetch list of participants (peserta) for a specific Kelas by ID with optional pagination.
    */
   async getKelasPeserta(

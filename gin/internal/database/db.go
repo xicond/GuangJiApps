@@ -105,6 +105,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&domain.AppLookup{},
 		&domain.WorkMapping{},
 		&domain.DepartmentMst{},
+		&domain.AdminMatrix{},
 	}
 	return db.AutoMigrate(models...)
 }

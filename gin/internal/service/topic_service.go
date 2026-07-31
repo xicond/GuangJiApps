@@ -118,7 +118,7 @@ func (s *TopicService) List(page int, filters map[string]string, limit int) ([]d
 
 func (s *TopicService) Create(payload domain.Topic, c *gin.Context) (domain.Topic, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.Topic{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.Topic{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	userIDStr := "1"

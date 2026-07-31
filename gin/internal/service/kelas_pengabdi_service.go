@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -23,6 +25,120 @@ func NewKelasPengabdiService(db *gorm.DB) *KelasPengabdiService {
 		db = database.MustOpen("")
 	}
 	return &KelasPengabdiService{db: db, resource: "kelas_pengabdi"}
+}
+
+func validatePengabdiLookups(db *gorm.DB, payload *domain.KelasPengabdi) error {
+	type lookupCheck struct {
+		fieldName string
+		queryFn   func(db *gorm.DB) error
+	}
+
+	var checks []lookupCheck
+
+	// 1. TrxId from Kelas
+	if payload.TrxId != 0 {
+		checks = append(checks, lookupCheck{
+			fieldName: "trx_id",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.Kelas{}).Where("trxid = ?", payload.TrxId).Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("trx_id %d tidak ditemukan di Kelas", payload.TrxId)
+				}
+				return nil
+			},
+		})
+	}
+
+	// 2. IdPengabdi from Umat
+	if payload.IdPengabdi != nil && *payload.IdPengabdi != 0 {
+		checks = append(checks, lookupCheck{
+			fieldName: "id_pengabdi",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.Umat{}).Where("id = ?", *payload.IdPengabdi).Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("id_pengabdi %d tidak ditemukan di Umat", *payload.IdPengabdi)
+				}
+				return nil
+			},
+		})
+	}
+
+	// 3. TimKerja B_TIMKERJA
+	if payload.TimKerja != nil && strings.TrimSpace(*payload.TimKerja) != "" {
+		val := strings.TrimSpace(*payload.TimKerja)
+		checks = append(checks, lookupCheck{
+			fieldName: "tim_kerja",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.AppLookup{}).
+					Where("CategoryId = ? AND (LookupValue = ? OR LookupId = ?)", "B_TIMKERJA", val, val).
+					Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("field tim_kerja nilai '%s' tidak valid", val)
+				}
+				return nil
+			},
+		})
+	}
+
+	// 4. SubKerja if notempty B_SUBKERJA
+	if payload.SubKerja != nil && strings.TrimSpace(*payload.SubKerja) != "" {
+		val := strings.TrimSpace(*payload.SubKerja)
+		checks = append(checks, lookupCheck{
+			fieldName: "sub_kerja",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.AppLookup{}).
+					Where("CategoryId = ? AND (LookupValue = ? OR LookupId = ?)", "B_SUBKERJA", val, val).
+					Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("field sub_kerja nilai '%s' tidak valid", val)
+				}
+				return nil
+			},
+		})
+	}
+
+	if len(checks) == 0 {
+		return nil
+	}
+
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		details = make(map[string][]string)
+	)
+
+	wg.Add(len(checks))
+	for _, check := range checks {
+		go func(c lookupCheck) {
+			defer wg.Done()
+			sess := db.Session(&gorm.Session{})
+			if err := c.queryFn(sess); err != nil {
+				mu.Lock()
+				details[c.fieldName] = append(details[c.fieldName], err.Error())
+				mu.Unlock()
+			}
+		}(check)
+	}
+
+	wg.Wait()
+
+	if len(details) > 0 {
+		return &ValidationError{Details: details}
+	}
+
+	return nil
 }
 
 func (s *KelasPengabdiService) List(trxID string, page int, limit int) ([]domain.KelasPengabdi, int64, error) {
@@ -69,7 +185,11 @@ func (s *KelasPengabdiService) List(trxID string, page int, limit int) ([]domain
 
 func (s *KelasPengabdiService) Create(payload domain.KelasPengabdi, c *gin.Context) (domain.KelasPengabdi, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.KelasPengabdi{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.KelasPengabdi{}, fmt.Errorf("Validation failed: %w", err)
+	}
+
+	if err := validatePengabdiLookups(s.db, &payload); err != nil {
+		return domain.KelasPengabdi{}, err
 	}
 
 	if payload.DetailId == 0 {
@@ -120,6 +240,24 @@ func (s *KelasPengabdiService) Update(id string, payload domain.KelasPengabdi, c
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.KelasPengabdi{}, fmt.Errorf("kelas pengabdi %s not found", id)
 		}
+		return domain.KelasPengabdi{}, err
+	}
+
+	targetVal := item
+	if payload.TrxId != 0 {
+		targetVal.TrxId = payload.TrxId
+	}
+	if payload.IdPengabdi != nil {
+		targetVal.IdPengabdi = payload.IdPengabdi
+	}
+	if payload.TimKerja != nil {
+		targetVal.TimKerja = payload.TimKerja
+	}
+	if payload.SubKerja != nil {
+		targetVal.SubKerja = payload.SubKerja
+	}
+
+	if err := validatePengabdiLookups(s.db, &targetVal); err != nil {
 		return domain.KelasPengabdi{}, err
 	}
 

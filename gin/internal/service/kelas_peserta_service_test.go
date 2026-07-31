@@ -20,10 +20,29 @@ func TestKelasPesertaService(t *testing.T) {
 	svc := NewKelasPesertaService(db)
 	c := setupTestContext()
 
+	// Seed target FK records (Kelas & Umat) for lookup validation
+	kodeK := "K01"
+	db.Exec("DELETE FROM T_TRX_KELAS WHERE trxid = ?", 26160003)
+	db.Exec("DELETE FROM T_BUS_UMAT WHERE id = ?", 101)
+	db.Create(&domain.Kelas{TrxId: 26160003, KodeKelas: &kodeK})
+	db.Create(&domain.Umat{ID: 101, Kode: "UM101", NamaIndonesia: "Peserta Test", JenisKelamin: "001"})
+	defer func() {
+		db.Exec("DELETE FROM T_TRX_KELAS WHERE trxid = ?", 26160003)
+		db.Exec("DELETE FROM T_BUS_UMAT WHERE id = ?", 101)
+	}()
+
 	// 1. Validation error tests - missing TrxId or IdPeserta
 	_, err = svc.Create(domain.KelasPeserta{}, c)
 	if err == nil {
 		t.Fatalf("expected error for missing required fields, got nil")
+	}
+
+	// Validation error for non-existent TrxId or IdPeserta
+	invalidTrx := int32(999999)
+	invalidUmat := int32(888888)
+	_, err = svc.Create(domain.KelasPeserta{TrxId: invalidTrx, IdPeserta: &invalidUmat}, c)
+	if err == nil {
+		t.Fatalf("expected lookup validation error for invalid FKs, got nil")
 	}
 
 	// 2. Successful Create

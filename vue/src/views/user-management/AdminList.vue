@@ -299,7 +299,7 @@
         <div class="dialog-footer">
           <el-button @click="dialogVisible = false">Batal</el-button>
           <el-button type="primary" :loading="submitting" @click="submitForm">
-            {{ isEditing ? 'Simpan Perubahan' : 'Tambah Admin' }}
+            {{ isMobile ? (isEditing ? 'Simpan' : 'Tambah') : (isEditing ? 'Simpan Perubahan' : 'Tambah Admin') }}
           </el-button>
         </div>
       </template>

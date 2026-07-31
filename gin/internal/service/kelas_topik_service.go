@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -23,6 +25,98 @@ func NewKelasTopikService(db *gorm.DB) *KelasTopikService {
 		db = database.MustOpen("")
 	}
 	return &KelasTopikService{db: db, resource: "kelas_topik"}
+}
+
+func validateTopikLookups(db *gorm.DB, payload *domain.KelasTopik) error {
+	type lookupCheck struct {
+		fieldName string
+		queryFn   func(db *gorm.DB) error
+	}
+
+	var checks []lookupCheck
+
+	// 1. TrxId from Kelas
+	if payload.TrxId != 0 {
+		checks = append(checks, lookupCheck{
+			fieldName: "trx_id",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.Kelas{}).Where("trxid = ?", payload.TrxId).Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("trx_id %d tidak ditemukan di Kelas", payload.TrxId)
+				}
+				return nil
+			},
+		})
+	}
+
+	// 2. KodeTopik from Topic
+	if payload.KodeTopik != nil && strings.TrimSpace(*payload.KodeTopik) != "" {
+		val := strings.TrimSpace(*payload.KodeTopik)
+		checks = append(checks, lookupCheck{
+			fieldName: "kode_topik",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.Topic{}).Where("TopicCode = ?", val).Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("kode_topik '%s' tidak ditemukan di Topic", val)
+				}
+				return nil
+			},
+		})
+	}
+
+	// 3. Penceramah if notempty from Umat
+	if payload.Penceramah != nil && *payload.Penceramah != 0 {
+		checks = append(checks, lookupCheck{
+			fieldName: "penceramah",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.Umat{}).Where("id = ?", *payload.Penceramah).Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("penceramah %d tidak ditemukan di Umat", *payload.Penceramah)
+				}
+				return nil
+			},
+		})
+	}
+
+	if len(checks) == 0 {
+		return nil
+	}
+
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		details = make(map[string][]string)
+	)
+
+	wg.Add(len(checks))
+	for _, check := range checks {
+		go func(c lookupCheck) {
+			defer wg.Done()
+			sess := db.Session(&gorm.Session{})
+			if err := c.queryFn(sess); err != nil {
+				mu.Lock()
+				details[c.fieldName] = append(details[c.fieldName], err.Error())
+				mu.Unlock()
+			}
+		}(check)
+	}
+
+	wg.Wait()
+
+	if len(details) > 0 {
+		return &ValidationError{Details: details}
+	}
+
+	return nil
 }
 
 func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.KelasTopik, int64, error) {
@@ -61,7 +155,11 @@ func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.Ke
 
 func (s *KelasTopikService) Create(payload domain.KelasTopik, c *gin.Context) (domain.KelasTopik, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.KelasTopik{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.KelasTopik{}, fmt.Errorf("Validation failed: %w", err)
+	}
+
+	if err := validateTopikLookups(s.db, &payload); err != nil {
+		return domain.KelasTopik{}, err
 	}
 
 	if payload.DetailId == 0 {
@@ -112,6 +210,21 @@ func (s *KelasTopikService) Update(id string, payload domain.KelasTopik, c *gin.
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.KelasTopik{}, fmt.Errorf("kelas topik %s not found", id)
 		}
+		return domain.KelasTopik{}, err
+	}
+
+	targetVal := item
+	if payload.TrxId != 0 {
+		targetVal.TrxId = payload.TrxId
+	}
+	if payload.KodeTopik != nil {
+		targetVal.KodeTopik = payload.KodeTopik
+	}
+	if payload.Penceramah != nil {
+		targetVal.Penceramah = payload.Penceramah
+	}
+
+	if err := validateTopikLookups(s.db, &targetVal); err != nil {
 		return domain.KelasTopik{}, err
 	}
 

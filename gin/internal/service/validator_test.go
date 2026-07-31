@@ -14,8 +14,8 @@ func TestValidateStruct(t *testing.T) {
 		if err == nil {
 			t.Fatalf("expected validation error, got nil")
 		}
-		if !strings.Contains(err.Error(), "required") {
-			t.Errorf("expected error message to contain 'required', got: %v", err)
+		if !strings.Contains(err.Error(), "wajib diisi") {
+			t.Errorf("expected error message to contain 'wajib diisi', got: %v", err)
 		}
 		if !strings.Contains(strings.ToLower(err.Error()), "username") {
 			t.Errorf("expected error message to mention 'username', got: %v", err)
@@ -94,8 +94,8 @@ func TestValidateStruct(t *testing.T) {
 		if err == nil {
 			t.Fatalf("expected gte validation error, got nil")
 		}
-		if !strings.Contains(err.Error(), "gte:0") {
-			t.Errorf("expected error message to contain 'gte:0', got: %v", err)
+		if !strings.Contains(err.Error(), "kurang dari nilai minimum 0") {
+			t.Errorf("expected error message to contain 'kurang dari nilai minimum 0', got: %v", err)
 		}
 	})
 
@@ -114,4 +114,16 @@ func TestValidateStruct(t *testing.T) {
 			t.Errorf("expected error for invalid date, got nil")
 		}
 	})
+
+	t.Run("validation failure translates field name using dictionary mapping or space separation", func(t *testing.T) {
+		payload := domain.Umat{}
+		err := ValidateStruct(payload)
+		if err == nil {
+			t.Fatalf("expected validation error for empty Umat, got nil")
+		}
+		if !strings.Contains(err.Error(), "Nama Indonesia wajib diisi") {
+			t.Errorf("expected translated error message for NamaIndonesia, got: %v", err)
+		}
+	})
 }
+

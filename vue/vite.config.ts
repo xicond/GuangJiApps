@@ -33,14 +33,26 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'GuangJi Apps',
           short_name: 'GuangJi',
-          description: 'GuangJi PWA Application',
+          description: 'GuangJi Application',
           theme_color: '#409eff',
           background_color: '#141414',
           display: 'standalone',
           icons: [
             {
+              src: 'favicon.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any'
+            },
+          /* {
+            src: 'favicon_512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }, */
+            {
               src: 'favicon.ico',
-              sizes: '64x64 32x32 24x24 16x16',
+              sizes: '192x192',
               type: 'image/x-icon'
             }
           ]

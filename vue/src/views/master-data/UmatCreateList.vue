@@ -50,7 +50,7 @@ async function handleCreate(payload: Partial<Umat>) {
     console.error('Failed to create umat:', err)
     if (err.response?.data?.details) {
       fieldErrors.value = err.response.data.details
-      ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
+      ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
     } else {
       ElMessage.error(err.response?.data?.error || err.message || 'Gagal menambahkan data umat')
     }

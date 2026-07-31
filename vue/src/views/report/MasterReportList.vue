@@ -68,7 +68,7 @@
         style="width: 100%"
         empty-text="Tidak ada data master report yang ditemukan"
       >
-        <el-table-column prop="id" label="ID" width="80" align="center" sortable />
+        <el-table-column v-if="isDesktop" prop="id" label="ID" width="80" align="center" sortable />
 
         <el-table-column prop="nama" label="Nama Master Report" min-width="180">
           <template #default="{ row }">
@@ -91,7 +91,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" fixed="right">
+        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -132,7 +132,7 @@
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
+          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />
@@ -143,6 +143,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
@@ -154,6 +155,13 @@ import {
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
+
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 const dataList = shallowRef<any[]>([])
 const loading = ref(false)

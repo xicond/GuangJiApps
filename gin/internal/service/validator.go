@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+
+	"guangjiapps/gin/internal/domain"
 )
 
 var validate = func() *validator.Validate {
@@ -47,6 +49,14 @@ func FormatValidatorErrors(err error) map[string][]string {
 	if len(validationErrs) > 0 {
 		for _, e := range validationErrs {
 			field := e.Field()
+			label := domain.GetFieldLabel(e.StructNamespace())
+			if label == "" {
+				label = domain.GetFieldLabel(e.StructField())
+			}
+			if label == "" {
+				label = field
+			}
+
 			rule := e.Tag()
 			if e.Param() != "" {
 				rule = fmt.Sprintf("%s:%s", e.Tag(), e.Param())
@@ -55,19 +65,31 @@ func FormatValidatorErrors(err error) map[string][]string {
 			var msg string
 			switch e.Tag() {
 			case "required":
-				msg = fmt.Sprintf("%s wajib diisi (required)", field)
+				msg = fmt.Sprintf("%s wajib diisi", label)
 			case "email":
-				msg = fmt.Sprintf("%s harus berupa email yang valid (email)", field)
+				msg = fmt.Sprintf("%s harus berupa email yang valid (email)", label)
 			case "min":
-				msg = fmt.Sprintf("%s kurang dari nilai minimum %s (min)", field, e.Param())
+				msg = fmt.Sprintf("%s kurang dari nilai minimum %s (min)", label, e.Param())
 			case "max":
-				msg = fmt.Sprintf("%s melebihi nilai maksimum %s (max:%s)", field, e.Param(), e.Param())
+				msg = fmt.Sprintf("%s melebihi nilai maksimum %s (max:%s)", label, e.Param(), e.Param())
 			case "gte":
-				msg = fmt.Sprintf("%s kurang dari nilai minimum %s (gte:%s)", field, e.Param(), e.Param())
+				msg = fmt.Sprintf("%s kurang dari nilai minimum %s", label, e.Param())
 			case "lte":
-				msg = fmt.Sprintf("%s melebihi nilai maksimum %s (lte:%s)", field, e.Param(), e.Param())
+				msg = fmt.Sprintf("%s melebihi nilai maksimum %s", label, e.Param())
+			case "gtefield":
+				targetLabel := domain.GetFieldLabel(e.Param())
+				if targetLabel == "" {
+					targetLabel = e.Param()
+				}
+				msg = fmt.Sprintf("%s tidak boleh lebih awal dari %s", label, targetLabel)
+			case "ltefield":
+				targetLabel := domain.GetFieldLabel(e.Param())
+				if targetLabel == "" {
+					targetLabel = e.Param()
+				}
+				msg = fmt.Sprintf("%s tidak boleh lebih lambat dari %s", label, targetLabel)
 			default:
-				msg = fmt.Sprintf("%s gagal pada aturan %s", field, rule)
+				msg = fmt.Sprintf("%s gagal pada aturan %s", label, rule)
 			}
 			details[field] = append(details[field], msg)
 		}

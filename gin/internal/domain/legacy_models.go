@@ -6,7 +6,110 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 )
+
+// ==========================================
+// FIELD TRANSLATIONS DICTIONARY & HELPER
+// ==========================================
+
+// FieldTranslations maps struct namespace (e.g. "Umat.NamaIndonesia"),
+// struct field name (e.g. "NamaIndonesia"), or json tag name (e.g. "nama_indonesia")
+// to custom user-friendly label translations.
+var FieldTranslations = map[string]string{
+	"Umat.NamaIndonesia":        "Nama Indonesia",
+	"Umat.NamaMandarin":         "Nama Mandarin",
+	"Umat.TanggalChiutaoInt":    "Tanggal Ciu Tao (Masehi)",
+	"Umat.TanggalChiutaoMan":    "Tanggal Ciu Tao (Imlek)",
+	"Umat.TahunChiutaoMandarin": "Tahun Ciu Tao (Mandarin)",
+	"Umat.WaktuChiutaoMandarin": "Waktu Ciu Tao (Mandarin)",
+	"Umat.TanggalAncuo":         "Tanggal An cuo",
+	"Umat.NamaCetyaRumah":       "Nama Cetya Rumah",
+	"Kelas.StartDate":           "Tanggal Mulai",
+	"Kelas.EndDate":             "Tanggal Selesai",
+	"StartDate":                 "Tanggal Mulai",
+	"EndDate":                   "Tanggal Selesai",
+	"start_date":                "Tanggal Mulai",
+	"end_date":                  "Tanggal Selesai",
+}
+
+// GetFieldLabel translates a field identifier (struct namespace like "Umat.NamaIndonesia",
+// struct field name like "NamaIndonesia", or json key like "nama_indonesia") to a human-readable label.
+// If not found in FieldTranslations map, it defaults to splitting the model field name into space-separated words.
+func GetFieldLabel(identifier string) string {
+	if identifier == "" {
+		return ""
+	}
+
+	// 1. Check exact identifier in FieldTranslations map
+	if translated, ok := FieldTranslations[identifier]; ok && translated != "" {
+		return translated
+	}
+
+	// If identifier has a struct namespace prefix (e.g. "Umat.NamaIndonesia"), check field name part
+	fieldName := identifier
+	if idx := strings.LastIndex(identifier, "."); idx != -1 {
+		fieldName = identifier[idx+1:]
+		if translated, ok := FieldTranslations[fieldName]; ok && translated != "" {
+			return translated
+		}
+	}
+
+	// 2. Default fallback: space separate model field name
+	return FormatFieldName(fieldName)
+}
+
+// FormatFieldName converts PascalCase/camelCase or snake_case string into space-separated words.
+// E.g., "NamaIndonesia" -> "Nama Indonesia", "nama_indonesia" -> "Nama Indonesia".
+func FormatFieldName(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	// Handle snake_case if present
+	if strings.Contains(s, "_") {
+		parts := strings.Split(s, "_")
+		var b strings.Builder
+		b.Grow(len(s))
+		for i, part := range parts {
+			if part == "" {
+				continue
+			}
+			if i > 0 && b.Len() > 0 {
+				b.WriteByte(' ')
+			}
+			runes := []rune(part)
+			runes[0] = unicode.ToUpper(runes[0])
+			b.WriteString(string(runes))
+		}
+		return b.String()
+	}
+
+	// Handle PascalCase / camelCase
+	runes := []rune(s)
+	n := len(runes)
+	var b strings.Builder
+	b.Grow(n + 5) // Pre-allocate capacity to minimize GC pressure
+
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			prev := runes[i-1]
+			curr := runes[i]
+
+			if unicode.IsUpper(curr) {
+				if unicode.IsLower(prev) || unicode.IsDigit(prev) {
+					b.WriteByte(' ')
+				} else if unicode.IsUpper(prev) && i+1 < n && unicode.IsLower(runes[i+1]) {
+					b.WriteByte(' ')
+				}
+			} else if unicode.IsDigit(curr) && !unicode.IsDigit(prev) {
+				b.WriteByte(' ')
+			}
+		}
+		b.WriteRune(runes[i])
+	}
+	return b.String()
+}
 
 // ==========================================
 // 1. ADMIN & AUTHORIZATION MODELS
@@ -532,8 +635,8 @@ func (SxyDonatur) TableName() string { return "T_SXY_MST_DONATUR" }
 type Kelas struct {
 	TrxId      int32      `gorm:"primaryKey;column:trxid;type:int;not null" json:"trx_id,omitempty"`
 	KodeKelas  *string    `gorm:"column:kodekelas;type:varchar(3)" json:"kode_kelas,omitempty" validate:"required,max=3"`
-	StartDate  *time.Time `gorm:"column:startdate;type:date" json:"start_date,omitempty"`
-	EndDate    *time.Time `gorm:"column:enddate;type:date" json:"end_date,omitempty"`
+	StartDate  *time.Time `gorm:"column:startdate;type:date" json:"start_date,omitempty" validate:"omitempty"`
+	EndDate    *time.Time `gorm:"column:enddate;type:date" json:"end_date,omitempty" validate:"omitempty,gtefield=StartDate"`
 	KodeFotang *string    `gorm:"column:kodefotang;type:varchar(3)" json:"kode_fotang,omitempty" validate:"omitempty,max=3"`
 	Lokasi     *string    `gorm:"column:lokasi;type:varchar(50)" json:"lokasi,omitempty" validate:"omitempty,max=50"`
 	PIC        *string    `gorm:"column:PIC;type:nvarchar(100)" json:"pic,omitempty" validate:"omitempty,max=100"`

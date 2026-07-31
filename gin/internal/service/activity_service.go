@@ -108,7 +108,7 @@ func (s *ActivityService) List(page int, filters map[string]string, limit int) (
 
 func (s *ActivityService) Create(payload domain.Activity, c *gin.Context) (domain.Activity, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.Activity{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.Activity{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	userIDStr := "1"

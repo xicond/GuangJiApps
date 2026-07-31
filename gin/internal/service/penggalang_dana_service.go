@@ -170,7 +170,7 @@ func (s *PenggalangDanaService) List(page int, filters map[string]string, limit 
 
 func (s *PenggalangDanaService) Create(payload domain.PenggalangDana, c *gin.Context) (domain.PenggalangDana, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.PenggalangDana{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.PenggalangDana{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	var maxID int32

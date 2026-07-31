@@ -6,7 +6,7 @@
         <h2 class="page-title">Group Menu Mapping</h2>
         <p class="page-subtitle">Kelola daftar data group menu mapping, pencarian, serta pembaruan profil</p>
       </div>
-      <el-button
+      <!-- <el-button
         type="primary"
         size="large"
         :icon="Plus"
@@ -14,7 +14,7 @@
         @click="handleCreate"
       >
         Tambah Group Menu Mapping Baru
-      </el-button>
+      </el-button> -->
     </div>
 
     <!-- Filter Card -->

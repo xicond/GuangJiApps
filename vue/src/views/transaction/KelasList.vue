@@ -125,7 +125,7 @@
         </el-table-column>
 
         <!-- Actions Column -->
-        <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
+        <el-table-column label="Aksi" width="190" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button
@@ -144,6 +144,16 @@
                 :icon="Edit"
                 title="Edit Kelas"
                 @click="handleEdit(row.trx_id)"
+              />
+
+              <el-button
+                type="success"
+                size="small"
+                circle
+                :icon="Download"
+                title="Download Report Excel"
+                :loading="downloadingId === row.trx_id"
+                @click="handleDownloadReport(row.trx_id)"
               />
 
               <el-popconfirm
@@ -195,7 +205,8 @@ import {
   Plus,
   Edit,
   View,
-  Delete
+  Delete,
+  Download
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { kelasApi } from '../../api/kelas'
@@ -215,6 +226,7 @@ const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 // Memory Optimization: shallowRef for table dataset
 const dataList = shallowRef<Kelas[]>([])
 const loading = ref(false)
+const downloadingId = ref<string | number | null>(null)
 
 // Pagination state
 const pagination = reactive({
@@ -332,6 +344,31 @@ async function handleDelete(id: string) {
   } catch (err: any) {
     console.error('Failed to delete item:', err)
     ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data')
+  }
+}
+
+async function handleDownloadReport(id: string | number) {
+  downloadingId.value = id
+  try {
+    const blob = await kelasApi.downloadReport(id)
+    const url = window.URL.createObjectURL(new Blob([blob]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `rpt_trx_kelas_${id}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+    ElNotification({
+      title: 'Berhasil',
+      message: `Report kelas ${id} berhasil di-download`,
+      type: 'success'
+    })
+  } catch (err: any) {
+    console.error('Failed to download report:', err)
+    ElMessage.error(err.response?.data?.error || err.message || 'Gagal mendownload report')
+  } finally {
+    downloadingId.value = null
   }
 }
 

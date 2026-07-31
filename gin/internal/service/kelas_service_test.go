@@ -1,11 +1,18 @@
 package service
 
 import (
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestKelasService(t *testing.T) {
@@ -69,11 +76,17 @@ func TestKelasService(t *testing.T) {
 		t.Fatalf("expected error for missing KodeKelas, got nil")
 	}
 
-	// Invalid KodeKelas
+	// Invalid KodeKelas returns ValidationError
 	invalidK := "INVALID_K"
 	_, err = svc.Create(domain.Kelas{KodeKelas: &invalidK}, c)
 	if err == nil {
 		t.Fatalf("expected error for invalid KodeKelas, got nil")
+	}
+	var valErr *ValidationError
+	if !errors.As(err, &valErr) {
+		t.Errorf("expected *ValidationError for invalid KodeKelas, got %T (%v)", err, err)
+	} else if len(valErr.Details["kode_kelas"]) == 0 {
+		t.Errorf("expected details for 'kode_kelas', got: %v", valErr.Details)
 	}
 
 	// Valid KodeKelas but invalid KodeFotang
@@ -81,6 +94,19 @@ func TestKelasService(t *testing.T) {
 	_, err = svc.Create(domain.Kelas{KodeKelas: &valKelas, KodeFotang: &invalidF}, c)
 	if err == nil {
 		t.Fatalf("expected error for invalid KodeFotang, got nil")
+	}
+	if !errors.As(err, &valErr) {
+		t.Errorf("expected *ValidationError for invalid KodeFotang, got %T (%v)", err, err)
+	} else if len(valErr.Details["kode_fotang"]) == 0 {
+		t.Errorf("expected details for 'kode_fotang', got: %v", valErr.Details)
+	}
+
+	// Date range validation: EndDate < StartDate
+	tMulai := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
+	tSelesai := time.Date(2026, 8, 5, 0, 0, 0, 0, time.UTC)
+	_, err = svc.Create(domain.Kelas{KodeKelas: &valKelas, StartDate: &tMulai, EndDate: &tSelesai}, c)
+	if err == nil {
+		t.Fatalf("expected error for StartDate > EndDate, got nil")
 	}
 
 	// 2. Successful Create
@@ -158,5 +184,79 @@ func TestKelasService(t *testing.T) {
 	}
 	if totalAll != 1 || len(lookupsAll) != 1 {
 		t.Errorf("expected 1 lookup item with limit=0, got %d", totalAll)
+	}
+}
+
+func TestKelasServiceReport(t *testing.T) {
+	db, err := database.Open("")
+	if err != nil {
+		t.Fatalf("failed to open test db: %v", err)
+	}
+	if err := database.AutoMigrate(db); err != nil {
+		t.Fatalf("auto migrate failed: %v", err)
+	}
+
+	db.Exec("DELETE FROM T_WH_USER_MATRIX_MST WHERE CRUID = 999999 OR LOGINID = 999999")
+	if err := db.Exec("INSERT INTO T_WH_USER_MATRIX_MST (CRUID, LOGINID, SUBWHID) VALUES (?, ?, ?)", 999999, 999999, 160).Error; err != nil {
+		t.Fatalf("failed to seed matrix: %v", err)
+	}
+	defer db.Exec("DELETE FROM T_WH_USER_MATRIX_MST WHERE CRUID = 999999")
+
+	mockReportContent := []byte("PK\x03\x04mock_excel_openxml_data")
+
+	digestTested := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if !strings.HasPrefix(authHeader, "Digest ") {
+			w.Header().Set("WWW-Authenticate", `Digest realm="TestRealm", nonce="test_nonce_123", qop="auth"`)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		if strings.HasPrefix(authHeader, "Digest ") {
+			digestTested = true
+			if !strings.Contains(authHeader, `username="admin"`) {
+				t.Errorf("expected Digest auth username=admin, got %s", authHeader)
+			}
+		}
+
+		if r.URL.Query().Get("TrxId") != "26040001" {
+			t.Errorf("expected TrxId=26040001, got %s", r.URL.Query().Get("TrxId"))
+		}
+		if subWh := r.URL.Query().Get("SubWhId"); subWh != "" && subWh != "160" {
+			t.Errorf("expected SubWhId=160, got %s", subWh)
+		}
+
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+		w.WriteHeader(http.StatusOK)
+		w.Write(mockReportContent)
+	}))
+	defer ts.Close()
+
+	svc := NewKelasService(db)
+	svc.reportServerURL = ts.URL
+	svc.reportServerUsername = "admin"
+	svc.reportServerPassword = "password123"
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request, _ = http.NewRequest("GET", "/kelas/26040001/report", nil)
+	c.Set("userID", int32(999999))
+
+	err = svc.Report("26040001", "", c)
+	if err != nil {
+		t.Fatalf("Report streaming failed: %v", err)
+	}
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected HTTP 200, got %d", w.Code)
+	}
+
+	if w.Body.String() != string(mockReportContent) {
+		t.Errorf("expected body %q, got %q", string(mockReportContent), w.Body.String())
+	}
+
+	if !digestTested {
+		t.Errorf("expected Digest Auth challenge to be processed")
 	}
 }

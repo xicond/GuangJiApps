@@ -20,10 +20,29 @@ func TestKelasTopikService(t *testing.T) {
 	svc := NewKelasTopikService(db)
 	c := setupTestContext()
 
+	// Seed target FK records (Kelas & Topic) for lookup validation
+	kodeK := "K01"
+	db.Exec("DELETE FROM T_TRX_KELAS WHERE trxid = ?", 26160003)
+	db.Exec("DELETE FROM T_BUS_TOPIC WHERE TopicCode = ?", "TP001")
+	db.Create(&domain.Kelas{TrxId: 26160003, KodeKelas: &kodeK})
+	db.Create(&domain.Topic{TopicCode: "TP001", TopicName: "Pembuka", Status: true})
+	defer func() {
+		db.Exec("DELETE FROM T_TRX_KELAS WHERE trxid = ?", 26160003)
+		db.Exec("DELETE FROM T_BUS_TOPIC WHERE TopicCode = ?", "TP001")
+	}()
+
 	// 1. Validation error test - missing TrxId
 	_, err = svc.Create(domain.KelasTopik{}, c)
 	if err == nil {
 		t.Fatalf("expected error for missing required fields, got nil")
+	}
+
+	// Validation error for non-existent TrxId or KodeTopik
+	invalidTrx := int32(999999)
+	invalidTopik := "INVALID_TOPIC"
+	_, err = svc.Create(domain.KelasTopik{TrxId: invalidTrx, KodeTopik: &invalidTopik}, c)
+	if err == nil {
+		t.Fatalf("expected lookup validation error for invalid FKs, got nil")
 	}
 
 	// 2. Successful Create

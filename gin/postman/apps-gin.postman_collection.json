@@ -2892,6 +2892,38 @@
           }
         },
         {
+          "name": "Kelas - Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/kelas/26040001/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "kelas",
+                "26040001",
+                "report"
+              ],
+              "query": [
+                {
+                  "key": "sub_wh_id",
+                  "value": "160",
+                  "description": "Optional SubWhId override (defaults to user matrix SubWhId)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Kelas - Peserta List",
           "request": {
             "method": "GET",

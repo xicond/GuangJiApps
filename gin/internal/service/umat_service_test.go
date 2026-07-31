@@ -31,7 +31,7 @@ func TestUmatService(t *testing.T) {
 	c := setupTestContext()
 
 	// Clean up existing test umat records to ensure test isolation
-	db.Exec("DELETE FROM T_BUS_UMAT WHERE Kode = 'UM001' OR NamaIndonesia = 'Test Invalid'")
+	db.Exec("DELETE FROM T_BUS_UMAT")
 
 	// Seed lookup category and values for validation testing safely using FirstOrCreate
 	catStatus := domain.AppLookupCategory{CategoryId: "B_STATUS", Status: true}

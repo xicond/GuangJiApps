@@ -165,7 +165,14 @@ const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 const isTablet = breakpoints.between('md', 'lg')
 
 const isCollapsed = ref(isTablet.value)
-const activeMenu = computed(() => route.path)
+const activeMenu = computed(() => {
+  if (route.meta?.activeMenu) {
+    return route.meta.activeMenu as string
+  }
+  const path = route.path
+  const parentPath = path.replace(/\/(create|edit|view)(\/.*)?$/, '')
+  return parentPath || path
+})
 const usernameDisplay = computed(() => authStore.user?.username || authStore.user?.Username || 'User')
 const hasMenu = (menuName: string) => authStore.hasMenu(menuName)
 const hasSubMenu = (parentMenuName: string, subMenuName: string) => authStore.hasSubMenu(parentMenuName, subMenuName)

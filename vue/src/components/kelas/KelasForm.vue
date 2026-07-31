@@ -4,7 +4,7 @@
       v-if="props.fieldErrors && Object.keys(props.fieldErrors).length > 0"
       type="error"
       show-icon
-      title="Validasi Gagal"
+      title="Invalid Inputs"
       description="Terdapat kesalahan pengisian form pada beberapa kolom di bawah ini. Silahkan periksa pesan kesalahan berwarna merah."
       class="validation-alert mb-4"
     />
@@ -47,33 +47,25 @@
       </el-row>
 
       <el-row :gutter="20">
-        <!-- Start Date -->
-        <el-col :xs="24" :sm="12">
-          <el-form-item label="Tanggal Mulai (Start Date)" prop="start_date" :error="hasFieldError('start_date') ? ' ' : undefined">
+        <!-- Tanggal Pelaksanaan Kelas (Date Range) -->
+        <el-col :xs="24" :sm="24">
+          <el-form-item
+            label="Tanggal Pelaksanaan Kelas"
+            prop="date_range"
+            :error="hasFieldError('start_date') || hasFieldError('end_date') ? ' ' : undefined"
+          >
             <el-date-picker
-              v-model="formData.start_date"
-              type="date"
-              placeholder="Pilih Tanggal Mulai"
+              v-model="dateRange"
+              type="daterange"
+              range-separator="s/d"
+              start-placeholder="Tanggal Mulai"
+              end-placeholder="Tanggal Selesai"
               value-format="YYYY-MM-DD"
               style="width: 100%"
               :clearable="false"
+              unlink-panels
             />
-            <FieldErrors :errors="getFieldErrors('start_date')" />
-          </el-form-item>
-        </el-col>
-
-        <!-- End Date -->
-        <el-col :xs="24" :sm="12">
-          <el-form-item label="Tanggal Selesai (End Date)" prop="end_date" :error="hasFieldError('end_date') ? ' ' : undefined">
-            <el-date-picker
-              v-model="formData.end_date"
-              type="date"
-              placeholder="Pilih Tanggal Selesai"
-              value-format="YYYY-MM-DD"
-              style="width: 100%"
-              :clearable="false"
-            />
-            <FieldErrors :errors="getFieldErrors('end_date')" />
+            <FieldErrors :errors="[...getFieldErrors('start_date'), ...getFieldErrors('end_date')]" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -154,7 +146,7 @@
           <template #title>
             <div class="mc-collapse-title">
               <el-icon><User /></el-icon>
-              <span>Daftar Pembawa Acara / MC (Opsional)</span>
+              <span>{{ isMobile ? 'Detail MC' : 'Daftar Pembawa Acara / MC (Opsional)' }}</span>
             </div>
           </template>
 
@@ -209,7 +201,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User } from '@element-plus/icons-vue'
 import { kelasApi } from '../../api/kelas'
@@ -233,6 +226,13 @@ const props = withDefaults(
     fieldErrors: () => ({})
   }
 )
+
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+// const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 const emit = defineEmits<{
   (e: 'submit', payload: Partial<Kelas>): void
@@ -267,6 +267,24 @@ const formData = reactive<Partial<Kelas>>({
   mc5: '',
   kelas_name: undefined,
   fotang_name: undefined
+})
+
+const dateRange = computed<[string, string] | null>({
+  get() {
+    if (formData.start_date || formData.end_date) {
+      return [formData.start_date || '', formData.end_date || '']
+    }
+    return null
+  },
+  set(val) {
+    if (val && val.length === 2) {
+      formData.start_date = val[0] || ''
+      formData.end_date = val[1] || ''
+    } else {
+      formData.start_date = ''
+      formData.end_date = ''
+    }
+  }
 })
 
 const formRules = reactive<FormRules>({

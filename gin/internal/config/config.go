@@ -9,12 +9,14 @@ import (
 )
 
 type Config struct {
-	Port          string
-	GinMode       string
-	BaseURL       string
-	JWTSecret     string
-	RefreshSecret string
-	DatabaseDSN   string
+	Port                 string
+	GinMode              string
+	BaseURL              string
+	JWTSecret            string
+	RefreshSecret        string
+	DatabaseDSN          string
+	ReportServerUsername string
+	ReportServerPassword string
 }
 
 func Load() Config {
@@ -26,12 +28,14 @@ func Load() Config {
 	_ = godotenv.Overload("../../.env.local")
 
 	cfg := Config{
-		Port:          getenv("PORT", "8080"),
-		GinMode:       getenv("GIN_MODE", "debug"),
-		BaseURL:       NormalizeBaseURL(getenv("BASE_URL", "http://localhost:8080")),
-		JWTSecret:     getenv("JWT_SECRET", "change-me"),
-		RefreshSecret: getenv("REFRESH_SECRET", "change-me"),
-		DatabaseDSN:   getenv("DATABASE_DSN", ""),
+		Port:                 getenv("PORT", "8080"),
+		GinMode:              getenv("GIN_MODE", "debug"),
+		BaseURL:              NormalizeBaseURL(getenv("BASE_URL", "http://localhost:8080")),
+		JWTSecret:            getenv("JWT_SECRET", "change-me"),
+		RefreshSecret:        getenv("REFRESH_SECRET", "change-me"),
+		DatabaseDSN:          getenv("DATABASE_DSN", ""),
+		ReportServerUsername: getenv("REPORT_USERNAME", ""),
+		ReportServerPassword: getenv("REPORT_PASSWORD", ""),
 	}
 
 	if cfg.GinMode == "release" {

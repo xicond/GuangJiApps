@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -25,6 +26,100 @@ func NewKelasPesertaService(db *gorm.DB) *KelasPesertaService {
 		db = database.MustOpen("")
 	}
 	return &KelasPesertaService{db: db, resource: "kelas_peserta"}
+}
+
+func validatePesertaLookups(db *gorm.DB, payload *domain.KelasPeserta) error {
+	type lookupCheck struct {
+		fieldName string
+		queryFn   func(db *gorm.DB) error
+	}
+
+	var checks []lookupCheck
+
+	// 1. TrxId from Kelas
+	if payload.TrxId != 0 {
+		checks = append(checks, lookupCheck{
+			fieldName: "trx_id",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.Kelas{}).Where("trxid = ?", payload.TrxId).Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("trx_id %d tidak ditemukan di Kelas", payload.TrxId)
+				}
+				return nil
+			},
+		})
+	}
+
+	// 2. IdPeserta from Umat
+	if payload.IdPeserta != nil && *payload.IdPeserta != 0 {
+		checks = append(checks, lookupCheck{
+			fieldName: "id_peserta",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.Umat{}).Where("id = ?", *payload.IdPeserta).Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("id_peserta %d tidak ditemukan di Umat", *payload.IdPeserta)
+				}
+				return nil
+			},
+		})
+	}
+
+	// 3. TimKerja if notempty B_TIMKERJA
+	if payload.TimKerja != nil && strings.TrimSpace(*payload.TimKerja) != "" {
+		val := strings.TrimSpace(*payload.TimKerja)
+		checks = append(checks, lookupCheck{
+			fieldName: "tim_kerja",
+			queryFn: func(db *gorm.DB) error {
+				var count int64
+				if err := db.Model(&domain.AppLookup{}).
+					Where("CategoryId = ? AND (LookupValue = ? OR LookupId = ?)", "B_TIMKERJA", val, val).
+					Count(&count).Error; err != nil {
+					return err
+				}
+				if count == 0 {
+					return fmt.Errorf("field tim_kerja nilai '%s' tidak valid", val)
+				}
+				return nil
+			},
+		})
+	}
+
+	if len(checks) == 0 {
+		return nil
+	}
+
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		details = make(map[string][]string)
+	)
+
+	wg.Add(len(checks))
+	for _, check := range checks {
+		go func(c lookupCheck) {
+			defer wg.Done()
+			sess := db.Session(&gorm.Session{})
+			if err := c.queryFn(sess); err != nil {
+				mu.Lock()
+				details[c.fieldName] = append(details[c.fieldName], err.Error())
+				mu.Unlock()
+			}
+		}(check)
+	}
+
+	wg.Wait()
+
+	if len(details) > 0 {
+		return &ValidationError{Details: details}
+	}
+
+	return nil
 }
 
 func (s *KelasPesertaService) List(id string, c *gin.Context, page int, limit int) ([]domain.KelasPesertaResponse, int64, error) {
@@ -143,7 +238,11 @@ func (s *KelasPesertaService) List(id string, c *gin.Context, page int, limit in
 
 func (s *KelasPesertaService) Create(payload domain.KelasPeserta, c *gin.Context) (domain.KelasPeserta, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.KelasPeserta{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.KelasPeserta{}, fmt.Errorf("Validation failed: %w", err)
+	}
+
+	if err := validatePesertaLookups(s.db, &payload); err != nil {
+		return domain.KelasPeserta{}, err
 	}
 
 	if payload.DetailId == 0 {
@@ -194,6 +293,21 @@ func (s *KelasPesertaService) Update(id string, payload domain.KelasPeserta, c *
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.KelasPeserta{}, fmt.Errorf("kelas peserta %s not found", id)
 		}
+		return domain.KelasPeserta{}, err
+	}
+
+	targetVal := item
+	if payload.TrxId != 0 {
+		targetVal.TrxId = payload.TrxId
+	}
+	if payload.IdPeserta != nil {
+		targetVal.IdPeserta = payload.IdPeserta
+	}
+	if payload.TimKerja != nil {
+		targetVal.TimKerja = payload.TimKerja
+	}
+
+	if err := validatePesertaLookups(s.db, &targetVal); err != nil {
 		return domain.KelasPeserta{}, err
 	}
 

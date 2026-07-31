@@ -1,30 +1,80 @@
 package service
 
 import (
+	"crypto/md5"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
 
+	"github.com/Azure/go-ntlmssp"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type KelasService struct {
-	db       *gorm.DB
-	resource string
+	db                   *gorm.DB
+	resource             string
+	reportServerURL      string
+	reportServerUsername string
+	reportServerPassword string
 }
 
 func NewKelasService(db *gorm.DB) *KelasService {
 	if db == nil {
 		db = database.MustOpen("")
 	}
-	return &KelasService{db: db, resource: "kelas"}
+	return &KelasService{
+		db:                   db,
+		resource:             "kelas",
+		reportServerURL:      getReportServerURL(),
+		reportServerUsername: getReportServerUsername(),
+		reportServerPassword: getReportServerPassword(),
+	}
+}
+
+func getReportServerURL() string {
+	if url := os.Getenv("REPORT_BASE_URL"); url != "" {
+		return strings.TrimRight(url, "/")
+	}
+	return "http://localhost"
+}
+
+func getReportServerUsername() string {
+	return os.Getenv("REPORT_USERNAME")
+}
+
+func getReportServerPassword() string {
+	return os.Getenv("REPORT_PASSWORD")
+}
+
+var defaultReportClient = &http.Client{
+	Timeout: 120 * time.Second,
+	Transport: ntlmssp.Negotiator{
+		RoundTripper: &http.Transport{
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 20,
+			IdleConnTimeout:     90 * time.Second,
+		},
+	},
+}
+
+var copyBufferPool = sync.Pool{
+	New: func() any {
+		buf := make([]byte, 32*1024)
+		return &buf
+	},
 }
 
 func (s *KelasService) List(page int, filters map[string]string, c *gin.Context, limit int) ([]domain.KelasResponse, int64, error) {
@@ -192,40 +242,288 @@ func getUserID(c *gin.Context) int32 {
 	return 1
 }
 
-func validateKelasLookups(db *gorm.DB, kodeKelas *string, kodeFotang *string) error {
-	if kodeKelas == nil || strings.TrimSpace(*kodeKelas) == "" {
-		return errors.New("kode_kelas is required")
+func validateKelasLookups(db *gorm.DB, kodeKelas *string, kodeFotang *string, level *string) error {
+	type lookupCheck struct {
+		fieldName  string
+		categoryID string
+		val        string
 	}
 
-	var countKelas int64
-	if err := db.Model(&domain.AppLookup{}).
-		Where("CategoryId = ? AND LookupValue = ?", "B_KELASKHUSUS", *kodeKelas).
-		Count(&countKelas).Error; err != nil {
-		return fmt.Errorf("failed to validate kode_kelas: %w", err)
+	var activeChecks []lookupCheck
+	if kodeKelas != nil && strings.TrimSpace(*kodeKelas) != "" {
+		activeChecks = append(activeChecks, lookupCheck{
+			fieldName:  "kode_kelas",
+			categoryID: "B_KELASKHUSUS",
+			val:        strings.TrimSpace(*kodeKelas),
+		})
 	}
-	if countKelas == 0 {
-		return fmt.Errorf("kode_kelas %s not found in lookup", *kodeKelas)
-	}
-
 	if kodeFotang != nil && strings.TrimSpace(*kodeFotang) != "" {
-		var countFotang int64
-		if err := db.Model(&domain.AppLookup{}).
-			Where("CategoryId = ? AND LookupValue = ?", "B_FOTHANG", *kodeFotang).
-			Count(&countFotang).Error; err != nil {
-			return fmt.Errorf("failed to validate kode_fotang: %w", err)
+		activeChecks = append(activeChecks, lookupCheck{
+			fieldName:  "kode_fotang",
+			categoryID: "B_FOTHANG",
+			val:        strings.TrimSpace(*kodeFotang),
+		})
+	}
+	if level != nil && strings.TrimSpace(*level) != "" {
+		activeChecks = append(activeChecks, lookupCheck{
+			fieldName:  "level",
+			categoryID: "B_KLS_LEVEL",
+			val:        strings.TrimSpace(*level),
+		})
+	}
+
+	if len(activeChecks) == 0 {
+		return nil
+	}
+
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		details = make(map[string][]string)
+	)
+
+	wg.Add(len(activeChecks))
+	for _, check := range activeChecks {
+		go func(c lookupCheck) {
+			defer wg.Done()
+			var count int64
+			if err := db.Session(&gorm.Session{}).Model(&domain.AppLookup{}).
+				Where("CategoryId = ? AND (LookupValue = ? OR LookupId = ?)", c.categoryID, c.val, c.val).
+				Count(&count).Error; err != nil {
+				mu.Lock()
+				details[c.fieldName] = append(details[c.fieldName], fmt.Sprintf("gagal memvalidasi %s: %v", c.fieldName, err))
+				mu.Unlock()
+				return
+			}
+			if count == 0 {
+				mu.Lock()
+				details[c.fieldName] = append(details[c.fieldName], fmt.Sprintf("field %s nilai '%s' tidak valid", c.categoryID, c.val))
+				mu.Unlock()
+			}
+		}(check)
+	}
+
+	wg.Wait()
+
+	if len(details) > 0 {
+		return &ValidationError{Details: details}
+	}
+
+	return nil
+}
+
+func (s *KelasService) Report(trxId string, subWhId string, c *gin.Context) error {
+	if trxId == "" && c != nil {
+		trxId = c.Param("id")
+		if trxId == "" {
+			trxId = c.Query("trx_id")
 		}
-		if countFotang == 0 {
-			return fmt.Errorf("kode_fotang %s not found in lookup", *kodeFotang)
+		if trxId == "" {
+			trxId = c.Query("TrxId")
 		}
 	}
+
+	/* if subWhId == "" && c != nil {
+		subWhId = c.Query("sub_wh_id")
+		if subWhId == "" {
+			subWhId = c.Query("SubWhId")
+		}
+	}
+
+	if subWhId == "" && c != nil {
+		var subWhVal int64
+		userID := getUserID(c)
+		row := s.db.Model(&domain.AdminMatrix{}).
+			Where("LOGINID = ?", userID).
+			Select("SUBWHID").
+			Row()
+		if row != nil {
+			_ = row.Scan(&subWhVal)
+		}
+		if subWhVal > 0 {
+			subWhId = strconv.FormatInt(subWhVal, 10)
+		}
+	} */
+
+	baseURL := s.reportServerURL
+	if baseURL == "" {
+		baseURL = getReportServerURL()
+	}
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	username := s.reportServerUsername
+	if username == "" {
+		username = getReportServerUsername()
+	}
+	password := s.reportServerPassword
+	if password == "" {
+		password = getReportServerPassword()
+	}
+
+	if username != "" {
+		parsedURL, err := url.Parse(baseURL)
+		if err == nil {
+			parsedURL.User = url.UserPassword(username, password)
+			baseURL = parsedURL.String()
+		} else {
+			schemeParts := strings.SplitN(baseURL, "://", 2)
+			if len(schemeParts) == 2 {
+				baseURL = fmt.Sprintf("%s://%s:%s@%s", schemeParts[0], url.QueryEscape(username), url.QueryEscape(password), schemeParts[1])
+			}
+		}
+	}
+
+	// &SubWhId=%s
+	reportURL := fmt.Sprintf("%s/ReportServer?%%2fGuangJiReport%%2frpt_trx_kelas&TrxId=%s&rs:Command=Render&rs:Format=EXCELOPENXML",
+		baseURL,
+		url.QueryEscape(trxId),
+		// url.QueryEscape(subWhId),
+	)
+
+	var reqCtx = c.Request.Context()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, reportURL, nil)
+	if err != nil {
+		return fmt.Errorf("gagal membuat request report: %w", err)
+	}
+
+	if username != "" {
+		req.SetBasicAuth(username, password)
+	}
+
+	client := defaultReportClient
+
+	startTime := time.Now()
+	resp, err := client.Do(req)
+	fetchDuration := time.Since(startTime)
+	if err != nil {
+		return fmt.Errorf("gagal mengambil report dari SSRS (%v): %w", fetchDuration, err)
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized && username != "" {
+		authHeader := resp.Header.Get("WWW-Authenticate")
+		if strings.HasPrefix(authHeader, "Digest ") {
+			resp.Body.Close()
+
+			req2, err := http.NewRequestWithContext(reqCtx, http.MethodGet, reportURL, nil)
+			if err != nil {
+				return fmt.Errorf("gagal membuat digest request: %w", err)
+			}
+
+			digestVal := formatDigestAuth(authHeader, username, password, http.MethodGet, req2.URL.RequestURI())
+			req2.Header.Set("Authorization", digestVal)
+
+			resp, err = client.Do(req2)
+			if err != nil {
+				return fmt.Errorf("gagal mengambil report dengan Digest auth: %w", err)
+			}
+		}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("report server mengembalikan HTTP %d (fetch %v)", resp.StatusCode, fetchDuration)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	}
+
+	contentDisposition := resp.Header.Get("Content-Disposition")
+	if contentDisposition == "" {
+		filename := fmt.Sprintf("rpt_trx_kelas_%s.xlsx", trxId)
+		contentDisposition = fmt.Sprintf("attachment; filename=\"%s\"", filename)
+	}
+
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", contentDisposition)
+	if resp.ContentLength > 0 {
+		c.Header("Content-Length", strconv.FormatInt(resp.ContentLength, 10))
+	}
+	c.Status(http.StatusOK)
+
+	if flusher, ok := c.Writer.(http.Flusher); ok {
+		flusher.Flush()
+	}
+
+	bufPtr := copyBufferPool.Get().(*[]byte)
+	defer copyBufferPool.Put(bufPtr)
+
+	streamStart := time.Now()
+	nBytes, err := io.CopyBuffer(c.Writer, resp.Body, *bufPtr)
+	streamDuration := time.Since(streamStart)
+	totalDuration := time.Since(startTime)
+
+	log.Printf("[REPORT PERF] SSRS Fetch: %v, Client Stream (%d bytes): %v, Total: %v",
+		fetchDuration, nBytes, streamDuration, totalDuration)
+
+	if err != nil {
+		return fmt.Errorf("gagal stream report ke client: %w", err)
+	}
+
 	return nil
+}
+
+func formatDigestAuth(authHeader, username, password, method, uri string) string {
+	parts := parseHeaderParts(authHeader)
+	realm := parts["realm"]
+	nonce := parts["nonce"]
+	qop := parts["qop"]
+	opaque := parts["opaque"]
+
+	ha1 := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s", username, realm, password))))
+	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s", method, uri))))
+
+	nc := "00000001"
+	cnonce := fmt.Sprintf("%08x", time.Now().UnixNano())
+
+	var response string
+	if strings.Contains(qop, "auth") {
+		qop = "auth"
+		response = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s:%s:%s:%s", ha1, nonce, nc, cnonce, qop, ha2))))
+	} else {
+		response = fmt.Sprintf("%x", md5.Sum([]byte(fmt.Sprintf("%s:%s:%s", ha1, nonce, ha2))))
+	}
+
+	digest := fmt.Sprintf(`Digest username="%s", realm="%s", nonce="%s", uri="%s", response="%s"`,
+		username, realm, nonce, uri, response)
+
+	if qop != "" {
+		digest += fmt.Sprintf(`, qop=%s, nc=%s, cnonce="%s"`, qop, nc, cnonce)
+	}
+	if opaque != "" {
+		digest += fmt.Sprintf(`, opaque="%s"`, opaque)
+	}
+	if parts["algorithm"] != "" {
+		digest += fmt.Sprintf(`, algorithm="%s"`, parts["algorithm"])
+	}
+
+	return digest
+}
+
+func parseHeaderParts(header string) map[string]string {
+	result := make(map[string]string)
+	if !strings.HasPrefix(header, "Digest ") {
+		return result
+	}
+	content := strings.TrimPrefix(header, "Digest ")
+	parts := strings.Split(content, ",")
+	for _, part := range parts {
+		keyValue := strings.SplitN(strings.TrimSpace(part), "=", 2)
+		if len(keyValue) == 2 {
+			key := strings.TrimSpace(keyValue[0])
+			value := strings.Trim(strings.TrimSpace(keyValue[1]), `"`)
+			result[key] = value
+		}
+	}
+	return result
 }
 
 func (s *KelasService) Create(payload domain.Kelas, c *gin.Context) (domain.Kelas, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.Kelas{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.Kelas{}, fmt.Errorf("Validation failed: %w", err)
 	}
-	if err := validateKelasLookups(s.db, payload.KodeKelas, payload.KodeFotang); err != nil {
+	if err := validateKelasLookups(s.db, payload.KodeKelas, payload.KodeFotang, payload.Level); err != nil {
 		return domain.Kelas{}, err
 	}
 
@@ -283,33 +581,16 @@ func (s *KelasService) Update(id string, payload domain.Kelas, c *gin.Context) (
 		return domain.Kelas{}, err
 	}
 
+	if err := validateKelasLookups(s.db, payload.KodeKelas, payload.KodeFotang, payload.Level); err != nil {
+		return domain.Kelas{}, err
+	}
+
 	if payload.KodeKelas != nil {
-		if strings.TrimSpace(*payload.KodeKelas) == "" {
-			return domain.Kelas{}, errors.New("kode_kelas cannot be empty")
-		}
-		var countKelas int64
-		if err := s.db.Model(&domain.AppLookup{}).
-			Where("CategoryId = ? AND LookupValue = ?", "B_KELASKHUSUS", *payload.KodeKelas).
-			Count(&countKelas).Error; err != nil {
-			return domain.Kelas{}, fmt.Errorf("failed to validate kode_kelas: %w", err)
-		}
-		if countKelas == 0 {
-			return domain.Kelas{}, fmt.Errorf("kode_kelas %s not found in lookup", *payload.KodeKelas)
-		}
 		item.KodeKelas = payload.KodeKelas
 	}
 
 	if payload.KodeFotang != nil {
 		if strings.TrimSpace(*payload.KodeFotang) != "" {
-			var countFotang int64
-			if err := s.db.Model(&domain.AppLookup{}).
-				Where("CategoryId = ? AND LookupValue = ?", "B_FOTHANG", *payload.KodeFotang).
-				Count(&countFotang).Error; err != nil {
-				return domain.Kelas{}, fmt.Errorf("failed to validate kode_fotang: %w", err)
-			}
-			if countFotang == 0 {
-				return domain.Kelas{}, fmt.Errorf("kode_fotang %s not found in lookup", *payload.KodeFotang)
-			}
 			item.KodeFotang = payload.KodeFotang
 		} else {
 			item.KodeFotang = nil
@@ -360,6 +641,10 @@ func (s *KelasService) Update(id string, payload domain.Kelas, c *gin.Context) (
 	item.ModAct = &modActU
 	item.ModBy = &userID
 	item.ModDate = &now
+
+	if err := ValidateStruct(item); err != nil {
+		return domain.Kelas{}, fmt.Errorf("Validation failed: %w", err)
+	}
 
 	if err := s.db.Save(&item).Error; err != nil {
 		return domain.Kelas{}, fmt.Errorf("failed to update record: %w", err)

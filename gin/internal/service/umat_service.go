@@ -81,7 +81,7 @@ func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 			}
 			if count == 0 {
 				mu.Lock()
-				details[c.fieldName] = append(details[c.fieldName], fmt.Sprintf("nilai '%s' tidak ditemukan di lookup category %s", c.val, c.categoryID))
+				details[c.fieldName] = append(details[c.fieldName], fmt.Sprintf("field %s nilai '%s' tidak valid", c.categoryID, c.val))
 				mu.Unlock()
 			}
 		}(check)
@@ -198,7 +198,7 @@ func (s *UmatService) List(page int, filters map[string]string, limit int) ([]do
 
 func (s *UmatService) Create(payload domain.Umat, c *gin.Context) (domain.Umat, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.Umat{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.Umat{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	if err := validateUmatLookups(s.db, &payload); err != nil {
@@ -249,7 +249,7 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 
 func (s *UmatService) Update(id string, payload domain.Umat, c *gin.Context) (domain.Umat, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.Umat{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.Umat{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	if err := validateUmatLookups(s.db, &payload); err != nil {

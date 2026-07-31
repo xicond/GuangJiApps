@@ -164,7 +164,7 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 
 func (s *TahunCiuTaoService) Create(payload domain.TahunCiuTao, c *gin.Context) (domain.TahunCiuTao, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.TahunCiuTao{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.TahunCiuTao{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	userIDStr := "1"

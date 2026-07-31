@@ -218,7 +218,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := adminService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -290,7 +290,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := adminGroupService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -351,7 +351,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := groupMenuService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -412,7 +412,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := adminSubWarehouseService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -473,7 +473,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := umatService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -535,7 +535,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := topicService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -596,7 +596,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := activityService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -687,7 +687,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := timKerjaService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -748,7 +748,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := tahunCiuTaoService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -809,7 +809,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := penggalangDanaService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -870,7 +870,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := sxyDonaturService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1043,6 +1043,31 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "KelasLookup"})
 	})
+	protected.GET("/kelas/report", func(c *gin.Context) {
+		trxId := c.Query("trx_id")
+		if trxId == "" {
+			trxId = c.Query("TrxId")
+		}
+		subWhId := c.Query("sub_wh_id")
+		if subWhId == "" {
+			subWhId = c.Query("SubWhId")
+		}
+		if err := kelasService.Report(trxId, subWhId, c); err != nil {
+			respondError(c, err)
+			return
+		}
+	})
+	protected.GET("/kelas/:id/report", func(c *gin.Context) {
+		trxId := c.Param("id")
+		subWhId := c.Query("sub_wh_id")
+		if subWhId == "" {
+			subWhId = c.Query("SubWhId")
+		}
+		if err := kelasService.Report(trxId, subWhId, c); err != nil {
+			respondError(c, err)
+			return
+		}
+	})
 	protected.GET("/kelas/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		item, err := kelasService.Get(c.Param("id"))
@@ -1075,7 +1100,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1135,7 +1160,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasPesertaService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1197,7 +1222,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasPengabdiService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1259,7 +1284,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasTopikService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1321,7 +1346,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasKendaraanService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1383,7 +1408,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasDonasiService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1445,7 +1470,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasDonasiBarangService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1507,7 +1532,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasPengeluaranService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1569,7 +1594,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasMusikService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1631,7 +1656,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := kelasAbsensiService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1692,7 +1717,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		updated, err := donasiSxyService.Update(c.Param("id"), payload, c)
 		if err != nil {
-			if strings.Contains(err.Error(), "validasi gagal") {
+			if strings.Contains(err.Error(), "Validation failed") {
 				respondValidationError(c, err)
 				return
 			}
@@ -1729,7 +1754,7 @@ func FormatValidationError(err error) map[string][]string {
 	}
 
 	errorsMap := make(map[string][]string)
-	errStr := strings.TrimPrefix(err.Error(), "validasi gagal: ")
+	errStr := strings.TrimPrefix(err.Error(), "Validation failed: ")
 	parts := strings.Split(errStr, ", ")
 	for _, part := range parts {
 		if idx := strings.Index(part, ": "); idx != -1 {
@@ -1745,7 +1770,7 @@ func FormatValidationError(err error) map[string][]string {
 
 func respondValidationError(c *gin.Context, err error) {
 	c.JSON(http.StatusBadRequest, gin.H{
-		"error":   "Validasi gagal",
+		"error":   "Validation failed",
 		"details": FormatValidationError(err),
 	})
 }
@@ -1764,7 +1789,7 @@ func respondError(c *gin.Context, err error) {
 		c.JSON(http.StatusNotFound, gin.H{"error": errStr})
 		return
 	}
-	if strings.Contains(errStr, "invalid ID format") || strings.Contains(errStr, "is required") || strings.Contains(errStr, "validasi gagal") || strings.Contains(errStr, "not found in lookup") {
+	if strings.Contains(errStr, "invalid ID format") || strings.Contains(errStr, "is required") || strings.Contains(errStr, "Validation failed") || strings.Contains(errStr, "not found in lookup") {
 		respondValidationError(c, err)
 		return
 	}

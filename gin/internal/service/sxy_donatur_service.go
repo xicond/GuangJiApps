@@ -243,7 +243,7 @@ func toInt64(val interface{}) int64 {
 
 func (s *SxyDonaturService) Create(payload domain.SxyDonatur, c *gin.Context) (domain.SxyDonatur, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.SxyDonatur{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.SxyDonatur{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	var maxID int32

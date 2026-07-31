@@ -18,7 +18,7 @@
       :initial-data="umatData"
       :submitting="submitting"
       :field-errors="fieldErrors"
-      submit-text="Simpan Perubahan"
+      :submit-text="isMobile ? 'Simpan' : 'Simpan Perubahan'"
       @submit="handleUpdate"
       @cancel="handleBack"
     />
@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import { Back } from '@element-plus/icons-vue'
@@ -36,6 +37,9 @@ import type { Umat } from '../../types/umat'
 
 const route = useRoute()
 const router = useRouter()
+
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('md')
 
 const umatId = route.params.id as string
 const umatData = ref<Partial<Umat>>({})
@@ -82,7 +86,7 @@ async function handleUpdate(payload: Partial<Umat>) {
     console.error('Failed to update umat:', err)
     if (err.response?.data?.details) {
       fieldErrors.value = err.response.data.details
-      ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
+      ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
     } else {
       ElMessage.error(err.response?.data?.error || err.message || 'Gagal memperbarui data umat')
     }

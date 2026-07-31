@@ -2,10 +2,10 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { clientsClaim } from 'workbox-core'
 import { registerRoute } from 'workbox-routing'
-import { StaleWhileRevalidate, CacheFirst } from 'workbox-strategies'
+import { StaleWhileRevalidate, CacheFirst/* , NetworkOnly */ } from 'workbox-strategies'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { ExpirationPlugin } from 'workbox-expiration'
-
+// import { BackgroundSyncPlugin } from 'workbox-background-sync'
 declare let self: ServiceWorkerGlobalScope
 
 
@@ -32,7 +32,7 @@ registerRoute(
     })
 )
 
-// Match GET requests to guangji.id or /v1/ or /api/
+// Match GET requests to /v1/ or /api/
 registerRoute(
     ({ url, request }) => {
         const isMatch = request.method === 'GET' &&
@@ -52,5 +52,18 @@ registerRoute(
 
 
 
+// const bgSyncPlugin = new BackgroundSyncPlugin('api-queue', {
+//   maxRetentionTime: 24 * 60, // Waktu maksimal request disimpan dalam antrean (dalam menit = 24 jam)
+// })
 
+// // 2. Daftarkan route untuk method POST/PUT/DELETE
+// registerRoute(
+//   ({ url, request }) => {
+//     return (request.method === 'POST' || request.method === 'PUT') &&
+//            url.pathname.startsWith('/v1/submit')
+//   },
+//   new NetworkOnly({
+//     plugins: [bgSyncPlugin],
+//   })
+// )
 

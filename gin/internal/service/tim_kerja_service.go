@@ -108,7 +108,7 @@ func (s *TimKerjaService) List(page int, filters map[string]string, limit int) (
 
 func (s *TimKerjaService) Create(payload domain.TimKerja, c *gin.Context) (domain.TimKerja, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.TimKerja{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.TimKerja{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	userIDStr := "1"

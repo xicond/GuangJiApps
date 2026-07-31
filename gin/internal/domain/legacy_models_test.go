@@ -94,3 +94,32 @@ func TestIntBoolJSON(t *testing.T) {
 		t.Errorf("Marshal false failed, got: %s, err: %v", string(bFalse), err)
 	}
 }
+
+func TestGetFieldLabel(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"Umat.NamaIndonesia", "Nama Indonesia"},
+		{"Umat.NamaMandarin", "Nama Mandarin"},
+		{"Umat.TanggalChiutaoInt", "Tanggal Ciu Tao (Masehi)"},
+		{"Umat.Kode", "Kode"},
+		{"Umat.NamaLengkap", "Nama Lengkap"},
+		{"NamaIndonesia", "Nama Indonesia"},
+		{"TempatLahir", "Tempat Lahir"},
+		{"EventCode", "Event Code"},
+		{"Username", "Username"},
+		{"nama_indonesia", "Nama Indonesia"},
+		{"", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := GetFieldLabel(tt.input)
+			if got != tt.expected {
+				t.Errorf("GetFieldLabel(%q) = %q, expected %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+

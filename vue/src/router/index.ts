@@ -70,13 +70,13 @@ const router = createRouter({
           path: 'master-data/umat/create',
           name: 'umat-create',
           component: () => import('../views/master-data/UmatCreateList.vue'),
-          meta: { title: 'Tambah Umat' }
+          meta: { title: 'Tambah Umat', activeMenu: '/master-data/umat' }
         },
         {
           path: 'master-data/umat/edit/:id',
           name: 'umat-edit',
           component: () => import('../views/master-data/UmatEditList.vue'),
-          meta: { title: 'Edit Umat' }
+          meta: { title: 'Edit Umat', activeMenu: '/master-data/umat' }
         },
         {
           path: 'master-data/topic',
@@ -125,19 +125,19 @@ const router = createRouter({
           path: 'transaction/kelas/create',
           name: 'kelas-create',
           component: () => import('../views/transaction/KelasCreate.vue'),
-          meta: { title: 'Tambah Kelas' }
+          meta: { title: 'Tambah Kelas', activeMenu: '/transaction/kelas' }
         },
         {
           path: 'transaction/kelas/edit/:id',
           name: 'kelas-edit',
           component: () => import('../views/transaction/KelasEdit.vue'),
-          meta: { title: 'Edit Kelas' }
+          meta: { title: 'Edit Kelas', activeMenu: '/transaction/kelas' }
         },
         {
           path: 'transaction/kelas/view/:id',
           name: 'kelas-view',
           component: () => import('../views/transaction/KelasView.vue'),
-          meta: { title: 'Detail Kelas' }
+          meta: { title: 'Detail Kelas', activeMenu: '/transaction/kelas' }
         },
         {
           path: 'transaction/donasi-sxy',

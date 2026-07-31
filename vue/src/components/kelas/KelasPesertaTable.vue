@@ -6,7 +6,7 @@
           <div class="accordion-header" @click.stop>
             <div class="header-title">
               <el-icon class="header-icon"><UserFilled /></el-icon>
-              <span>Daftar Peserta Kelas</span>
+              <span>{{isDesktop ? 'Daftar Peserta Kelas' : 'Peserta'}}</span>
               <el-tag size="small" type="info" class="ml-2">{{ total }} Peserta</el-tag>
             </div>
             <div class="header-actions" @click.stop>
@@ -16,7 +16,7 @@
                 :icon="Plus"
                 @click.stop="openAddDialog"
               >
-                Tambah Peserta
+                {{isMobile?'':'Tambah Peserta'}}
               </el-button>
               <el-button
                 :icon="Refresh"
@@ -39,7 +39,7 @@
             style="width: 100%"
             empty-text="Belum ada peserta yang terdaftar pada kelas ini"
           >
-            <el-table-column type="index" label="No." width="60" align="center" fixed="left" />
+            <el-table-column v-if="isDesktop" type="index" label="No." width="60" align="center" fixed="left" />
 
             <el-table-column prop="nama_indonesia" label="Nama Ciu Tao" min-width="160">
               <template #default="{ row }">
@@ -88,11 +88,11 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="Aksi" width="140" align="center" fixed="right">
+            <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
                 <el-button
                   type="primary"
-                  link
+                  circle
                   size="small"
                   :icon="Edit"
                   @click="openEditDialog(row)" />
@@ -104,7 +104,7 @@
                   @confirm="handleDelete(row)"
                 >
                   <template #reference>
-                    <el-button type="danger" link size="small" :icon="Delete" />
+                    <el-button type="danger" circle size="small" :icon="Delete" />
                   </template>
                 </el-popconfirm>
               </template>
@@ -117,7 +117,7 @@
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
-              layout="total, sizes, prev, pager, next, jumper"
+              :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
               :total="total"
               @size-change="handleSizeChange"
               @current-change="handleCurrentChange"
@@ -138,7 +138,7 @@
         v-if="Object.keys(dialogFieldErrors).length > 0"
         type="error"
         show-icon
-        title="Validasi Gagal"
+        title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
         class="mb-4"
       />
@@ -273,6 +273,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { UserFilled, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import dayjs from 'dayjs'
@@ -287,6 +288,14 @@ const props = defineProps<{
   startDate?: string
   endDate?: string
 }>()
+
+
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 // Accordion collapse state (empty array by default -> collapsed)
 const activeNames = ref<string[]>([])
@@ -616,7 +625,7 @@ async function submitForm() {
       console.error('Error submitting peserta form:', err)
       if (err.response?.data?.details) {
         dialogFieldErrors.value = err.response.data.details
-        ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
+        ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
       } else {
         ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data peserta')
       }

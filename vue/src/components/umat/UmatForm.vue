@@ -12,7 +12,7 @@
       v-if="props.fieldErrors && Object.keys(props.fieldErrors).length > 0"
       type="error"
       show-icon
-      title="Validasi Gagal"
+      title="Invalid Inputs"
       description="Terdapat kesalahan pengisian form pada beberapa kolom di bawah ini. Silahkan periksa pesan kesalahan berwarna merah."
       class="validation-alert mb-4"
     />

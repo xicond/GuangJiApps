@@ -18,7 +18,7 @@
         :initial-data="kelasData"
         :submitting="submitting"
         :field-errors="fieldErrors"
-        submit-text="Simpan Perubahan"
+        :submit-text="isMobile ? 'Simpan' : 'Simpan Perubahan'"
         @submit="handleUpdate"
         @cancel="handleBack"
       />
@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import { Back } from '@element-plus/icons-vue'
@@ -49,6 +50,13 @@ import type { Kelas } from '../../types/kelas'
 
 const route = useRoute()
 const router = useRouter()
+
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 const kelasId = route.params.id as string
 const kelasData = ref<Partial<Kelas>>({})
@@ -95,7 +103,7 @@ async function handleUpdate(payload: Partial<Kelas>) {
     console.error('Failed to update kelas:', err)
     if (err.response?.data?.details) {
       fieldErrors.value = err.response.data.details
-      ElMessage.error(err.response.data.error || 'Validasi gagal, Silahkan periksa kolom form')
+      ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
     } else {
       ElMessage.error(err.response?.data?.error || err.message || 'Gagal memperbarui data kelas')
     }

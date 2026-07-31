@@ -231,7 +231,7 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 
 func (s *DonasiSxyService) Create(payload domain.DonasiSxy, c *gin.Context) (domain.DonasiSxy, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.DonasiSxy{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.DonasiSxy{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	var maxID int32

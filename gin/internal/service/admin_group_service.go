@@ -106,7 +106,7 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 
 func (s *AdminGroupService) Create(payload domain.AdminGroup, c *gin.Context) (domain.AdminGroup, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.AdminGroup{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.AdminGroup{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	var maxID int32

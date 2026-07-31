@@ -58,7 +58,7 @@ func (s *KelasDonasiService) List(trxID string, page int, limit int) ([]domain.K
 
 func (s *KelasDonasiService) Create(payload domain.KelasDonasi, c *gin.Context) (domain.KelasDonasi, error) {
 	if err := ValidateStruct(payload); err != nil {
-		return domain.KelasDonasi{}, fmt.Errorf("validasi gagal: %w", err)
+		return domain.KelasDonasi{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
 	if payload.DetailId == 0 {

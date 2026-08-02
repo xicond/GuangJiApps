@@ -1,6 +1,18 @@
 import apiClient from './client'
 import type { LookupQueryParams, LookupListResponse } from '../types/lookup'
 
+function buildParams(params: LookupQueryParams = {}): Record<string, any> {
+  const cleanParams: Record<string, any> = {
+    page: params.page || 1,
+    limit: params.limit || 10
+  }
+  if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
+  if (params.lookup_value) cleanParams.lookup_value = params.lookup_value
+  if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
+  if (params.search) cleanParams.search = params.search
+  return cleanParams
+}
+
 export const lookupApi = {
   /**
    * Waktu Ciu Tao Lookup (Category B_WAKTUCIUTAO)
@@ -9,14 +21,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/waktu-ciu-tao', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -29,14 +35,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/gender', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -49,14 +49,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/tcs', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -69,14 +63,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/fotang', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -89,14 +77,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/kelas', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -109,14 +91,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/pendidikan', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -129,14 +105,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/kelas-umum', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -149,14 +119,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/pekerjaan', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -169,14 +133,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/keluarga', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -189,14 +147,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/status', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -209,14 +161,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/lookup/kelas-level', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -229,14 +175,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>('/v1/tim-kerja/lookup', {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -250,14 +190,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>(`/v1/tim-kerja/lookup/${timKerjaId}/sub`, {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data
@@ -271,14 +205,8 @@ export const lookupApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
-      page: params.page || 1,
-      limit: params.limit || 10
-    }
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-
     const response = await apiClient.get<LookupListResponse>(`/v1/lookup/category/${categoryID}`, {
-      params: cleanParams,
+      params: buildParams(params),
       signal
     })
     return response.data

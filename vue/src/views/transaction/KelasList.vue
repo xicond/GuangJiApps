@@ -198,7 +198,7 @@
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage, ElNotification, ElLoading } from 'element-plus'
 import {
   Search,
   Refresh,
@@ -349,6 +349,11 @@ async function handleDelete(id: string) {
 
 async function handleDownloadReport(id: string | number) {
   downloadingId.value = id
+  const loadingInstance = ElLoading.service({
+    lock: true,
+    text: 'Mendownload report Excel, mohon tunggu...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  })
   try {
     const blob = await kelasApi.downloadReport(id)
     const url = window.URL.createObjectURL(new Blob([blob]))
@@ -366,8 +371,19 @@ async function handleDownloadReport(id: string | number) {
     })
   } catch (err: any) {
     console.error('Failed to download report:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal mendownload report')
+    let errorMessage = err.response?.data?.error || err.message || 'Gagal mendownload report'
+    if (err.response?.data instanceof Blob) {
+      try {
+        const text = await err.response.data.text()
+        const parsed = JSON.parse(text)
+        if (parsed?.error) errorMessage = parsed.error
+      } catch (e) {
+        // preserve default errorMessage if text is not JSON
+      }
+    }
+    ElMessage.error(errorMessage)
   } finally {
+    loadingInstance.close()
     downloadingId.value = null
   }
 }

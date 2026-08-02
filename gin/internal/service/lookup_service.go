@@ -40,7 +40,7 @@ func (s *LookupService) LookupTcs(filters map[string]string, page int, limit int
 }
 
 func (s *LookupService) LookupFotang(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
-	return Lookup(s.db, "B_FOTANG", page, limit, filters)
+	return Lookup(s.db, "B_FOTHANG", page, limit, filters)
 }
 
 func (s *LookupService) LookupKelas(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
@@ -115,14 +115,26 @@ func Lookup(db *gorm.DB, categoryID string, page int, limit int, opts ...interfa
 		Where("T_APP_LOOKUP.Status = ?", true)
 
 	if filters != nil {
-		if val, ok := filters["lookup_description"]; ok && val != "" {
-			query = query.Where("LookupDescription LIKE ?", "%"+val+"%")
+		var searchVal string
+		for _, key := range []string{"search", "query", "q"} {
+			if val, ok := filters[key]; ok && val != "" {
+				searchVal = val
+				break
+			}
 		}
-		if val, ok := filters["lookup_value"]; ok && val != "" {
-			query = query.Where("LookupValue LIKE ?", "%"+val+"%")
+
+		if searchVal != "" {
+			query = query.Where("(T_APP_LOOKUP.LookupDescription LIKE ? OR T_APP_LOOKUP.LookupValue LIKE ? OR T_APP_LOOKUP.LookupId LIKE ?)", "%"+searchVal+"%", "%"+searchVal+"%", "%"+searchVal+"%")
+		} else if val, ok := filters["lookup_description"]; ok && val != "" {
+			query = query.Where("(T_APP_LOOKUP.LookupDescription LIKE ? OR T_APP_LOOKUP.LookupValue LIKE ?)", "%"+val+"%", "%"+val+"%")
 		}
+
+		if val, ok := filters["lookup_value"]; ok && val != "" && searchVal == "" {
+			query = query.Where("T_APP_LOOKUP.LookupValue LIKE ?", "%"+val+"%")
+		}
+
 		if val, ok := filters["lookup_id"]; ok && val != "" {
-			query = query.Where("LookupId = ?", val)
+			query = query.Where("T_APP_LOOKUP.LookupId = ?", val)
 		}
 	}
 

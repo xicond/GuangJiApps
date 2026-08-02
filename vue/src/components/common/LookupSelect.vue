@@ -46,6 +46,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import type { AppLookup, LookupQueryParams } from '../../types/lookup'
+import { cachedFetchLookup } from '../../utils/lookupCache'
 
 const props = withDefaults(
   defineProps<{
@@ -124,7 +125,7 @@ watch(
   { immediate: true, deep: true }
 )
 
-async function loadData(targetPage = 1, query = '') {
+async function loadData(targetPage = 1, query = '', forceRefresh = false) {
   if (currentAbortController) {
     currentAbortController.abort()
   }
@@ -135,25 +136,51 @@ async function loadData(targetPage = 1, query = '') {
   searchQuery.value = query
 
   try {
-    const res = await props.fetchApi(
-      {
-        page: targetPage,
-        limit: props.pageSize,
-        lookup_description: query.trim() || undefined
-      },
-      currentAbortController.signal
+    const params = {
+      page: targetPage,
+      limit: props.pageSize,
+      lookup_description: query.trim() || undefined
+    }
+    const res = await cachedFetchLookup(
+      props.fetchApi,
+      params,
+      currentAbortController.signal,
+      forceRefresh
     )
 
     options.value = res.data || []
     if (props.initialOption) {
       ensureInitialOption(props.initialOption)
     }
+    await checkAndFetchMissingSelectedValue()
     total.value = res.meta?.total || options.value.length
   } catch (err: any) {
     if (err.name === 'AbortError' || err.name === 'CanceledError') return
     console.error('Error fetching lookup options:', err)
   } finally {
     loading.value = false
+  }
+}
+
+async function checkAndFetchMissingSelectedValue() {
+  const currentVal = props.modelValue
+  if (currentVal === undefined || currentVal === null || currentVal === '') return
+  const exists = options.value.some((item) => String(getOptionValue(item)) === String(currentVal))
+  if (!exists && props.fetchApi) {
+    try {
+      const resVal = await props.fetchApi({ lookup_value: String(currentVal), limit: 1 })
+      if (resVal?.data && resVal.data.length > 0) {
+        ensureInitialOption(resVal.data[0])
+        return
+      }
+      const resId = await props.fetchApi({ lookup_id: String(currentVal), limit: 1 })
+      if (resId?.data && resId.data.length > 0) {
+        ensureInitialOption(resId.data[0])
+        return
+      }
+    } catch (e) {
+      // Ignore lookup error for missing selected item
+    }
   }
 }
 
@@ -183,7 +210,7 @@ function onValueChange(val: string | number | undefined) {
 
 function onClear() {
   onValueChange('')
-  loadData(1, '')
+  loadData(1, '', true)
 }
 
 function onVisibleChange(visible: boolean) {
@@ -195,17 +222,32 @@ function onVisibleChange(visible: boolean) {
 watch(
   () => props.fetchApi,
   () => {
-    loadData(1, '')
+    loadData(1, '', true)
   }
 )
 
+watch(
+  () => props.modelValue,
+  async (newVal) => {
+    if (newVal !== undefined && newVal !== null && newVal !== '') {
+      await checkAndFetchMissingSelectedValue()
+    }
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
-  loadData(1, '')
+  if (
+    (props.modelValue !== undefined && props.modelValue !== null && props.modelValue !== '') ||
+    props.initialOption
+  ) {
+    loadData(1, '')
+  }
 })
 
 defineExpose({
-  loadData,
-  reload: () => loadData(1, '')
+  loadData: (targetPage = 1, query = '', forceRefresh = true) => loadData(targetPage, query, forceRefresh),
+  reload: () => loadData(1, '', true)
 })
 </script>
 

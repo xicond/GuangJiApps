@@ -6,6 +6,7 @@
     label-position="top"
     size="default"
     class="umat-form"
+    v-loading="submitting"
     @submit.prevent="handleSubmit"
   >
     <el-alert
@@ -65,8 +66,10 @@
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Jenis Kelamin" prop="jenis_kelamin" :error="hasFieldError('jenis_kelamin') ? ' ' : undefined">
             <el-select v-model="formData.jenis_kelamin" placeholder="Pilih jenis kelamin" class="w-full" clearable>
-              <el-option label="Pria (L)" value="001" />
-              <el-option label="Wanita (P)" value="002" />
+              <el-option label="乾 PRIA" value="001" />
+              <el-option label="坤 WANITA" value="002" />
+              <el-option label="童 ANAK PRIA" value="003" />
+              <el-option label="女 ANAK WANITA" value="004" />
             </el-select>
             <FieldErrors :errors="getFieldErrors('jenis_kelamin')" />
           </el-form-item>
@@ -518,11 +521,12 @@
 
     <!-- Form Action Buttons -->
     <div class="form-actions">
-      <el-button size="large" @click="handleCancel">Batal</el-button>
+      <el-button size="large" :disabled="submitting" @click="handleCancel">Batal</el-button>
       <el-button
         type="primary"
         size="large"
         :loading="submitting"
+        :disabled="submitting"
         :icon="Check"
         @click="handleSubmit"
       >
@@ -640,12 +644,40 @@ function formatUmatLabel(item: any): string {
   return formatted ? `${formatted} (${item.kode || item.id || ''})` : item.kode || String(item.id || '')
 }
 
+const TRIM_FIELDS: (keyof Umat)[] = [
+  'kelas_khusus',
+  'kelas_umum',
+  'fotang_chiutao',
+  'fotang_aktif',
+  'tcs',
+  'waktu_chiutao_mandarin',
+  'pendidikan',
+  'pekerjaan',
+  'jenis_kelamin',
+  'tempat_sd2',
+  'tempat_sd3',
+  'tim_kerja',
+  'posisi',
+  'status_umat'
+]
+
+function trimTargetFields(data: Partial<Umat>): Partial<Umat> {
+  const trimmed = { ...data }
+  for (const field of TRIM_FIELDS) {
+    if (typeof trimmed[field] === 'string') {
+      trimmed[field] = (trimmed[field] as string).trim() as any
+    }
+  }
+  return trimmed
+}
+
 // Watch props for initial data updates on edit page
 watch(
   () => props.initialData,
   (val) => {
     if (val && Object.keys(val).length > 0) {
-      formData.value = { ...formData.value, ...val }
+      const trimmedVal = trimTargetFields(val)
+      formData.value = { ...formData.value, ...trimmedVal }
     }
   },
   { immediate: true, deep: true }
@@ -666,7 +698,8 @@ async function handleSubmit() {
   if (!formRef.value) return
   await formRef.value.validate((valid) => {
     if (valid) {
-      emit('submit', { ...formData.value })
+      const payload = trimTargetFields(formData.value)
+      emit('submit', payload)
     }
   })
 }

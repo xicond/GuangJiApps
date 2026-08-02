@@ -160,7 +160,7 @@ func (s *KelasPengabdiService) List(trxID string, page int, limit int) ([]domain
 			lt.LookupDescription AS tim_kerja_desc, 
 			ls.LookupDescription AS sub_kerja_desc`).
 		Joins("LEFT JOIN T_BUS_UMAT u ON T_TRX_KELAS_PENGABDI.idpengabdi = u.id").
-		Joins("LEFT JOIN T_APP_LOOKUP lf ON (u.fotangaktif = lf.LookupValue OR u.fotangaktif = lf.LookupId) AND lf.CategoryId = 'B_FOTANG'").
+		Joins("LEFT JOIN T_APP_LOOKUP lf ON (u.fotangaktif = lf.LookupValue OR u.fotangaktif = lf.LookupId) AND lf.CategoryId = 'B_FOTHANG'").
 		Joins("LEFT JOIN T_APP_LOOKUP lt ON (T_TRX_KELAS_PENGABDI.timkerja = lt.LookupValue OR T_TRX_KELAS_PENGABDI.timkerja = lt.LookupId) AND lt.CategoryId = 'B_TIMKERJA'").
 		Joins("LEFT JOIN T_APP_LOOKUP ls ON (T_TRX_KELAS_PENGABDI.SubKerja = ls.LookupValue OR T_TRX_KELAS_PENGABDI.SubKerja = ls.LookupId) AND ls.CategoryId = 'B_SUBKERJA'").
 		Where("T_TRX_KELAS_PENGABDI.status = ?", true)

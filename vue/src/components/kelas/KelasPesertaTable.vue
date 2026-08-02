@@ -149,6 +149,7 @@
         :rules="formRules"
         label-width="140px"
         size="default"
+        v-loading="submitting"
       >
         <el-form-item label="Peserta (Umat)" prop="id_peserta" :error="hasFieldError('id_peserta') ? ' ' : undefined">
           <el-select
@@ -262,8 +263,8 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">Batal</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitForm">
+        <el-button :disabled="submitting" @click="dialogVisible = false">Batal</el-button>
+        <el-button type="primary" :loading="submitting" :disabled="submitting" @click="submitForm">
           {{ dialogMode === 'add' ? 'Simpan' : 'Perbarui' }}
         </el-button>
       </template>
@@ -312,6 +313,8 @@ const kelasDetail = ref<{ start_date?: string; end_date?: string } | null>(null)
 
 async function fetchKelasDetail() {
   if (!props.kelasId) return
+  if (props.startDate && props.endDate) return
+  if (kelasDetail.value) return
   try {
     const res = await kelasApi.getKelasById(props.kelasId)
     if (res.data) {
@@ -586,53 +589,53 @@ function openEditDialog(row: KelasPeserta) {
 
 // Submit Create or Edit Form
 async function submitForm() {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
+  if (!formRef.value || submitting.value) return
+  submitting.value = true
+  try {
+    const valid = await formRef.value.validate().catch(() => false)
     if (!valid) return
-    submitting.value = true
     dialogFieldErrors.value = {}
-    try {
-      const payload: Partial<KelasPeserta> = {
-        trx_id: props.kelasId ? Number(props.kelasId) : undefined,
-        id_peserta: form.value.id_peserta ? Number(form.value.id_peserta) : undefined,
-        lulus: form.value.lulus,
-        keterangan_lulus: form.value.keterangan_lulus,
-        sumbangan: form.value.sumbangan,
-        barang: form.value.barang,
-        tim_kerja: form.value.tim_kerja,
-        keterangan: form.value.keterangan,
-        anak: anakDays.value.map(v => v || 0).join(','),
-        suster: susterDays.value.map(v => v || 0).join(','),
-        menginap: menginapDays.value.map(v => v ? '1' : '0').join(','),
-        makanan_pagi: makananPagiDays.value.map(v => v ? '1' : '0').join(','),
-        makanan_siang: makananSiangDays.value.map(v => v ? '1' : '0').join(','),
-        makanan_malam: makananMalamDays.value.map(v => v ? '1' : '0').join(',')
-      }
 
-      if (dialogMode.value === 'add') {
-        await kelasApi.createKelasPeserta(payload)
-        ElMessage.success('Peserta kelas berhasil ditambahkan')
-      } else {
-        const detailId = form.value.detail_id
-        if (!detailId) return
-        await kelasApi.updateKelasPeserta(detailId, payload)
-        ElMessage.success('Data peserta kelas berhasil diperbarui')
-      }
-
-      dialogVisible.value = false
-      if (isExpanded.value) fetchPeserta()
-    } catch (err: any) {
-      console.error('Error submitting peserta form:', err)
-      if (err.response?.data?.details) {
-        dialogFieldErrors.value = err.response.data.details
-        ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
-      } else {
-        ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data peserta')
-      }
-    } finally {
-      submitting.value = false
+    const payload: Partial<KelasPeserta> = {
+      trx_id: props.kelasId ? Number(props.kelasId) : undefined,
+      id_peserta: form.value.id_peserta ? Number(form.value.id_peserta) : undefined,
+      lulus: form.value.lulus,
+      keterangan_lulus: form.value.keterangan_lulus,
+      sumbangan: form.value.sumbangan,
+      barang: form.value.barang,
+      tim_kerja: form.value.tim_kerja,
+      keterangan: form.value.keterangan,
+      anak: anakDays.value.map(v => v || 0).join(','),
+      suster: susterDays.value.map(v => v || 0).join(','),
+      menginap: menginapDays.value.map(v => v ? '1' : '0').join(','),
+      makanan_pagi: makananPagiDays.value.map(v => v ? '1' : '0').join(','),
+      makanan_siang: makananSiangDays.value.map(v => v ? '1' : '0').join(','),
+      makanan_malam: makananMalamDays.value.map(v => v ? '1' : '0').join(',')
     }
-  })
+
+    if (dialogMode.value === 'add') {
+      await kelasApi.createKelasPeserta(payload)
+      ElMessage.success('Peserta kelas berhasil ditambahkan')
+    } else {
+      const detailId = form.value.detail_id
+      if (!detailId) return
+      await kelasApi.updateKelasPeserta(detailId, payload)
+      ElMessage.success('Data peserta kelas berhasil diperbarui')
+    }
+
+    dialogVisible.value = false
+    if (isExpanded.value) fetchPeserta()
+  } catch (err: any) {
+    console.error('Error submitting peserta form:', err)
+    if (err.response?.data?.details) {
+      dialogFieldErrors.value = err.response.data.details
+      ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
+    } else {
+      ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data peserta')
+    }
+  } finally {
+    submitting.value = false
+  }
 }
 
 // Handle Delete Participant
@@ -654,7 +657,9 @@ watch(
   () => props.kelasId,
   (newId) => {
     if (newId) {
-      fetchKelasDetail()
+      if (!props.startDate || !props.endDate) {
+        fetchKelasDetail()
+      }
       currentPage.value = 1
       if (isExpanded.value) {
         fetchPeserta()
@@ -663,11 +668,13 @@ watch(
         total.value = 0
       }
     }
-  },
-  { immediate: true }
+  }
 )
 
 onMounted(() => {
+  if (!props.startDate || !props.endDate) {
+    fetchKelasDetail()
+  }
   // Only fetch if accordion is expanded on mount
   if (isExpanded.value) {
     fetchPeserta()

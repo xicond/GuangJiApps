@@ -1613,6 +1613,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -1656,6 +1668,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -1696,6 +1720,18 @@
                   "key": "lookup_description",
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
                   "disabled": true
                 }
               ]
@@ -2308,6 +2344,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -2354,6 +2402,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -2394,6 +2454,18 @@
                   "key": "lookup_description",
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
                   "disabled": true
                 }
               ]
@@ -2436,6 +2508,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -2476,6 +2560,18 @@
                   "key": "lookup_description",
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
                   "disabled": true
                 }
               ]
@@ -2518,6 +2614,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -2558,6 +2666,18 @@
                   "key": "lookup_description",
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
                   "disabled": true
                 }
               ]
@@ -2600,6 +2720,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -2640,6 +2772,18 @@
                   "key": "lookup_description",
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
                   "disabled": true
                 }
               ]
@@ -2682,6 +2826,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -2722,6 +2878,18 @@
                   "key": "lookup_description",
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
                   "disabled": true
                 }
               ]
@@ -2764,6 +2932,18 @@
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
                   "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
                 }
               ]
             }
@@ -2805,6 +2985,18 @@
                   "key": "lookup_description",
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
                   "disabled": true
                 }
               ]
@@ -2885,6 +3077,18 @@
                   "key": "lookup_description",
                   "value": "",
                   "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
                   "disabled": true
                 }
               ]

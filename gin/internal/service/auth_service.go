@@ -18,9 +18,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type menuCacheEntry struct {
+	menus     []domain.MainMenuItem
+	fetchedAt time.Time
+}
+
 type AuthService struct {
-	cfg config.Config
-	db  *gorm.DB
+	cfg       config.Config
+	db        *gorm.DB
+	menuCache sync.Map
 }
 
 // Replicates .NET System.Text.ASCIIEncoding.ASCII.GetString(result)
@@ -68,18 +74,37 @@ func (s *AuthService) GenerateToken(userID int32) (string, error) {
 	return token.SignedString([]byte(s.cfg.JWTSecret))
 }
 
+func executeWithRetry(fn func() error) error {
+	var err error
+	for attempt := 1; attempt <= 3; attempt++ {
+		err = fn()
+		if err == nil {
+			return nil
+		}
+		errStr := err.Error()
+		if strings.Contains(errStr, "dial tcp") || strings.Contains(errStr, "unable to open tcp") || strings.Contains(errStr, "connectex") {
+			time.Sleep(time.Duration(attempt*15) * time.Millisecond)
+			continue
+		}
+		return err
+	}
+	return err
+}
+
 func (s *AuthService) Login(username, password string) (domain.Admin, string, []domain.MainMenuItem, error) {
 	if username == "" || password == "" {
 		return domain.Admin{}, "", nil, errors.New("username and password are required")
 	}
 
-	// Call SP_Login for validation
+	// Call SP_Login for validation with transient connection retry
 	var result struct {
 		Warn     string
 		FlagWarn int
 		GroupId  int
 	}
-	err := s.db.Raw("EXEC SP_Login ?, ?", username, EncryptPassword(password)).Scan(&result).Error
+	err := executeWithRetry(func() error {
+		return s.db.Raw("EXEC SP_Login ?, ?", username, EncryptPassword(password)).Scan(&result).Error
+	})
 	if err != nil {
 		return domain.Admin{}, "", nil, err
 	}
@@ -91,23 +116,21 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 		user      domain.Admin
 		userErr   error
 		mainMenus = []domain.MainMenuItem{}
-		xmlErr    error
 		token     string
 
-		wgPhase1 sync.WaitGroup
-		wgPhase2 sync.WaitGroup
+		wgUser sync.WaitGroup
 	)
 
-	// Phase 1 goroutines: Fetch user from T_Login_Mst and execute SP_Login_Create_Xml concurrently
-	wgPhase1.Add(1)
-	wgPhase2.Add(1)
-
+	// Fetch user details from T_Login_Mst concurrently
+	wgUser.Add(1)
 	go func() {
-		defer wgPhase1.Done()
-		err := s.db.Table("T_Login_Mst").
-			Select("LoginId, DepartmentId, GroupId, Username, ImgUrl, LastLogin, IsWarehouse, GroupId").
-			Where("Username = ?", username).
-			First(&user).Error
+		defer wgUser.Done()
+		err := executeWithRetry(func() error {
+			return s.db.Table("T_Login_Mst").
+				Select("LoginId, DepartmentId, GroupId, Username, ImgUrl, LastLogin, IsWarehouse, GroupId").
+				Where("Username = ?", username).
+				First(&user).Error
+		})
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				userErr = errors.New("username tidak ditemukan")
@@ -117,15 +140,7 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 		}
 	}()
 
-	go func() {
-		defer wgPhase2.Done()
-		err := s.db.Raw("EXEC SP_Login_Create_Xml ?", username).Scan(&mainMenus).Error
-		if err != nil {
-			xmlErr = fmt.Errorf("failed to execute SP_Login_Create_Xml: %w", err)
-		}
-	}()
-
-	wgPhase1.Wait()
+	wgUser.Wait()
 
 	if userErr != nil {
 		return domain.Admin{}, "", nil, userErr
@@ -146,86 +161,101 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 		return domain.Admin{}, "", nil, err
 	}
 
-	wgPhase2.Wait()
-
-	if xmlErr != nil {
-		return domain.Admin{}, "", nil, xmlErr
+	// Check menu cache in RAM (5-minute TTL) to eliminate repetitive SP_Login_Create_Xml calls
+	cacheKey := fmt.Sprintf("%s:%d", username, result.GroupId)
+	if val, ok := s.menuCache.Load(cacheKey); ok {
+		entry := val.(menuCacheEntry)
+		if time.Since(entry.fetchedAt) < 5*time.Minute {
+			mainMenus = entry.menus
+		}
 	}
 
-	// Coroutine loop: for each main menu item, fetch sub-menus via SP_Login_View_Mapping_Group
-	if len(mainMenus) > 0 {
-		var wgSubMenu sync.WaitGroup
-		wgSubMenu.Add(len(mainMenus))
-
-		for i := range mainMenus {
-			go func(idx int) {
-				defer wgSubMenu.Done()
-				parentID := mainMenus[idx].MenuID
-
-				rows, err := s.db.Raw("EXEC [dbo].[SP_Login_View_Mapping_Group] @ParentId = ?, @groupid = ?", parentID, result.GroupId).Rows()
-				if err != nil {
-					log.Printf("[WARNING] Failed to fetch sub menu for ParentId %d, GroupId %d: %v", parentID, result.GroupId, err)
-					mainMenus[idx].SubMenu = []domain.SubMenuItem{}
-					return
-				}
-				defer rows.Close()
-
-				cols, err := rows.Columns()
-				if err != nil {
-					mainMenus[idx].SubMenu = []domain.SubMenuItem{}
-					return
-				}
-
-				subMenus := []domain.SubMenuItem{}
-				for rows.Next() {
-					values := make([]interface{}, len(cols))
-					valuePtrs := make([]interface{}, len(cols))
-					for k := range values {
-						valuePtrs[k] = &values[k]
-					}
-
-					if err := rows.Scan(valuePtrs...); err != nil {
-						continue
-					}
-
-					rowMap := make(map[string]interface{})
-					var firstParentID int
-					gotFirstParent := false
-
-					for k, colName := range cols {
-						val := values[k]
-						if b, ok := val.([]byte); ok {
-							val = string(b)
-						}
-
-						cleanName := strings.ToLower(strings.TrimSpace(colName))
-
-						// Capture the VERY FIRST ParentId column value (preventing 2nd ParenId from overwriting it)
-						if strings.EqualFold(cleanName, "parentid") && !gotFirstParent {
-							firstParentID = toInt(val)
-							gotFirstParent = true
-						}
-
-						rowMap[cleanName] = val
-					}
-
-					if toBool(rowMap["flaguse"]) {
-						seqVal := rowMap["squence"]
-
-						subMenus = append(subMenus, domain.SubMenuItem{
-							MenuID:   toInt(rowMap["menuid"]),
-							ParentID: firstParentID,
-							Level2:   toString(rowMap["level2"]),
-							Level3:   toString(rowMap["level3"]),
-							Sequence: toInt(seqVal),
-						})
-					}
-				}
-				mainMenus[idx].SubMenu = subMenus
-			}(i)
+	if len(mainMenus) == 0 {
+		xmlErr := s.db.Raw("EXEC SP_Login_Create_Xml ?", username).Scan(&mainMenus).Error
+		if xmlErr != nil {
+			return domain.Admin{}, "", nil, fmt.Errorf("failed to execute SP Login: %w", xmlErr)
 		}
 
-		wgSubMenu.Wait()
+		// Coroutine loop: for each main menu item, fetch sub-menus via SP_Login_View_Mapping_Group
+		if len(mainMenus) > 0 {
+			var wgSubMenu sync.WaitGroup
+			wgSubMenu.Add(len(mainMenus))
+
+			for i := range mainMenus {
+				go func(idx int) {
+					defer wgSubMenu.Done()
+					parentID := mainMenus[idx].MenuID
+
+					rows, err := s.db.Raw("EXEC [dbo].[SP_Login_View_Mapping_Group] @ParentId = ?, @groupid = ?", parentID, result.GroupId).Rows()
+					if err != nil {
+						log.Printf("[WARNING] Failed to fetch sub menu for ParentId %d, GroupId %d: %v", parentID, result.GroupId, err)
+						mainMenus[idx].SubMenu = []domain.SubMenuItem{}
+						return
+					}
+					defer rows.Close()
+
+					cols, err := rows.Columns()
+					if err != nil {
+						mainMenus[idx].SubMenu = []domain.SubMenuItem{}
+						return
+					}
+
+					subMenus := []domain.SubMenuItem{}
+					for rows.Next() {
+						values := make([]interface{}, len(cols))
+						valuePtrs := make([]interface{}, len(cols))
+						for k := range values {
+							valuePtrs[k] = &values[k]
+						}
+
+						if err := rows.Scan(valuePtrs...); err != nil {
+							continue
+						}
+
+						rowMap := make(map[string]interface{})
+						var firstParentID int
+						gotFirstParent := false
+
+						for k, colName := range cols {
+							val := values[k]
+							if b, ok := val.([]byte); ok {
+								val = string(b)
+							}
+
+							cleanName := strings.ToLower(strings.TrimSpace(colName))
+
+							// Capture the VERY FIRST ParentId column value (preventing 2nd ParenId from overwriting it)
+							if strings.EqualFold(cleanName, "parentid") && !gotFirstParent {
+								firstParentID = toInt(val)
+								gotFirstParent = true
+							}
+
+							rowMap[cleanName] = val
+						}
+
+						if toBool(rowMap["flaguse"]) {
+							seqVal := rowMap["squence"]
+
+							subMenus = append(subMenus, domain.SubMenuItem{
+								MenuID:   toInt(rowMap["menuid"]),
+								ParentID: firstParentID,
+								Level2:   toString(rowMap["level2"]),
+								Level3:   toString(rowMap["level3"]),
+								Sequence: toInt(seqVal),
+							})
+						}
+					}
+					mainMenus[idx].SubMenu = subMenus
+				}(i)
+			}
+
+			wgSubMenu.Wait()
+
+			s.menuCache.Store(cacheKey, menuCacheEntry{
+				menus:     mainMenus,
+				fetchedAt: time.Now(),
+			})
+		}
 	}
 
 	user.Password = ""

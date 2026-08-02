@@ -312,7 +312,7 @@ func validateKelasLookups(db *gorm.DB, kodeKelas *string, kodeFotang *string, le
 	return nil
 }
 
-func (s *KelasService) Report(trxId string, subWhId string, c *gin.Context) error {
+func (s *KelasService) Report(trxId string /* , subWhId string */, c *gin.Context) error {
 	if trxId == "" && c != nil {
 		trxId = c.Param("id")
 		if trxId == "" {

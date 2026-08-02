@@ -82,6 +82,41 @@ services:
       /bin/sh -c " npm install && npm run dev -- --host 0.0.0.0 "
     restart: unless-stopped
 
+  # SERVICE STRESSTEST K6 (ON-DEMAND)
+  k6:
+    image: grafana/k6:latest
+    container_name: chat_k6
+    # profiles mencegah service ini jalan otomatis saat `docker compose up`
+    profiles:
+      - tools
+    env_file:
+      - ./vue/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+    volumes:
+      - ./vue:/app
+    working_dir: /app
+    command: run ./pentest.js
+    #pentest.js #single_test.js
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    sysctls:
+      - net.core.somaxconn=65535
+      - net.ipv4.ip_local_port_range=1024 65535
+      # - net.core.netdev_max_backlog=65535
+      - net.ipv4.tcp_wmem=4096 16384 4194304
+      - net.ipv4.tcp_rmem=4096 87380 4194304
+      - net.ipv4.tcp_tw_reuse=1
+      - net.ipv4.tcp_fin_timeout=5
+    cpuset: "0"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25' # Maksimal total CPU yang boleh dipakai (Batas Atas)
+
 volumes:
   go-compiler-cache:
   go-modules-cache:

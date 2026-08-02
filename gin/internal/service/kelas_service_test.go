@@ -102,8 +102,8 @@ func TestKelasService(t *testing.T) {
 	}
 
 	// Date range validation: EndDate < StartDate
-	tMulai := time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)
-	tSelesai := time.Date(2026, 8, 5, 0, 0, 0, 0, time.UTC)
+	tMulai := domain.DateOnly{Time: time.Date(2026, 8, 10, 0, 0, 0, 0, time.UTC)}
+	tSelesai := domain.DateOnly{Time: time.Date(2026, 8, 5, 0, 0, 0, 0, time.UTC)}
 	_, err = svc.Create(domain.Kelas{KodeKelas: &valKelas, StartDate: &tMulai, EndDate: &tSelesai}, c)
 	if err == nil {
 		t.Fatalf("expected error for StartDate > EndDate, got nil")

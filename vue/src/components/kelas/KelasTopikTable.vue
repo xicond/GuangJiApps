@@ -143,6 +143,7 @@
         :rules="formRules"
         label-width="140px"
         size="default"
+        v-loading="submitting"
       >
         <el-row :gutter="16">
           <el-col :span="12">
@@ -240,8 +241,8 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">Batal</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitForm">
+        <el-button :disabled="submitting" @click="dialogVisible = false">Batal</el-button>
+        <el-button type="primary" :loading="submitting" :disabled="submitting" @click="submitForm">
           {{ dialogMode === 'add' ? 'Simpan' : 'Perbarui' }}
         </el-button>
       </template>
@@ -499,48 +500,48 @@ function openEditDialog(row: KelasTopik) {
 }
 
 async function submitForm() {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
+  if (!formRef.value || submitting.value) return
+  submitting.value = true
+  try {
+    const valid = await formRef.value.validate().catch(() => false)
     if (!valid) return
-    submitting.value = true
     dialogFieldErrors.value = {}
-    try {
-      const payload: Partial<KelasTopik> = {
-        trx_id: props.kelasId ? Number(props.kelasId) : undefined,
-        kode_topik: form.value.kode_topik,
-        urutan: form.value.urutan,
-        topik_date: form.value.topik_date,
-        penceramah: form.value.penceramah ? Number(form.value.penceramah) : undefined,
-        penceramah_ext: form.value.penceramah_ext,
-        penterjemah: form.value.penterjemah,
-        durasi: form.value.durasi,
-        keterangan: selectedTopic.value?.description || form.value.keterangan
-      }
 
-      if (dialogMode.value === 'add') {
-        await kelasApi.createKelasTopik(payload)
-        ElMessage.success('Topik kelas berhasil ditambahkan')
-      } else {
-        const detailId = form.value.detail_id
-        if (!detailId) return
-        await kelasApi.updateKelasTopik(detailId, payload)
-        ElMessage.success('Data topik kelas berhasil diperbarui')
-      }
-
-      dialogVisible.value = false
-      if (isExpanded.value) fetchTopik()
-    } catch (err: any) {
-      console.error('Error submitting topik form:', err)
-      if (err.response?.data?.details) {
-        dialogFieldErrors.value = err.response.data.details
-        ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
-      } else {
-        ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data topik')
-      }
-    } finally {
-      submitting.value = false
+    const payload: Partial<KelasTopik> = {
+      trx_id: props.kelasId ? Number(props.kelasId) : undefined,
+      kode_topik: form.value.kode_topik,
+      urutan: form.value.urutan,
+      topik_date: form.value.topik_date,
+      penceramah: form.value.penceramah ? Number(form.value.penceramah) : undefined,
+      penceramah_ext: form.value.penceramah_ext,
+      penterjemah: form.value.penterjemah,
+      durasi: form.value.durasi,
+      keterangan: selectedTopic.value?.description || form.value.keterangan
     }
-  })
+
+    if (dialogMode.value === 'add') {
+      await kelasApi.createKelasTopik(payload)
+      ElMessage.success('Topik kelas berhasil ditambahkan')
+    } else {
+      const detailId = form.value.detail_id
+      if (!detailId) return
+      await kelasApi.updateKelasTopik(detailId, payload)
+      ElMessage.success('Data topik kelas berhasil diperbarui')
+    }
+
+    dialogVisible.value = false
+    if (isExpanded.value) fetchTopik()
+  } catch (err: any) {
+    console.error('Error submitting topik form:', err)
+    if (err.response?.data?.details) {
+      dialogFieldErrors.value = err.response.data.details
+      ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
+    } else {
+      ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data topik')
+    }
+  } finally {
+    submitting.value = false
+  }
 }
 
 async function handleDelete(row: KelasTopik) {

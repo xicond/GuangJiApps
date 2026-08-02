@@ -1,5 +1,5 @@
 <template>
-  <el-card shadow="never" class="form-card">
+  <el-card shadow="never" class="form-card" v-loading="submitting">
     <el-alert
       v-if="props.fieldErrors && Object.keys(props.fieldErrors).length > 0"
       type="error"
@@ -187,10 +187,11 @@
 
       <!-- Form Actions -->
       <div class="form-actions">
-        <el-button @click="handleCancel">Batal</el-button>
+        <el-button :disabled="submitting" @click="handleCancel">Batal</el-button>
         <el-button
           type="primary"
           :loading="submitting"
+          :disabled="submitting"
           @click="handleSubmit"
         >
           {{ submitText }}
@@ -293,27 +294,52 @@ const formRules = reactive<FormRules>({
   ]
 })
 
+const TRIM_FIELDS: (keyof Kelas)[] = [
+  'kode_kelas',
+  'kode_fotang',
+  'level',
+  'lokasi',
+  'pic',
+  'keterangan',
+  'mc1',
+  'mc2',
+  'mc3',
+  'mc4',
+  'mc5'
+]
+
+function trimTargetFields(data: Partial<Kelas>): Partial<Kelas> {
+  const trimmed = { ...data }
+  for (const field of TRIM_FIELDS) {
+    if (typeof trimmed[field] === 'string') {
+      trimmed[field] = (trimmed[field] as string).trim() as any
+    }
+  }
+  return trimmed
+}
+
 watch(
   () => props.initialData,
   (newData) => {
     if (newData && Object.keys(newData).length > 0) {
+      const trimmedData = trimTargetFields(newData)
       Object.assign(formData, {
-        kode_kelas: newData.kode_kelas || '',
-        kode_fotang: newData.kode_fotang || '',
-        start_date: newData.start_date || '',
-        end_date: newData.end_date || '',
-        lokasi: newData.lokasi || '',
-        pic: newData.pic || '',
-        level: newData.level || '',
-        deadline: newData.deadline || '',
-        keterangan: newData.keterangan || '',
-        mc1: newData.mc1 || '',
-        mc2: newData.mc2 || '',
-        mc3: newData.mc3 || '',
-        mc4: newData.mc4 || '',
-        mc5: newData.mc5 || '',
-        kelas_name: newData.kelas_name,
-        fotang_name: newData.fotang_name
+        kode_kelas: trimmedData.kode_kelas || '',
+        kode_fotang: trimmedData.kode_fotang || '',
+        start_date: trimmedData.start_date || '',
+        end_date: trimmedData.end_date || '',
+        lokasi: trimmedData.lokasi || '',
+        pic: trimmedData.pic || '',
+        level: trimmedData.level || '',
+        deadline: trimmedData.deadline || '',
+        keterangan: trimmedData.keterangan || '',
+        mc1: trimmedData.mc1 || '',
+        mc2: trimmedData.mc2 || '',
+        mc3: trimmedData.mc3 || '',
+        mc4: trimmedData.mc4 || '',
+        mc5: trimmedData.mc5 || '',
+        kelas_name: trimmedData.kelas_name,
+        fotang_name: trimmedData.fotang_name
       })
     }
   },
@@ -324,7 +350,7 @@ async function handleSubmit() {
   if (!formRef.value) return
   await formRef.value.validate((valid) => {
     if (valid) {
-      const payload: Partial<Kelas> = { ...formData }
+      const payload: Partial<Kelas> = trimTargetFields({ ...formData })
       // Clean temporary preloaded lookup object fields before submitting
       delete payload.kelas_name
       delete payload.fotang_name

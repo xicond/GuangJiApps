@@ -39,10 +39,10 @@ func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 		{fieldName: "tim_kerja", categoryID: "B_TIMKERJA", val: payload.TimKerja},
 		{fieldName: "kelas_khusus", categoryID: "B_KELAS", val: payload.KelasKhusus},
 		{fieldName: "kelas_umum", categoryID: "B_KELASUMUM", val: payload.KelasUmum},
-		{fieldName: "tempat_sd2", categoryID: "B_FOTANG", val: payload.TempatSd2},
-		{fieldName: "tempat_sd3", categoryID: "B_FOTANG", val: payload.TempatSd3},
-		{fieldName: "fotang_aktif", categoryID: "B_FOTANG", val: payload.FotangAktif},
-		{fieldName: "fotang_chiutao", categoryID: "B_FOTANG", val: payload.FotangChiutao},
+		{fieldName: "tempat_sd2", categoryID: "B_FOTHANG", val: payload.TempatSd2},
+		{fieldName: "tempat_sd3", categoryID: "B_FOTHANG", val: payload.TempatSd3},
+		{fieldName: "fotang_aktif", categoryID: "B_FOTHANG", val: payload.FotangAktif},
+		{fieldName: "fotang_chiutao", categoryID: "B_FOTHANG", val: payload.FotangChiutao},
 		{fieldName: "tcs", categoryID: "B_TCS", val: payload.Tcs},
 		{fieldName: "waktu_chiutao_mandarin", categoryID: "B_WAKTUCIUTAO", val: payload.WaktuChiutaoMandarin},
 		{fieldName: "pendidikan", categoryID: "B_PENDIDIKAN", val: payload.Pendidikan},
@@ -221,10 +221,10 @@ func (s *UmatService) Create(payload domain.Umat, c *gin.Context) (domain.Umat, 
 	// item.Kode = CurrentLogin.SubWhName + "-" + item.Id.ToString();
 
 	// 3. Populate matching schema structural constraints
-	payload.Status = true                            // Active status mapping
-	payload.ModAct = "I"                             // 'I' standard legacy flag for Insert
-	payload.ModBy = int32(c.MustGet("userID").(int)) // Default system user ID matching INT type
-	payload.ModDate = time.Now()                     // Local server time object
+	payload.Status = true        // Active status mapping
+	payload.ModAct = "I"         // 'I' standard legacy flag for Insert
+	payload.ModBy = getUserID(c) // Default system user ID matching INT type
+	payload.ModDate = time.Now() // Local server time object
 
 	// 4. Persist the new entity to the database pool
 	if err := s.db.Create(&payload).Error; err != nil {
@@ -241,9 +241,10 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 	if !item.TanggalLahir.IsZero() && item.TanggalLahir.Year() > 1900 {
 		item.Usia = int32(time.Now().Year() - item.TanggalLahir.Year())
 	}
-	if item.JenisKelaminInfo != nil && item.JenisKelaminInfo.LookupDescription != nil && *item.JenisKelaminInfo.LookupDescription != "" {
+	// Dont activate this, get from JenisKelaminInfo
+	/* if item.JenisKelaminInfo != nil && item.JenisKelaminInfo.LookupDescription != nil && *item.JenisKelaminInfo.LookupDescription != "" {
 		item.JenisKelamin = *item.JenisKelaminInfo.LookupDescription
-	}
+	} */
 	return item, nil
 }
 
@@ -323,9 +324,9 @@ func (s *UmatService) Update(id string, payload domain.Umat, c *gin.Context) (do
 	item.ImagePath = payload.ImagePath
 
 	// Legacy metadata mappings
-	item.ModAct = "U"                             // 'U' standard legacy flag for Update
-	item.ModBy = int32(c.MustGet("userID").(int)) // System user ID (int32)
-	item.ModDate = time.Now()                     // Actual time.Time object expected by DATETIME column
+	item.ModAct = "U"        // 'U' standard legacy flag for Update
+	item.ModBy = getUserID(c) // System user ID (int32)
+	item.ModDate = time.Now() // Actual time.Time object expected by DATETIME column
 
 	// 4. Save updates back to SQL Server
 	if err := s.db.Save(&item).Error; err != nil {
@@ -353,9 +354,9 @@ func (s *UmatService) Delete(id string, c *gin.Context) error {
 
 	// Legacy metadata mappings
 	item.Status = false
-	item.ModAct = "D"                             // 'D' standard legacy flag for Delete
-	item.ModBy = int32(c.MustGet("userID").(int)) // Default system user ID matching INT type
-	item.ModDate = time.Now()                     // Local server time object
+	item.ModAct = "D"        // 'D' standard legacy flag for Delete
+	item.ModBy = getUserID(c) // Default system user ID matching INT type
+	item.ModDate = time.Now() // Local server time object
 
 	// 4. Save updates back to SQL Server
 	if err := s.db.Save(&item).Error; err != nil {

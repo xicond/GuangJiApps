@@ -40,27 +40,27 @@ func (s *TimKerjaService) List(page int, filters map[string]string, limit int) (
 
 	query := s.db.Table("T_APP_LOOKUP").Where("CategoryId = ? AND Status = ?", "B_POSISI", true)
 
-	type FilterRule struct {
-		Column string
-		IsLike bool
-	}
-
-	allowedFilters := map[string]FilterRule{
-		"lookup_id":          {Column: "LookupId", IsLike: true},
-		"lookup_value":       {Column: "LookupValue", IsLike: true},
-		"lookup_description": {Column: "LookupDescription", IsLike: true},
-	}
-
-	for field, value := range filters {
-		if value == "" {
-			continue
-		}
-		if rule, exists := allowedFilters[field]; exists {
-			if rule.IsLike {
-				query = query.Where(fmt.Sprintf("[%s] LIKE ?", rule.Column), "%"+value+"%")
-			} else {
-				query = query.Where(fmt.Sprintf("[%s] = ?", rule.Column), value)
+	if filters != nil {
+		var searchVal string
+		for _, key := range []string{"search", "query", "q"} {
+			if val, ok := filters[key]; ok && val != "" {
+				searchVal = val
+				break
 			}
+		}
+
+		if searchVal != "" {
+			query = query.Where("([LookupDescription] LIKE ? OR [LookupValue] LIKE ? OR [LookupId] LIKE ?)", "%"+searchVal+"%", "%"+searchVal+"%", "%"+searchVal+"%")
+		} else if val, ok := filters["lookup_description"]; ok && val != "" {
+			query = query.Where("([LookupDescription] LIKE ? OR [LookupValue] LIKE ?)", "%"+val+"%", "%"+val+"%")
+		}
+
+		if val, ok := filters["lookup_value"]; ok && val != "" && searchVal == "" {
+			query = query.Where("[LookupValue] LIKE ?", "%"+val+"%")
+		}
+
+		if val, ok := filters["lookup_id"]; ok && val != "" {
+			query = query.Where("[LookupId] = ?", val)
 		}
 	}
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -112,6 +113,29 @@ func TestValidateStruct(t *testing.T) {
 		err = d.UnmarshalJSON([]byte(`"invalid-date"`))
 		if err == nil {
 			t.Errorf("expected error for invalid date, got nil")
+		}
+	})
+
+	t.Run("Kelas DateOnly unmarshaling and formatting", func(t *testing.T) {
+		jsonData := `{"kode_kelas":"K01","start_date":"2019-04-14T00:00:00Z","end_date":"2019-04-15","deadline":""}`
+		var k domain.Kelas
+		if err := json.Unmarshal([]byte(jsonData), &k); err != nil {
+			t.Fatalf("failed to unmarshal Kelas JSON with DateOnly: %v", err)
+		}
+		if k.StartDate == nil || k.StartDate.Format("2006-01-02") != "2019-04-14" {
+			t.Errorf("expected start_date 2019-04-14, got %v", k.StartDate)
+		}
+		if k.EndDate == nil || k.EndDate.Format("2006-01-02") != "2019-04-15" {
+			t.Errorf("expected end_date 2019-04-15, got %v", k.EndDate)
+		}
+
+		b, err := json.Marshal(k)
+		if err != nil {
+			t.Fatalf("failed to marshal Kelas to JSON: %v", err)
+		}
+		jsonStr := string(b)
+		if !strings.Contains(jsonStr, `"start_date":"2019-04-14"`) {
+			t.Errorf("expected start_date format YYYY-MM-DD in JSON, got %s", jsonStr)
 		}
 	})
 

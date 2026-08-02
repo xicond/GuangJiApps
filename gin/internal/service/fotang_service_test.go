@@ -16,7 +16,7 @@ func TestFotangServiceLookup(t *testing.T) {
 		t.Fatalf("auto migrate failed: %v", err)
 	}
 
-	db.Exec("DELETE FROM T_APP_LOOKUP WHERE LookupId = 'FT001'")
+	db.Exec("DELETE FROM T_APP_LOOKUP WHERE CategoryId = 'B_FOTHANG'")
 	db.Exec("DELETE FROM T_APP_LOOKUPCATEGORY WHERE CategoryId = 'B_FOTHANG'")
 
 	cat := domain.AppLookupCategory{

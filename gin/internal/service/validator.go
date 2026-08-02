@@ -19,6 +19,15 @@ var validate = func() *validator.Validate {
 		}
 		return name
 	})
+	v.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		if d, ok := field.Interface().(domain.DateOnly); ok {
+			if d.IsZero() {
+				return nil
+			}
+			return d.Time
+		}
+		return nil
+	}, domain.DateOnly{})
 	return v
 }()
 

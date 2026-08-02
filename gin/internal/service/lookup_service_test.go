@@ -111,11 +111,28 @@ func TestLookupService(t *testing.T) {
 		t.Errorf("expected 1 item filtered by id, got total=%d len=%d", totalID, len(filteredID))
 	}
 
+	// 4b. Test searching by lookup_value via lookup_description filter or search parameter
+	filteredByValInDesc, totalByValInDesc, err := Lookup(db, catID, 1, 10, map[string]string{"lookup_description": "VAL_07"})
+	if err != nil {
+		t.Fatalf("Lookup filter search by value in description filter failed: %v", err)
+	}
+	if totalByValInDesc != 1 || len(filteredByValInDesc) != 1 {
+		t.Errorf("expected 1 item searching by value in description filter, got total=%d len=%d", totalByValInDesc, len(filteredByValInDesc))
+	}
+
+	filteredSearch, totalSearch, err := Lookup(db, catID, 1, 10, map[string]string{"search": "VAL_09"})
+	if err != nil {
+		t.Fatalf("Lookup filter search parameter failed: %v", err)
+	}
+	if totalSearch != 1 || len(filteredSearch) != 1 {
+		t.Errorf("expected 1 item using search parameter, got total=%d len=%d", totalSearch, len(filteredSearch))
+	}
+
 	// 5. Test LookupService struct helper methods
 	svc := NewLookupService(db)
 
 	categories := []string{
-		"B_WAKTUCIUTAO", "B_GENDER", "B_TCS", "B_FOTANG", "B_KELAS",
+		"B_WAKTUCIUTAO", "B_GENDER", "B_TCS", "B_FOTHANG", "B_KELAS",
 		"B_PENDIDIKAN", "B_KELASUMUM", "B_PEKERJAAN", "B_KELUARGA", "B_STATUS",
 	}
 	for _, cID := range categories {

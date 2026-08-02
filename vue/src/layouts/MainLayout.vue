@@ -2,65 +2,87 @@
   <el-container class="layout-container">
     <el-aside :width="isCollapsed || isMobile ? '54px' : '240px'" class="aside">
       <div class="sidebar-logo">
-        <el-icon class="logo-icon"><Grid /></el-icon>
+        <el-icon class="logo-icon">
+          <Grid />
+        </el-icon>
         <span v-if="!isCollapsed && !isMobile" class="logo-text">GuangJi Apps</span>
       </div>
 
       <el-scrollbar class="menu-scrollbar">
-        <el-menu
-          :default-active="activeMenu"
-          :collapse="isCollapsed || isMobile"
-          :router="true"
-          class="el-menu-vertical"
-        >
+        <el-menu :default-active="activeMenu" :collapse="isCollapsed || isMobile" :router="true"
+          class="el-menu-vertical">
           <!-- Dashboard -->
           <el-menu-item index="/dashboard">
-            <el-icon><HomeFilled /></el-icon>
+            <el-icon>
+              <HomeFilled />
+            </el-icon>
             <template #title>Dashboard</template>
           </el-menu-item>
 
           <!-- User Management -->
           <el-sub-menu v-if="hasMenu('User Management')" index="user-management">
             <template #title>
-              <el-icon><User /></el-icon>
+              <el-icon>
+                <User />
+              </el-icon>
               <span>User Management</span>
             </template>
-            <el-menu-item v-if="hasSubMenu('User Management', 'Create User')" index="/user-management/admin">Admin</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('User Management', 'Group Control')" index="/user-management/admin-group">Admin Group</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('User Management', 'Menu Control')" index="/user-management/group-menu-mapping">Group Menu Mapping</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('User Management', 'User Sub Warehouse Control')" index="/user-management/admin-sub-warehouse">Admin Sub Warehouse</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('User Management', 'Create User')"
+              index="/user-management/admin">Admin</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('User Management', 'Group Control')"
+              index="/user-management/admin-group">Admin
+              Group</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('User Management', 'Menu Control')"
+              index="/user-management/group-menu-mapping">Group
+              Menu Mapping</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('User Management', 'User Sub Warehouse Control')"
+              index="/user-management/admin-sub-warehouse">Admin Sub Warehouse</el-menu-item>
           </el-sub-menu>
 
           <!-- Master Data -->
           <el-sub-menu v-if="hasMenu('Master Data')" index="master-data">
             <template #title>
-              <el-icon><Files /></el-icon>
+              <el-icon>
+                <Files />
+              </el-icon>
               <span>Master Data</span>
             </template>
             <el-menu-item v-if="hasSubMenu('Master Data', 'Umat')" index="/master-data/umat">Umat</el-menu-item>
             <el-menu-item v-if="hasSubMenu('Master Data', 'Topik')" index="/master-data/topic">Topic</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('Master Data', 'Kegiatan')" index="/master-data/activity">Activity</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('Master Data', 'Tim Kerja')" index="/master-data/tim-kerja">Tim Kerja</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('Master Data', 'Tahun Ciu Tao')" index="/master-data/tahun-ciu-tao">Tahun Ciu Tao</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('Master Data', 'Penggalang Dana')" index="/master-data/penggalang-dana">Penggalang Dana</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('Master Data', 'SXY Donatur')" index="/master-data/sxy-donatur">Sxy Donatur</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Kegiatan')"
+              index="/master-data/activity">Activity</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Tim Kerja')" index="/master-data/tim-kerja">Tim
+              Kerja</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Tahun Ciu Tao')" index="/master-data/tahun-ciu-tao">Tahun Ciu
+              Tao</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Penggalang Dana')"
+              index="/master-data/penggalang-dana">Penggalang
+              Dana</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'SXY Donatur')" index="/master-data/sxy-donatur">Sxy
+              Donatur</el-menu-item>
           </el-sub-menu>
 
           <!-- Transaction -->
           <el-sub-menu v-if="hasMenu('Transaction')" index="transaction">
             <template #title>
-              <el-icon><Tickets /></el-icon>
+              <el-icon>
+                <Tickets />
+              </el-icon>
               <span>Transaction</span>
             </template>
-            <el-menu-item v-if="hasSubMenu('Transaction', 'Kegiatan')" index="/master-data/activity">Activity</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Transaction', 'Kegiatan')"
+              index="/master-data/activity">Activity</el-menu-item>
             <el-menu-item v-if="hasSubMenu('Transaction', 'Kelas')" index="/transaction/kelas">Kelas</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('Transaction', 'Donasi SXY')" index="/transaction/donasi-sxy">Donasi Sxy</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Transaction', 'Donasi SXY')" index="/transaction/donasi-sxy">Donasi
+              Sxy</el-menu-item>
           </el-sub-menu>
 
           <!-- Report -->
           <el-sub-menu v-if="hasMenu('Report')" index="report">
             <template #title>
-              <el-icon><DataAnalysis /></el-icon>
+              <el-icon>
+                <DataAnalysis />
+              </el-icon>
               <span>Report</span>
             </template>
             <el-menu-item v-if="hasSubMenu('Report', 'Master')" index="/report/master">Master</el-menu-item>
@@ -73,14 +95,8 @@
     <el-container class="content-container">
       <el-header class="header">
         <div class="header-left">
-          <el-button
-            v-if="!isMobile"
-            circle
-            text
-            size="large"
-            :icon="isCollapsed || isCollapsed ? Expand : Fold"
-            @click="isCollapsed = !isCollapsed"
-          />
+          <el-button v-if="!isMobile" circle text size="large" :icon="isCollapsed || isCollapsed ? Expand : Fold"
+            @click="isCollapsed = !isCollapsed" />
         </div>
 
         <div class="header-right">
@@ -89,13 +105,19 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="system">
-                  <el-icon><Monitor /></el-icon> System Mode
+                  <el-icon>
+                    <Monitor />
+                  </el-icon> System Mode
                 </el-dropdown-item>
                 <el-dropdown-item command="light">
-                  <el-icon><Sunny /></el-icon> Light Mode
+                  <el-icon>
+                    <Sunny />
+                  </el-icon> Light Mode
                 </el-dropdown-item>
                 <el-dropdown-item command="dark">
-                  <el-icon><Moon /></el-icon> Dark Mode
+                  <el-icon>
+                    <Moon />
+                  </el-icon> Dark Mode
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -109,10 +131,14 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="change-password">
-                  <el-icon><Key /></el-icon> Change Password
+                  <el-icon>
+                    <Key />
+                  </el-icon> Change Password
                 </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
-                  <el-icon><SwitchButton /></el-icon> Logout
+                  <el-icon>
+                    <SwitchButton />
+                  </el-icon> Logout
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -130,12 +156,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
+import { ElNotification } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import { setMode, currentMode, isDark, type ThemeMode } from '../theme'
 import ChangePasswordModal from '../components/ChangePasswordModal.vue'
+import { useQuickStreamSpeedTest } from '../api/useQuickStreamSpeedTest'
 import {
   Grid,
   HomeFilled,
@@ -156,6 +184,24 @@ import {
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+
+const { speedMbps, lastTestCompletedAt } = useQuickStreamSpeedTest()
+let lastNotificationTime = 0
+const NOTIFY_THROTTLE_MS = 5000
+
+watch(lastTestCompletedAt, () => {
+  if (speedMbps.value !== null && speedMbps.value < 0.8) {
+    const now = Date.now()
+    if (now - lastNotificationTime >= NOTIFY_THROTTLE_MS) {
+      lastNotificationTime = now
+      ElNotification.warning({
+        title: 'Slow Connection',
+        message: `Your internet speed is slow (${speedMbps.value} Mbps). Some processes will use cache.`,
+        duration: 4000
+      })
+    }
+  }
+})
 
 const isChangePasswordVisible = ref(false)
 
@@ -296,4 +342,3 @@ const handleLogout = () => {
   background-color: var(--el-bg-color-page);
 }
 </style>
-

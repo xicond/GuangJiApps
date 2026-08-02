@@ -2,9 +2,15 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { clientsClaim } from 'workbox-core'
 import { registerRoute } from 'workbox-routing'
-import { StaleWhileRevalidate, CacheFirst/* , NetworkOnly */ } from 'workbox-strategies'
+import {
+    StaleWhileRevalidate, CacheFirst,/* , NetworkOnly */
+    NetworkFirst
+} from 'workbox-strategies'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { ExpirationPlugin } from 'workbox-expiration'
+import {
+    DynamicNetworkCacheStrategy
+} from './strategies/dynamicnetworkcache'
 // import { BackgroundSyncPlugin } from 'workbox-background-sync'
 declare let self: ServiceWorkerGlobalScope
 
@@ -19,14 +25,50 @@ precacheAndRoute(self.__WB_MANIFEST || [])
 
 registerRoute(
     ({ url, request }) => request.method === 'GET' && url.pathname.includes('/v1/lookup/'),
-    new CacheFirst({
+    new DynamicNetworkCacheStrategy({
         cacheName: 'lookup-cache',
+        timeoutMs: 280,
+        debounceMs: 2000,
         plugins: [
             new CacheableResponsePlugin({
                 statuses: [0, 200]
             }),
             new ExpirationPlugin({
-                maxAgeSeconds: 24 * 60 * 60 // 24 Jam
+                maxAgeSeconds: 7 * 60 * 60 // 24 Jam
+            })
+        ]
+    })
+)
+
+registerRoute(
+    ({ url, request }) => request.method === 'GET' && (url.pathname.includes('/v1/lookup/') || url.pathname.includes('/umat')),
+    new DynamicNetworkCacheStrategy({
+        cacheName: 'api-cache',
+        timeoutMs: 220,
+        debounceMs: 2200,
+        plugins: [
+            new CacheableResponsePlugin({
+                statuses: [0, 200]
+            }),
+            new ExpirationPlugin({
+                maxAgeSeconds: 7 * 60 * 60 // 1 week
+            })
+        ]
+    })
+)
+
+registerRoute(
+    ({ url, request }) => request.method === 'GET' && url.pathname.includes('/v1/') && url.pathname.includes('/report'),
+    new DynamicNetworkCacheStrategy({
+        cacheName: 'report-cache',
+        timeoutMs: 2200,
+        debounceMs: 10000,
+        plugins: [
+            new CacheableResponsePlugin({
+                statuses: [0, 200]
+            }),
+            new ExpirationPlugin({
+                maxAgeSeconds: 2 * 60 * 60 // 2 Jam
             })
         ]
     })
@@ -40,11 +82,14 @@ registerRoute(
 
         return isMatch
     },
-    new StaleWhileRevalidate({
+    new NetworkFirst({
         cacheName: 'api-cache',
         plugins: [
             new CacheableResponsePlugin({
                 statuses: [0, 200]
+            }),
+            new ExpirationPlugin({
+                maxAgeSeconds: 1 * 60 * 60 // 1 Jam
             })
         ]
     })

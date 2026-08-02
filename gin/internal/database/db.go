@@ -1,7 +1,6 @@
 package database
 
 import (
-	"strings"
 	"time"
 
 	"guangjiapps/gin/internal/config"
@@ -19,22 +18,12 @@ func Open(dsn string) (*gorm.DB, error) {
 	cfg := &gorm.Config{
 		Logger:                                   logger.Default.LogMode(logger.Silent),
 		DisableForeignKeyConstraintWhenMigrating: true,
+		SkipDefaultTransaction:                   true, // Disable default transaction wrapping for read performance
+		PrepareStmt:                              true, // Cache prepared statements to reduce SQL parsing overhead
 	}
 
 	// 1. Open the GORM connection with silent logging to save I/O overhead
 	db, err := gorm.Open(sqlserver.Open(dsn), cfg)
-	if err != nil && strings.Contains(err.Error(), "Cannot open database") {
-		masterDSN := strings.Replace(dsn, "database=guangji;", "database=master;", 1)
-		masterDB, masterErr := gorm.Open(sqlserver.Open(masterDSN), cfg)
-		if masterErr == nil {
-			_ = masterDB.Exec("CREATE DATABASE guangji").Error
-			sqlDB, _ := masterDB.DB()
-			if sqlDB != nil {
-				sqlDB.Close()
-			}
-			db, err = gorm.Open(sqlserver.Open(dsn), cfg)
-		}
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -45,21 +34,28 @@ func Open(dsn string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	// SetMaxIdleConns sets the maximum number of connections kept alive in the background.
-	// Having 10-20 connections pre-warmed prevents the 100ms TCP handshake delay on new requests.
-	sqlDB.SetMaxIdleConns(2)
+	// SetMaxIdleConns keeps connections pre-warmed to eliminate TCP handshake latency.
+	sqlDB.SetMaxIdleConns(10)
 
 	// SetMaxOpenConns sets the maximum number of simultaneous open connections to MSSQL.
-	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetMaxOpenConns(50)
 
-	// SetConnMaxLifetime sets the maximum amount of time a connection can be reused
-	// before it's cleanly closed and remade (prevents memory/socket leaks).
-	sqlDB.SetConnMaxLifetime(1 * time.Hour)
+	// SetConnMaxLifetime sets the maximum amount of time a connection can be reused.
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 
 	// SetConnMaxIdleTime closes connections that have been sitting completely unused.
-	sqlDB.SetConnMaxIdleTime(1 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 
-	// log.Println("Database connection pool initialized successfully")
+	// Pre-warm connection pool asynchronously so active TCP sockets are established before traffic spikes
+	go func() {
+		for i := 0; i < 50; i++ {
+			go func() {
+				var dummy int
+				_ = db.Raw("SELECT 1").Scan(&dummy).Error
+			}()
+		}
+	}()
+
 	return db, nil
 
 	// return gorm.Open(sqlserver.Open(dsn), cfg)

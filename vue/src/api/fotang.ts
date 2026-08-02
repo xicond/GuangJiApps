@@ -14,9 +14,10 @@ export const fotangApi = {
       limit: params.limit || 10
     }
 
-    // if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
-    // if (params.lookup_value) cleanParams.lookup_value = params.lookup_value
+    if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
+    if (params.lookup_value) cleanParams.lookup_value = params.lookup_value
     if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
+    if (params.search) cleanParams.search = params.search
 
     const response = await apiClient.get<LookupListResponse>('/v1/fotang/lookup', {
       params: cleanParams,

@@ -9,8 +9,9 @@ export interface LookupQueryParams {
   page?: number
   limit?: number
   lookup_description?: string
-  // lookup_value?: string
-  // lookup_id?: string
+  lookup_value?: string
+  lookup_id?: string
+  search?: string
 }
 
 export interface LookupListResponse {

@@ -243,7 +243,7 @@ type Umat struct {
 	Telepon              string     `gorm:"column:telepon" json:"telepon" validate:"omitempty,max=50"`
 	Mobile               string     `gorm:"column:mobile" json:"mobile" validate:"omitempty,max=50"`
 	TempatLahir          string     `gorm:"column:tempatlahir" json:"tempat_lahir" validate:"omitempty,max=50"`
-	TanggalLahir         time.Time  `gorm:"column:tanggallahir" json:"tanggal_lahir"`
+	TanggalLahir         DateOnly   `gorm:"column:tanggallahir" json:"tanggal_lahir"`
 	Usia                 int32      `gorm:"column:usia" json:"usia" validate:"omitempty,gte=0,lte=150"`
 	Wilayah              string     `gorm:"column:wilayah" json:"wilayah" validate:"omitempty,max=100"`
 	JenisKelamin         string     `gorm:"column:jeniskelamin" json:"jenis_kelamin" validate:"required,omitempty,max=3"`
@@ -635,8 +635,8 @@ func (SxyDonatur) TableName() string { return "T_SXY_MST_DONATUR" }
 type Kelas struct {
 	TrxId      int32      `gorm:"primaryKey;column:trxid;type:int;not null" json:"trx_id,omitempty"`
 	KodeKelas  *string    `gorm:"column:kodekelas;type:varchar(3)" json:"kode_kelas,omitempty" validate:"required,max=3"`
-	StartDate  *time.Time `gorm:"column:startdate;type:date" json:"start_date,omitempty" validate:"omitempty"`
-	EndDate    *time.Time `gorm:"column:enddate;type:date" json:"end_date,omitempty" validate:"omitempty,gtefield=StartDate"`
+	StartDate  *DateOnly  `gorm:"column:startdate;type:date" json:"start_date,omitempty" validate:"omitempty"`
+	EndDate    *DateOnly  `gorm:"column:enddate;type:date" json:"end_date,omitempty" validate:"omitempty,gtefield=StartDate"`
 	KodeFotang *string    `gorm:"column:kodefotang;type:varchar(3)" json:"kode_fotang,omitempty" validate:"omitempty,max=3"`
 	Lokasi     *string    `gorm:"column:lokasi;type:varchar(50)" json:"lokasi,omitempty" validate:"omitempty,max=50"`
 	PIC        *string    `gorm:"column:PIC;type:nvarchar(100)" json:"pic,omitempty" validate:"omitempty,max=100"`
@@ -651,7 +651,7 @@ type Kelas struct {
 	Mc3        *string    `gorm:"column:Mc3;type:nvarchar(100)" json:"mc3,omitempty" validate:"omitempty,max=100"`
 	Mc4        *string    `gorm:"column:Mc4;type:nvarchar(100)" json:"mc4,omitempty" validate:"omitempty,max=100"`
 	Mc5        *string    `gorm:"column:Mc5;type:nvarchar(100)" json:"mc5,omitempty" validate:"omitempty,max=100"`
-	Deadline   *time.Time `gorm:"column:deadline;type:date" json:"deadline,omitempty"`
+	Deadline   *DateOnly  `gorm:"column:deadline;type:date" json:"deadline,omitempty"`
 
 	KelasName  *AppLookup `gorm:"foreignKey:KodeKelas;references:LookupValue;constraint:false" json:"kelas_name,omitempty" validate:"-"`   // CategoryId = B_KELASKHUSUS
 	FotangName *AppLookup `gorm:"foreignKey:KodeFotang;references:LookupValue;constraint:false" json:"fotang_name,omitempty" validate:"-"` // CategoryId = B_FOTHANG
@@ -885,7 +885,7 @@ type KelasMusik struct {
 	TrxId      int32      `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
 	MusicId    int32      `gorm:"column:MusicId;type:int;not null" json:"music_id" validate:"required"`
 	Urutan     *int32     `gorm:"column:Urutan;type:int" json:"urutan" validate:"omitempty"`
-	MusicDate  *time.Time `gorm:"column:MusicDate;type:date" json:"music_date" validate:"omitempty"`
+	MusicDate  *DateOnly  `gorm:"column:MusicDate;type:date" json:"music_date" validate:"omitempty"`
 	Keterangan *string    `gorm:"column:Keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=200"`
 	Status     *bool      `gorm:"column:status;type:bit" json:"status" validate:"omitempty"`
 	ModAct     *string    `gorm:"column:ModAct;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`

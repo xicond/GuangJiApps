@@ -3,11 +3,14 @@ package api
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"guangjiapps/gin/internal/config"
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestPing(t *testing.T) {
@@ -116,5 +119,26 @@ func TestResourceEndpointsAreRegistered(t *testing.T) {
 				t.Fatalf("expected route to be registered for %s, got 404", tt.path)
 			}
 		})
+	}
+}
+
+func TestValidationErrorReturns400(t *testing.T) {
+	vErr := service.NewValidationError(map[string][]string{
+		"fotang_aktif":   {"field B_FOTHANG nilai '31' tidak valid"},
+		"fotang_chiutao": {"field B_FOTHANG nilai '31' tidak valid"},
+	})
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	respondError(c, vErr)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "tidak valid") {
+		t.Fatalf("expected body to contain error detail, got: %s", body)
 	}
 }

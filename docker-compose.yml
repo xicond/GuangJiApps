@@ -25,6 +25,13 @@ services:
     command: >
       /bin/sh -c "python ./export_to_sql.py"
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis_app
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
   gin:
     build:
       context: ./gin
@@ -38,7 +45,8 @@ services:
       - BASE_URL=/
       - JWT_SECRET=/app/certs/dev-private-key.pem
       - REFRESH_SECRET=/app/certs/dev-private-key.pem
-      - DATABASE_DSN=sqlserver://sa:YourStrong@Passw0rd123@mssql:1433?database=master
+      # - DATABASE_DSN=sqlserver://sa:YourStrong@Passw0rd123@mssql:1433?database=master
+      - REDIS_ADDR=redis:6379
     volumes:
       - ./gin/certs:/app/certs:ro
       - go-compiler-cache:/go-cache
@@ -47,6 +55,7 @@ services:
       - "8080:8080"
     depends_on:
       - mssql
+      - redis
     restart: unless-stopped
     # environment:
     #   - BASE_URL=/
@@ -65,6 +74,8 @@ services:
       - ./gin/dist:/out
       - go-compiler-cache:/go-cache
       - go-modules-cache:/go-mod-cache
+      - ./gin/.env:/app/.env
+      - ./gin/certs:/app/certs
     command: >
       /bin/sh -c " mkdir -p /out &&  GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=\"-s -w\" -v -o /out/server.exe ./cmd/server "
     restart: "no"

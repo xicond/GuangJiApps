@@ -26,7 +26,7 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kode Event" :label-position="isMobile? 'top' : 'right'">
+          <el-form-item label="Kode Event" :label-position="isMobile ? 'top' : 'right'">
             <el-input
               v-model="filters.event_code"
               placeholder="Cari kode event..."
@@ -38,7 +38,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Event" :label-position="isMobile? 'top' : 'right'">
+          <el-form-item label="Nama Event" :label-position="isMobile ? 'top' : 'right'">
             <el-input
               v-model="filters.event_name"
               placeholder="Cari nama event..."
@@ -50,13 +50,15 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kategori" :label-position="isMobile? 'top' : 'right'">
-            <el-input
+          <el-form-item label="Kategori" :label-position="isMobile ? 'top' : 'right'">
+            <LookupSelect
               v-model="filters.event_category"
-              placeholder="Cari kategori..."
+              placeholder="Pilih Kategori Event..."
+              :fetch-api="lookupApi.getLookupKategoriEvent"
+              value-key="lookup_value"
+              label-key="lookup_description"
               clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
+              @change="onFilterChange"
             />
           </el-form-item>
         </el-col>
@@ -92,25 +94,25 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="event_category" label="Kategori"  min-width="150"  >
+        <el-table-column prop="event_category" label="Kategori" min-width="150">
           <template #default="{ row }">
-            <span>{{ row.event_category || '-' }}</span>
+            <span>{{ row.event_category_info?.lookup_description || row.event_category || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="Keterangan"  min-width="220"  >
+        <el-table-column prop="description" label="Keterangan" min-width="220">
           <template #default="{ row }">
             <span>{{ row.description || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="110" align="center">
+        <!-- <el-table-column prop="status" label="Status" width="110" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status ? 'success' : 'info'" size="small">
               {{ row.status ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
-        </el-table-column>
+        </el-table-column> -->
 
         <!-- Actions Column -->
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
@@ -160,14 +162,82 @@
         />
       </div>
     </el-card>
+
+    <!-- Create / Edit Dialog -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEditing ? `Edit Activity #${editingCode}` : 'Tambah Activity Baru'"
+      :width="isMobile ? '90%' : '560px'"
+      destroy-on-close
+      @closed="resetForm"
+    >
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        label-width="130px"
+        :label-position="isMobile ? 'top' : 'right'"
+      >
+        <el-form-item label="Kode Event" prop="event_code">
+          <el-input
+            v-model="formData.event_code"
+            placeholder="Masukkan kode event (misal: EV01)"
+            :disabled="isEditing"
+          />
+        </el-form-item>
+
+        <el-form-item label="Nama Event" prop="event_name">
+          <el-input
+            v-model="formData.event_name"
+            placeholder="Masukkan nama event"
+          />
+        </el-form-item>
+
+        <el-form-item label="Kategori Event" prop="event_category">
+          <LookupSelect
+            v-model="formData.event_category"
+            placeholder="Pilih Kategori Event..."
+            :fetch-api="lookupApi.getLookupKategoriEvent"
+            value-key="lookup_value"
+            label-key="lookup_description"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="Keterangan" prop="description">
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="3"
+            placeholder="Masukkan keterangan tambahan..."
+          />
+        </el-form-item>
+
+        <!-- <el-form-item label="Status" prop="status">
+          <el-switch
+            v-model="formData.status"
+            active-text="Aktif"
+            inactive-text="Nonaktif"
+          />
+        </el-form-item> -->
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button :disabled="submitting" @click="dialogVisible = false">Batal</el-button>
+          <el-button type="primary" :loading="submitting" @click="handleSubmit">
+            Simpan
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage, ElNotification, type FormInstance, type FormRules } from 'element-plus'
 import {
   Search,
   Refresh,
@@ -176,18 +246,16 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import { activityApi } from '../../api/activity'
+import { lookupApi } from '../../api/lookup'
 import type { Activity, ActivityQueryParams } from '../../types/activity'
+import LookupSelect from '../../components/common/LookupSelect.vue'
 
-const router = useRouter()
-
-// Initialize breakpoints (Tailwind or custom layout mapping)
+// Breakpoints layout calculation
 const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('md')
+const isDesktop = breakpoints.greaterOrEqual('lg')
 
-// Subscribe to reactive states
-const isMobile = breakpoints.smaller('md')   // True if width < 768px
-const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
-
-// Memory Optimization: shallowRef for table dataset
+// Dataset state
 const dataList = shallowRef<Activity[]>([])
 const loading = ref(false)
 
@@ -208,6 +276,32 @@ const filters = reactive<ActivityQueryParams>({
   event_name: '',
   event_category: ''
 })
+
+// Dialog & Form state
+const dialogVisible = ref(false)
+const isEditing = ref(false)
+const editingCode = ref('')
+const submitting = ref(false)
+const formRef = ref<FormInstance | null>(null)
+
+const formData = reactive<Partial<Activity>>({
+  event_code: '',
+  event_name: '',
+  event_category: '',
+  description: '',
+  // status: true
+})
+
+const formRules: FormRules = {
+  event_code: [
+    { required: true, message: 'Kode event wajib diisi', trigger: 'blur' },
+    { max: 10, message: 'Kode event maksimal 10 karakter', trigger: 'blur' }
+  ],
+  event_name: [
+    { required: true, message: 'Nama event wajib diisi', trigger: 'blur' },
+    { max: 100, message: 'Nama event maksimal 100 karakter', trigger: 'blur' }
+  ]
+}
 
 let currentAbortController: AbortController | null = null
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -233,10 +327,11 @@ async function fetchData() {
 
     dataList.value = res.data || []
     pagination.total = res.meta?.total || 0
-  } catch (err: any) {
-    if (err.name === 'CanceledError' || err.name === 'AbortError') return
+  } catch (err: unknown) {
+    if (err instanceof Error && (err.name === 'CanceledError' || err.name === 'AbortError')) return
     console.error('Error fetching data:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal memuat data')
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal memuat data')
   } finally {
     loading.value = false
   }
@@ -269,34 +364,107 @@ function handlePageChange(newPage: number) {
   fetchData()
 }
 
+function resetForm() {
+  formData.event_code = ''
+  formData.event_name = ''
+  formData.event_category = ''
+  formData.description = ''
+  // formData.status = true
+  isEditing.value = false
+  editingCode.value = ''
+  if (formRef.value) {
+    formRef.value.resetFields()
+  }
+}
+
 function handleCreate() {
-  ElNotification({
-    title: 'Informasi',
-    message: 'Tambah activity baru',
-    type: 'info'
-  })
+  resetForm()
+  isEditing.value = false
+  dialogVisible.value = true
 }
 
-function handleEdit(id: string) {
-  ElNotification({
-    title: 'Informasi',
-    message: `Edit activity ID/Kode: ${id}`,
-    type: 'info'
-  })
-}
+async function handleEdit(code: string) {
+  resetForm()
+  isEditing.value = true
+  editingCode.value = code
 
-async function handleDelete(id: string) {
   try {
-    await activityApi.deleteActivity(id)
+    const res = await activityApi.getActivityById(code)
+    const activity = res.data
+    if (activity) {
+      formData.event_code = activity.event_code
+      formData.event_name = activity.event_name
+      formData.event_category = activity.event_category || ''
+      formData.description = activity.description || ''
+      // formData.status = activity.status !== undefined ? activity.status : true
+      dialogVisible.value = true
+    }
+  } catch (err: unknown) {
+    console.error('Error fetching activity by code:', err)
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal memuat detail activity')
+  }
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
+  submitting.value = true
+  try {
+    const payload: Partial<Activity> = {
+      event_code: formData.event_code?.trim(),
+      event_name: formData.event_name?.trim(),
+      event_category: formData.event_category || undefined,
+      description: formData.description?.trim() || undefined,
+      // status: formData.status
+    }
+
+    if (isEditing.value && editingCode.value) {
+      await activityApi.updateActivity(editingCode.value, payload)
+      ElNotification({
+        title: 'Berhasil',
+        message: `Activity ${editingCode.value} berhasil diperbarui`,
+        type: 'success'
+      })
+    } else {
+      await activityApi.createActivity(payload)
+      ElNotification({
+        title: 'Berhasil',
+        message: 'Activity baru berhasil ditambahkan',
+        type: 'success'
+      })
+    }
+
+    dialogVisible.value = false
+    fetchData()
+  } catch (err: unknown) {
+    console.error('Failed to submit activity form:', err)
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal menyimpan data activity')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleDelete(code: string) {
+  try {
+    await activityApi.deleteActivity(code)
     ElNotification({
       title: 'Berhasil',
-      message: `Data activity ${id} berhasil dihapus`,
+      message: `Data activity ${code} berhasil dihapus`,
       type: 'success'
     })
     fetchData()
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Failed to delete item:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data')
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal menghapus data activity')
   }
 }
 
@@ -395,5 +563,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.25rem;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 </style>

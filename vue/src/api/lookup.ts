@@ -210,6 +210,48 @@ export const lookupApi = {
       signal
     })
     return response.data
+  },
+
+  /**
+   * Kategori Topic Lookup (Category B_KATEGORI_TOPIK)
+   */
+  async getLookupKategoriTopic(
+    params: LookupQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<LookupListResponse> {
+    const response = await apiClient.get<LookupListResponse>('/v1/lookup/kategori-topic', {
+      params: buildParams(params),
+      signal
+    })
+    return response.data
+  },
+
+  /**
+   * Kategori Event Lookup (Category B_KATEGORI_EVENT)
+   */
+  async getLookupKategoriEvent(
+    params: LookupQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<LookupListResponse> {
+    const response = await apiClient.get<LookupListResponse>('/v1/lookup/kategori-event', {
+      params: buildParams(params),
+      signal
+    })
+    return response.data
+  },
+
+  /**
+   * Tipe Sumbangan Lookup (Category SXY_TIPESUMBANGAN)
+   */
+  async getLookupTipeSumbangan(
+    params: LookupQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<LookupListResponse> {
+    const response = await apiClient.get<LookupListResponse>('/v1/lookup/tipe-sumbangan', {
+      params: buildParams(params),
+      signal
+    })
+    return response.data
   }
 }
 

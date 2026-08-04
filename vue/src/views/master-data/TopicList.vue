@@ -26,7 +26,7 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kode Topik" :label-position="isMobile? 'top' : 'right'">
+          <el-form-item label="Kode Topik" :label-position="isMobile ? 'top' : 'right'">
             <el-input
               v-model="filters.topic_code"
               placeholder="Cari kode topik..."
@@ -38,7 +38,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Topik" :label-position="isMobile? 'top' : 'right'">
+          <el-form-item label="Nama Topik" :label-position="isMobile ? 'top' : 'right'">
             <el-input
               v-model="filters.topic_name"
               placeholder="Cari nama topik..."
@@ -50,13 +50,15 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Kategori" :label-position="isMobile? 'top' : 'right'">
-            <el-input
+          <el-form-item label="Kategori" :label-position="isMobile ? 'top' : 'right'">
+            <LookupSelect
               v-model="filters.topic_category"
-              placeholder="Cari kategori..."
+              placeholder="Pilih Kategori Topik..."
+              :fetch-api="lookupApi.getLookupKategoriTopic"
+              value-key="lookup_value"
+              label-key="lookup_description"
               clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
+              @change="onFilterChange"
             />
           </el-form-item>
         </el-col>
@@ -92,17 +94,25 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="topic_category" label="Kategori"  min-width="150"  >
+        <el-table-column prop="topic_category" label="Kategori" min-width="150">
           <template #default="{ row }">
-            <span>{{ row.topic_category || '-' }}</span>
+            <span>{{ row.topic_category_info?.lookup_description || row.topic_category || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="Keterangan"  min-width="220"  >
+        <el-table-column prop="description" label="Keterangan" min-width="220">
           <template #default="{ row }">
             <span>{{ row.description || '-' }}</span>
           </template>
         </el-table-column>
+
+        <!-- <el-table-column prop="status" label="Status" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status ? 'success' : 'info'" size="small">
+              {{ row.status ? 'Aktif' : 'Nonaktif' }}
+            </el-tag>
+          </template>
+        </el-table-column> -->
 
         <!-- Actions Column -->
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
@@ -152,14 +162,82 @@
         />
       </div>
     </el-card>
+
+    <!-- Create / Edit Dialog -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEditing ? `Edit Topic #${editingCode}` : 'Tambah Topic Baru'"
+      :width="isMobile ? '90%' : '560px'"
+      destroy-on-close
+      @closed="resetForm"
+    >
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        label-width="130px"
+        :label-position="isMobile ? 'top' : 'right'"
+      >
+        <el-form-item label="Kode Topik" prop="topic_code">
+          <el-input
+            v-model="formData.topic_code"
+            placeholder="Masukkan kode topik (misal: TP01)"
+            :disabled="isEditing"
+          />
+        </el-form-item>
+
+        <el-form-item label="Nama Topik" prop="topic_name">
+          <el-input
+            v-model="formData.topic_name"
+            placeholder="Masukkan nama topik"
+          />
+        </el-form-item>
+
+        <el-form-item label="Kategori Topik" prop="topic_category">
+          <LookupSelect
+            v-model="formData.topic_category"
+            placeholder="Pilih Kategori Topik..."
+            :fetch-api="lookupApi.getLookupKategoriTopic"
+            value-key="lookup_value"
+            label-key="lookup_description"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="Keterangan" prop="description">
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="3"
+            placeholder="Masukkan keterangan tambahan..."
+          />
+        </el-form-item>
+
+        <!-- <el-form-item label="Status" prop="status">
+          <el-switch
+            v-model="formData.status"
+            active-text="Aktif"
+            inactive-text="Nonaktif"
+          />
+        </el-form-item> -->
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button :disabled="submitting" @click="dialogVisible = false">Batal</el-button>
+          <el-button type="primary" :loading="submitting" @click="handleSubmit">
+            Simpan
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage, ElNotification, type FormInstance, type FormRules } from 'element-plus'
 import {
   Search,
   Refresh,
@@ -168,18 +246,16 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import { topicApi } from '../../api/topic'
+import { lookupApi } from '../../api/lookup'
 import type { Topic, TopicQueryParams } from '../../types/topic'
+import LookupSelect from '../../components/common/LookupSelect.vue'
 
-const router = useRouter()
-
-// Initialize breakpoints (Tailwind or custom layout mapping)
+// Breakpoints layout calculation
 const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('md')
+const isDesktop = breakpoints.greaterOrEqual('lg')
 
-// Subscribe to reactive states
-const isMobile = breakpoints.smaller('md')   // True if width < 768px
-const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
-
-// Memory Optimization: shallowRef for table dataset
+// Dataset state
 const dataList = shallowRef<Topic[]>([])
 const loading = ref(false)
 
@@ -200,6 +276,32 @@ const filters = reactive<TopicQueryParams>({
   topic_name: '',
   topic_category: ''
 })
+
+// Dialog & Form state
+const dialogVisible = ref(false)
+const isEditing = ref(false)
+const editingCode = ref('')
+const submitting = ref(false)
+const formRef = ref<FormInstance | null>(null)
+
+const formData = reactive<Partial<Topic>>({
+  topic_code: '',
+  topic_name: '',
+  topic_category: '',
+  description: '',
+  // status: true
+})
+
+const formRules: FormRules = {
+  topic_code: [
+    { required: true, message: 'Kode topik wajib diisi', trigger: 'blur' },
+    { max: 20, message: 'Kode topik maksimal 20 karakter', trigger: 'blur' }
+  ],
+  topic_name: [
+    { required: true, message: 'Nama topik wajib diisi', trigger: 'blur' },
+    { max: 300, message: 'Nama topik maksimal 300 karakter', trigger: 'blur' }
+  ]
+}
 
 let currentAbortController: AbortController | null = null
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -225,10 +327,11 @@ async function fetchData() {
 
     dataList.value = res.data || []
     pagination.total = res.meta?.total || 0
-  } catch (err: any) {
-    if (err.name === 'CanceledError' || err.name === 'AbortError') return
+  } catch (err: unknown) {
+    if (err instanceof Error && (err.name === 'CanceledError' || err.name === 'AbortError')) return
     console.error('Error fetching data:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal memuat data')
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal memuat data')
   } finally {
     loading.value = false
   }
@@ -261,34 +364,107 @@ function handlePageChange(newPage: number) {
   fetchData()
 }
 
+function resetForm() {
+  formData.topic_code = ''
+  formData.topic_name = ''
+  formData.topic_category = ''
+  formData.description = ''
+  // formData.status = true
+  isEditing.value = false
+  editingCode.value = ''
+  if (formRef.value) {
+    formRef.value.resetFields()
+  }
+}
+
 function handleCreate() {
-  ElNotification({
-    title: 'Informasi',
-    message: 'Tambah topic baru',
-    type: 'info'
-  })
+  resetForm()
+  isEditing.value = false
+  dialogVisible.value = true
 }
 
-function handleEdit(id: string) {
-  ElNotification({
-    title: 'Informasi',
-    message: `Edit topic ID/Kode: ${id}`,
-    type: 'info'
-  })
-}
+async function handleEdit(code: string) {
+  resetForm()
+  isEditing.value = true
+  editingCode.value = code
 
-async function handleDelete(id: string) {
   try {
-    await topicApi.deleteTopic(id)
+    const res = await topicApi.getTopicById(code)
+    const topic = res.data
+    if (topic) {
+      formData.topic_code = topic.topic_code
+      formData.topic_name = topic.topic_name
+      formData.topic_category = topic.topic_category || ''
+      formData.description = topic.description || ''
+      // formData.status = topic.status !== undefined ? topic.status : true
+      dialogVisible.value = true
+    }
+  } catch (err: unknown) {
+    console.error('Error fetching topic by code:', err)
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal memuat detail topic')
+  }
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
+  submitting.value = true
+  try {
+    const payload: Partial<Topic> = {
+      topic_code: formData.topic_code?.trim(),
+      topic_name: formData.topic_name?.trim(),
+      topic_category: formData.topic_category || undefined,
+      description: formData.description?.trim() || undefined,
+      // status: formData.status
+    }
+
+    if (isEditing.value && editingCode.value) {
+      await topicApi.updateTopic(editingCode.value, payload)
+      ElNotification({
+        title: 'Berhasil',
+        message: `Topic ${editingCode.value} berhasil diperbarui`,
+        type: 'success'
+      })
+    } else {
+      await topicApi.createTopic(payload)
+      ElNotification({
+        title: 'Berhasil',
+        message: 'Topic baru berhasil ditambahkan',
+        type: 'success'
+      })
+    }
+
+    dialogVisible.value = false
+    fetchData()
+  } catch (err: unknown) {
+    console.error('Failed to submit topic form:', err)
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal menyimpan data topic')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function handleDelete(code: string) {
+  try {
+    await topicApi.deleteTopic(code)
     ElNotification({
       title: 'Berhasil',
-      message: `Data topic ${id} berhasil dihapus`,
+      message: `Data topic ${code} berhasil dihapus`,
       type: 'success'
     })
     fetchData()
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Failed to delete item:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data')
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal menghapus data topic')
   }
 }
 
@@ -387,5 +563,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.25rem;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 </style>

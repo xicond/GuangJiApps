@@ -48,7 +48,7 @@ export interface Umat {
   keterangan?: string
   email?: string
   image_path?: string
-  status?: boolean
+  // status?: boolean
   mod_act?: string
   mod_by?: number
   mod_date?: string

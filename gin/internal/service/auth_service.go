@@ -67,11 +67,15 @@ func NewAuthService(cfg config.Config, db *gorm.DB) *AuthService {
 }
 
 func (s *AuthService) GenerateToken(userID int32) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	key, method, err := s.cfg.GetJWTSigningKey()
+	if err != nil {
+		return "", fmt.Errorf("failed to load JWT signing key: %w", err)
+	}
+	token := jwt.NewWithClaims(method, jwt.MapClaims{
 		"sub": userID,
 		"exp": time.Now().Add(time.Hour * 24).Unix(),
 	})
-	return token.SignedString([]byte(s.cfg.JWTSecret))
+	return token.SignedString(key)
 }
 
 func executeWithRetry(fn func() error) error {

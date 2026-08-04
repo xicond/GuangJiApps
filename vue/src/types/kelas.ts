@@ -9,7 +9,7 @@ export interface Kelas {
   lokasi?: string
   pic?: string
   keterangan?: string
-  status?: boolean
+  // status?: boolean
   level?: string
   mc1?: string
   mc2?: string

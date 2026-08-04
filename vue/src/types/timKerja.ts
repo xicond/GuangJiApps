@@ -3,7 +3,7 @@ export interface TimKerja {
   category_id?: string
   lookup_value: string
   lookup_description?: string
-  status?: boolean
+  // status?: boolean
   mod_act?: string
   mod_by?: string
   mod_date?: string

@@ -631,7 +631,7 @@ const formData = ref<Partial<Umat>>({
   meninggal: false,
   tanggal_meninggal: null,
   keterangan: '',
-  status: true
+  // status: true
 })
 
 function formatUmatLabel(item: any): string {

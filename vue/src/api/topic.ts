@@ -54,13 +54,16 @@ export const topicApi = {
   },
 
   /**
-   * Fetch single Topic details by ID.
+   * Fetch single Topic details by ID/Code.
    */
   async getTopicById(
     id: string,
     signal?: AbortSignal
   ): Promise<TopicSingleResponse> {
-    const response = await apiClient.get<TopicSingleResponse>(`/v1/topics/${id}`, { signal })
+    const response = await apiClient.get<TopicSingleResponse>('/v1/topic', {
+      params: { code: id },
+      signal
+    })
     return response.data
   },
 
@@ -68,26 +71,30 @@ export const topicApi = {
    * Create a new Topic record.
    */
   async createTopic(payload: Partial<Topic>): Promise<TopicSingleResponse> {
-    const response = await apiClient.post<TopicSingleResponse>('/v1/topics', payload)
+    const response = await apiClient.post<TopicSingleResponse>('/v1/topic', payload)
     return response.data
   },
 
   /**
-   * Update an existing Topic record.
+   * Update an existing Topic record by ID/Code.
    */
   async updateTopic(
     id: string,
     payload: Partial<Topic>
   ): Promise<TopicSingleResponse> {
-    const response = await apiClient.patch<TopicSingleResponse>(`/v1/topics/${id}`, payload)
+    const response = await apiClient.patch<TopicSingleResponse>('/v1/topic', payload, {
+      params: { code: id }
+    })
     return response.data
   },
 
   /**
-   * Delete a Topic record by ID.
+   * Delete a Topic record by ID/Code.
    */
   async deleteTopic(id: string): Promise<{ message: string }> {
-    const response = await apiClient.delete<{ message: string }>(`/v1/topics/${id}`)
+    const response = await apiClient.delete<{ message: string }>('/v1/topic', {
+      params: { code: id }
+    })
     return response.data
   }
 }

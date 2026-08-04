@@ -37,7 +37,7 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
+        <!-- <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Status">
             <el-select
               v-model="filters.status"
@@ -49,7 +49,7 @@
               <el-option label="Nonaktif" value="inactive" />
             </el-select>
           </el-form-item>
-        </el-col>
+        </el-col> -->
       </el-row>
 
       <div class="filter-actions">
@@ -82,13 +82,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="Status" width="120" align="center">
+        <!-- <el-table-column prop="status" label="Status" width="120" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">
               {{ row.status === 'active' ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
-        </el-table-column>
+        </el-table-column> -->
 
         <!-- Actions Column -->
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
@@ -174,7 +174,7 @@ const pagination = reactive({
 
 const filters = reactive({
   keyword: '',
-  status: ''
+  // status: ''
 })
 
 let currentAbortController: AbortController | null = null
@@ -209,7 +209,7 @@ function onFilterChange() {
 
 function resetFilters() {
   filters.keyword = ''
-  filters.status = ''
+  // filters.status = ''
   pagination.page = 1
   fetchData()
 }

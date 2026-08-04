@@ -30,7 +30,11 @@ func AuthMiddleware(cfg config.Config) gin.HandlerFunc {
 
 		tokenString := parts[1]
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte(cfg.JWTSecret), nil
+			vKey, _, err := cfg.GetJWTVerificationKey()
+			if err != nil {
+				return nil, err
+			}
+			return vKey, nil
 		})
 
 		if err != nil || !token.Valid {

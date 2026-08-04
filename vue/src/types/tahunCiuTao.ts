@@ -3,7 +3,7 @@ export interface TahunCiuTao {
   start_date?: string
   end_date?: string
   description?: string
-  status?: boolean
+  // status?: boolean
   mod_act?: string
   mod_by?: string
   mod_date?: string

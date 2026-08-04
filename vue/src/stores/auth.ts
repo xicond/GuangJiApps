@@ -22,6 +22,11 @@ export interface User {
   [key: string]: unknown
 }
 
+export interface LoginErrorResult extends Error {
+  retryAfter?: number
+  status?: number
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -74,8 +79,24 @@ export const useAuthStore = defineStore('auth', () => {
       return false
     } catch (error: unknown) {
       console.error('Login error:', error)
-      const msg = (axios.isAxiosError(error) && error.response?.data?.error) || (error instanceof Error ? error.message : 'Login failed')
-      throw new Error(msg)
+      if (axios.isAxiosError(error) && error.response) {
+        const status = error.response.status
+        const data = error.response.data as { error?: string; retry_after?: number } | undefined
+        const retryAfterHeader = error.response.headers['retry-after'] || error.response.headers['x-retry-after']
+        let retryAfter: number | undefined
+        if (typeof data?.retry_after === 'number') {
+          retryAfter = data.retry_after
+        } else if (retryAfterHeader) {
+          retryAfter = parseInt(String(retryAfterHeader), 10)
+        }
+
+        const msg = data?.error || (error instanceof Error ? error.message : 'Login failed')
+        const errObj: LoginErrorResult = new Error(msg)
+        errObj.retryAfter = retryAfter
+        errObj.status = status
+        throw errObj
+      }
+      throw new Error(error instanceof Error ? error.message : 'Login failed')
     }
   }
 

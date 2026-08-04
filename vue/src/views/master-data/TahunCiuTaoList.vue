@@ -26,7 +26,7 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Tahun Mandarin" :label-position="isMobile? 'top' : 'right'">
+          <el-form-item label="Tahun Mandarin" :label-position="isMobile ? 'top' : 'right'">
             <el-input
               v-model="filters.tahun_mandarin"
               placeholder="Cari tahun (e.g. 2024)..."
@@ -38,7 +38,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Keterangan" :label-position="isMobile? 'top' : 'right'">
+          <el-form-item label="Keterangan" :label-position="isMobile ? 'top' : 'right'">
             <el-input
               v-model="filters.description"
               placeholder="Cari deskripsi..."
@@ -74,23 +74,31 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="start_date" label="Tanggal Mulai"  min-width="140"  >
+        <el-table-column prop="start_date" label="Tanggal Mulai" min-width="140" align="center">
           <template #default="{ row }">
             <span>{{ row.start_date || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="end_date" label="Tanggal Selesai"  min-width="140"  >
+        <el-table-column prop="end_date" label="Tanggal Selesai" min-width="140" align="center">
           <template #default="{ row }">
             <span>{{ row.end_date || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="Keterangan"  min-width="220"  >
+        <el-table-column prop="description" label="Keterangan" min-width="220">
           <template #default="{ row }">
             <span>{{ row.description || '-' }}</span>
           </template>
         </el-table-column>
+
+        <!-- <el-table-column prop="status" label="Status" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status ? 'success' : 'info'" size="small">
+              {{ row.status ? 'Aktif' : 'Nonaktif' }}
+            </el-tag>
+          </template>
+        </el-table-column> -->
 
         <!-- Actions Column -->
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
@@ -140,14 +148,77 @@
         />
       </div>
     </el-card>
+
+    <!-- Create / Edit Dialog -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEditing ? `Edit Tahun Ciu Tao #${editingId}` : 'Tambah Tahun Ciu Tao Baru'"
+      :width="isMobile ? '90%' : '560px'"
+      destroy-on-close
+      @closed="resetForm"
+    >
+      <el-form
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        label-width="140px"
+        :label-position="isMobile ? 'top' : 'right'"
+      >
+        <el-form-item label="Tahun Mandarin" prop="tahun_mandarin">
+          <el-input
+            v-model="formData.tahun_mandarin"
+            placeholder="Masukkan tahun (e.g. 2024)"
+            :disabled="isEditing"
+          />
+        </el-form-item>
+
+        <el-form-item label="Periode Tanggal">
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="s/d"
+            start-placeholder="Tanggal Mulai"
+            end-placeholder="Tanggal Selesai"
+            value-format="YYYY-MM-DD"
+            format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+
+        <el-form-item label="Keterangan" prop="description">
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="3"
+            placeholder="Masukkan keterangan..."
+          />
+        </el-form-item>
+
+        <!-- <el-form-item label="Status" prop="status">
+          <el-switch
+            v-model="formData.status"
+            active-text="Aktif"
+            inactive-text="Nonaktif"
+          />
+        </el-form-item> -->
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button :disabled="submitting" @click="dialogVisible = false">Batal</el-button>
+          <el-button type="primary" :loading="submitting" @click="handleSubmit">
+            Simpan
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, shallowRef, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage, ElNotification, type FormInstance, type FormRules } from 'element-plus'
 import {
   Search,
   Refresh,
@@ -158,16 +229,12 @@ import {
 import { tahunCiuTaoApi } from '../../api/tahunCiuTao'
 import type { TahunCiuTao, TahunCiuTaoQueryParams } from '../../types/tahunCiuTao'
 
-const router = useRouter()
-
-// Initialize breakpoints (Tailwind or custom layout mapping)
+// Breakpoints layout calculation
 const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('md')
+const isDesktop = breakpoints.greaterOrEqual('lg')
 
-// Subscribe to reactive states
-const isMobile = breakpoints.smaller('md')   // True if width < 768px
-const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
-
-// Memory Optimization: shallowRef for table dataset
+// Dataset state
 const dataList = shallowRef<TahunCiuTao[]>([])
 const loading = ref(false)
 
@@ -187,6 +254,46 @@ const filters = reactive<TahunCiuTaoQueryParams>({
   tahun_mandarin: '',
   description: ''
 })
+
+// Dialog & Form state
+const dialogVisible = ref(false)
+const isEditing = ref(false)
+const editingId = ref('')
+const submitting = ref(false)
+const formRef = ref<FormInstance | null>(null)
+
+const formData = reactive<Partial<TahunCiuTao>>({
+  tahun_mandarin: '',
+  start_date: '',
+  end_date: '',
+  description: '',
+  // status: true
+})
+
+const dateRange = computed({
+  get(): [string, string] | [] {
+    if (formData.start_date || formData.end_date) {
+      return [formData.start_date || '', formData.end_date || '']
+    }
+    return []
+  },
+  set(val: [string, string] | null) {
+    if (val && val.length === 2) {
+      formData.start_date = val[0]
+      formData.end_date = val[1]
+    } else {
+      formData.start_date = ''
+      formData.end_date = ''
+    }
+  }
+})
+
+const formRules: FormRules = {
+  tahun_mandarin: [
+    { required: true, message: 'Tahun mandarin wajib diisi', trigger: 'blur' },
+    { max: 20, message: 'Tahun mandarin maksimal 20 karakter', trigger: 'blur' }
+  ]
+}
 
 let currentAbortController: AbortController | null = null
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -211,10 +318,11 @@ async function fetchData() {
 
     dataList.value = res.data || []
     pagination.total = res.meta?.total || 0
-  } catch (err: any) {
-    if (err.name === 'CanceledError' || err.name === 'AbortError') return
+  } catch (err: unknown) {
+    if (err instanceof Error && (err.name === 'CanceledError' || err.name === 'AbortError')) return
     console.error('Error fetching data:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal memuat data')
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal memuat data')
   } finally {
     loading.value = false
   }
@@ -246,20 +354,92 @@ function handlePageChange(newPage: number) {
   fetchData()
 }
 
-function handleCreate() {
-  ElNotification({
-    title: 'Informasi',
-    message: 'Tambah tahun ciu tao baru',
-    type: 'info'
-  })
+function resetForm() {
+  formData.tahun_mandarin = ''
+  formData.start_date = ''
+  formData.end_date = ''
+  formData.description = ''
+  // formData.status = true
+  isEditing.value = false
+  editingId.value = ''
+  if (formRef.value) {
+    formRef.value.resetFields()
+  }
 }
 
-function handleEdit(id: string) {
-  ElNotification({
-    title: 'Informasi',
-    message: `Edit tahun ciu tao ID/Kode: ${id}`,
-    type: 'info'
-  })
+function handleCreate() {
+  resetForm()
+  isEditing.value = false
+  dialogVisible.value = true
+}
+
+async function handleEdit(id: string) {
+  resetForm()
+  isEditing.value = true
+  editingId.value = id
+
+  try {
+    const res = await tahunCiuTaoApi.getTahunCiuTaoById(id)
+    const record = res.data
+    if (record) {
+      formData.tahun_mandarin = record.tahun_mandarin
+      formData.start_date = record.start_date || ''
+      formData.end_date = record.end_date || ''
+      formData.description = record.description || ''
+      // formData.status = record.status !== undefined ? record.status : true
+      dialogVisible.value = true
+    }
+  } catch (err: unknown) {
+    console.error('Error fetching record by ID:', err)
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal memuat detail data')
+  }
+}
+
+async function handleSubmit() {
+  if (!formRef.value) return
+
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
+  submitting.value = true
+  try {
+    const payload: Partial<TahunCiuTao> = {
+      tahun_mandarin: formData.tahun_mandarin?.trim(),
+      start_date: formData.start_date || undefined,
+      end_date: formData.end_date || undefined,
+      description: formData.description?.trim() || undefined,
+      // status: formData.status
+    }
+
+    if (isEditing.value && editingId.value) {
+      await tahunCiuTaoApi.updateTahunCiuTao(editingId.value, payload)
+      ElNotification({
+        title: 'Berhasil',
+        message: `Tahun Ciu Tao ${editingId.value} berhasil diperbarui`,
+        type: 'success'
+      })
+    } else {
+      await tahunCiuTaoApi.createTahunCiuTao(payload)
+      ElNotification({
+        title: 'Berhasil',
+        message: 'Tahun Ciu Tao baru berhasil ditambahkan',
+        type: 'success'
+      })
+    }
+
+    dialogVisible.value = false
+    fetchData()
+  } catch (err: unknown) {
+    console.error('Failed to submit form:', err)
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal menyimpan data')
+  } finally {
+    submitting.value = false
+  }
 }
 
 async function handleDelete(id: string) {
@@ -267,13 +447,14 @@ async function handleDelete(id: string) {
     await tahunCiuTaoApi.deleteTahunCiuTao(id)
     ElNotification({
       title: 'Berhasil',
-      message: `Data tahun ciu tao ${id} berhasil dihapus`,
+      message: `Data Tahun Ciu Tao ${id} berhasil dihapus`,
       type: 'success'
     })
     fetchData()
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Failed to delete item:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data')
+    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal menghapus data')
   }
 }
 
@@ -372,5 +553,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1.25rem;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 </style>

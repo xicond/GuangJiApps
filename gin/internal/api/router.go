@@ -149,8 +149,21 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		})
 	})
 
+	loginLimiter := middleware.NewLoginRateLimiter(cfg)
+
 	r.POST(cfg.BaseURL+"/login", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
+
+		limCtx, err := loginLimiter.Peek(c)
+		if err == nil && limCtx.Reached {
+			retryAfter := loginLimiter.SetHeaders(c, limCtx)
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error":       "Too many login attempts.",
+				"retry_after": retryAfter,
+			})
+			return
+		}
+
 		var req struct {
 			Username string `json:"username"`
 			Password string `json:"password"`
@@ -162,9 +175,26 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 
 		user, token, mainMenus, err := authService.Login(req.Username, req.Password)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			updatedLimCtx, _ := loginLimiter.Increment(c)
+			retryAfter := loginLimiter.SetHeaders(c, updatedLimCtx)
+
+			if updatedLimCtx.Reached {
+				c.JSON(http.StatusTooManyRequests, gin.H{
+					"error":       "Too many attempt. Login access locked for 5 mins.",
+					"retry_after": retryAfter,
+				})
+				return
+			}
+
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": err.Error(),
+			})
 			return
 		}
+
+		loginLimiter.Reset(c)
+		limCtxAfterReset, _ := loginLimiter.Peek(c)
+		loginLimiter.SetHeaders(c, limCtxAfterReset)
 
 		c.JSON(http.StatusOK, gin.H{"message": "login successful", "token": token, "user": user, "main_menu": mainMenus})
 	})
@@ -576,21 +606,24 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Topic"})
 	})
 	// protected.GET("/topik", topicHandler)
-	protected.GET("/topic/:id", func(c *gin.Context) {
+	protected.GET("/topic", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
+		code := c.Query("code")
+		if code == "" {
+			code = c.Query("id")
+		}
+		if code == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query param 'code' is required"})
 			return
 		}
-		item, err := topicService.Get(c.Param("id"))
+		item, err := topicService.Get(code)
 		if err != nil {
 			respondError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Topic"})
 	})
-	protected.POST("/topics", func(c *gin.Context) {
+	protected.POST("/topic", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.Topic
 		if err := c.ShouldBindJSON(&payload); err != nil {
@@ -604,11 +637,14 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Topic"})
 	})
-	protected.PATCH("/topics/:id", func(c *gin.Context) {
+	protected.PATCH("/topic", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
+		code := c.Query("code")
+		if code == "" {
+			code = c.Query("id")
+		}
+		if code == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query param 'code' is required"})
 			return
 		}
 		var payload domain.Topic
@@ -616,21 +652,24 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			respondValidationError(c, err)
 			return
 		}
-		updated, err := topicService.Update(c.Param("id"), payload, c)
+		updated, err := topicService.Update(code, payload, c)
 		if err != nil {
 			respondError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": updated, "resource": "Topic"})
 	})
-	protected.DELETE("/topics/:id", func(c *gin.Context) {
+	protected.DELETE("/topic", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
+		code := c.Query("code")
+		if code == "" {
+			code = c.Query("id")
+		}
+		if code == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query param 'code' is required"})
 			return
 		}
-		if err := topicService.Delete(c.Param("id"), c); err != nil {
+		if err := topicService.Delete(code, c); err != nil {
 			respondError(c, err)
 			return
 		}
@@ -1154,7 +1193,37 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupStatus"})
 	})
-	protected.GET("/lookup/category/:category", func(c *gin.Context) {
+	protected.GET("/lookup/kategori-topic", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := lookupService.LookupKategoriTopic(filters, page, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupKategoriTopic"})
+	})
+	protected.GET("/lookup/kategori-event", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := lookupService.LookupKategoriEvent(filters, page, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupKategoriEvent"})
+	})
+	protected.GET("/lookup/tipe-sumbangan", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := lookupService.LookupTipeSumbangan(filters, page, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupTipeSumbangan"})
+	})
+	/* protected.GET("/lookup/category/:category", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
@@ -1169,7 +1238,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupCategory"})
-	})
+	}) */
 
 	// Kelas
 	protected.GET("/kelas", func(c *gin.Context) {

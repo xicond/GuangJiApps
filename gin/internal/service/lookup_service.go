@@ -71,6 +71,18 @@ func (s *LookupService) LookupStatus(filters map[string]string, page int, limit 
 	return Lookup(s.db, "B_STATUS", page, limit, filters)
 }
 
+func (s *LookupService) LookupKategoriTopic(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
+	return Lookup(s.db, "B_KATEGORI_TOPIK", page, limit, filters)
+}
+
+func (s *LookupService) LookupKategoriEvent(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
+	return Lookup(s.db, "B_KATEGORI_EVENT", page, limit, filters)
+}
+
+func (s *LookupService) LookupTipeSumbangan(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
+	return Lookup(s.db, "SXY_TIPESUMBANGAN", page, limit, filters)
+}
+
 // Lookup fetches records from T_APP_LOOKUP for a given CategoryId with optional filters, pagination, and subQuery customizations.
 // If limit <= 0, all records are returned without pagination (page is ignored).
 // opts can optionally include a map[string]string (filters) and/or a *gorm.DB or func(*gorm.DB) *gorm.DB to customize the subQuery.

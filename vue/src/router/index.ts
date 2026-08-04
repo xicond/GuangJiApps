@@ -147,10 +147,22 @@ const router = createRouter({
         },
         // Report
         {
-          path: 'report/master',
+          path: 'report/master/umat',
           name: 'report-master',
           component: () => import('../views/report/MasterReportList.vue'),
-          meta: { title: 'Master Report' }
+          meta: { title: 'Master Report Umat' }
+        },
+        {
+          path: 'report/master/tcs',
+          name: 'report-master',
+          component: () => import('../views/report/MasterReportList.vue'),
+          meta: { title: 'Report Tcs' }
+        },
+        {
+          path: 'report/master/lagu',
+          name: 'report-master',
+          component: () => import('../views/report/MasterReportList.vue'),
+          meta: { title: 'Lagu Suci' }
         },
         {
           path: 'report/sxy',

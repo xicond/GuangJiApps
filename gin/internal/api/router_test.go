@@ -53,6 +53,47 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+func TestLoginRateLimiting(t *testing.T) {
+	cfg := config.Config{GinMode: "test", BaseURL: "/api"}
+	db, err := database.Open("")
+	if err != nil {
+		t.Fatalf("open test db failed: %v", err)
+	}
+	if err := database.AutoMigrate(db); err != nil {
+		t.Fatalf("auto migrate test db failed: %v", err)
+	}
+	router := NewRouter(service.NewAuthService(cfg, db), db, cfg)
+
+	invalidBody := `{"username":"wronguser","password":"wrongpassword"}`
+
+	// 3 Failed Attempts (each returns 401 Unauthorized)
+	for i := 1; i <= 3; i++ {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, "/api/login", strings.NewReader(invalidBody))
+		req.Header.Set("Content-Type", "application/json")
+		req.RemoteAddr = "192.168.1.100:12345"
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("attempt %d: expected status 401, got %d", i, w.Code)
+		}
+	}
+
+	// 4th Attempt should be immediately blocked with 429 Too Many Requests
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/login", strings.NewReader(invalidBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.RemoteAddr = "192.168.1.100:12345"
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("4th attempt: expected status 429, got %d", w.Code)
+	}
+	if w.Header().Get("X-Retry-After") == "" || w.Header().Get("Retry-After") == "" {
+		t.Fatalf("4th attempt: expected X-Retry-After header, got empty")
+	}
+}
+
 func TestResourceEndpointsAreRegistered(t *testing.T) {
 	cfg := config.Config{GinMode: "test", BaseURL: "/api"}
 	db, err := database.Open("")
@@ -102,6 +143,9 @@ func TestResourceEndpointsAreRegistered(t *testing.T) {
 		{name: "lookup pekerjaan", path: "/api/v1/lookup/pekerjaan", method: http.MethodGet},
 		{name: "lookup keluarga", path: "/api/v1/lookup/keluarga", method: http.MethodGet},
 		{name: "lookup status", path: "/api/v1/lookup/status", method: http.MethodGet},
+		{name: "lookup kategori topic", path: "/api/v1/lookup/kategori-topic", method: http.MethodGet},
+		{name: "lookup kategori event", path: "/api/v1/lookup/kategori-event", method: http.MethodGet},
+		{name: "lookup tipe sumbangan", path: "/api/v1/lookup/tipe-sumbangan", method: http.MethodGet},
 		{name: "lookup category param", path: "/api/v1/lookup/category/B_STATUS", method: http.MethodGet},
 		{name: "tim kerja lookup", path: "/api/v1/tim-kerja/lookup", method: http.MethodGet},
 		{name: "tim kerja lookup sub", path: "/api/v1/tim-kerja/lookup/1/sub", method: http.MethodGet},

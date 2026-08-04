@@ -1,4 +1,5 @@
 export interface DonasiSxy {
+  id?: number
   no_kwitansi: string
   tanggal?: string
   donatur_id?: number
@@ -7,7 +8,7 @@ export interface DonasiSxy {
   tipe_sumbangan?: number
   no_kupon?: string
   keterangan?: string
-  status?: boolean
+  // status?: boolean
   created_by?: number
   created_date?: string
   updated_by?: number
@@ -15,6 +16,9 @@ export interface DonasiSxy {
   tanggal_transfer?: string
   atas_nama?: string
   ttk_sent?: boolean
+  tipe_sumbangan_desc?: string
+  nama_penggalang?: string
+  nama_donatur?: string
 }
 
 export interface DonasiSxyQueryParams {

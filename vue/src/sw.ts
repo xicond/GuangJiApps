@@ -23,8 +23,13 @@ cleanupOutdatedCaches()
 // Fallback to [] so dev mode doesn't crash on undefined __WB_MANIFEST
 precacheAndRoute(self.__WB_MANIFEST || [])
 
+// 1. Match GET requests to /v1/lookup/
 registerRoute(
-    ({ url, request }) => request.method === 'GET' && url.pathname.includes('/v1/lookup/'),
+    ({ url, request }) => {
+        const isMatch = request.method === 'GET' && url.pathname.includes('/v1/lookup/')
+        if (isMatch) console.log('[SW Route] Matched lookup:', url.pathname)
+        return isMatch
+    },
     new DynamicNetworkCacheStrategy({
         cacheName: 'lookup-cache',
         timeoutMs: 280,
@@ -40,8 +45,13 @@ registerRoute(
     })
 )
 
+// 2. Match GET requests to /umat
 registerRoute(
-    ({ url, request }) => request.method === 'GET' && (url.pathname.includes('/v1/lookup/') || url.pathname.includes('/umat')),
+    ({ url, request }) => {
+        const isMatch = request.method === 'GET' && url.pathname.includes('/umat')
+        if (isMatch) console.log('[SW Route] Matched umat:', url.pathname)
+        return isMatch
+    },
     new DynamicNetworkCacheStrategy({
         cacheName: 'api-cache',
         timeoutMs: 220,
@@ -57,8 +67,13 @@ registerRoute(
     })
 )
 
+// 3. Match GET requests to /report
 registerRoute(
-    ({ url, request }) => request.method === 'GET' && url.pathname.includes('/v1/') && url.pathname.includes('/report'),
+    ({ url, request }) => {
+        const isMatch = request.method === 'GET' && url.pathname.includes('/v1/') && url.pathname.includes('/report')
+        if (isMatch) console.log('[SW Route] Matched report:', url.pathname)
+        return isMatch
+    },
     new DynamicNetworkCacheStrategy({
         cacheName: 'report-cache',
         timeoutMs: 2200,
@@ -74,16 +89,17 @@ registerRoute(
     })
 )
 
-// Match GET requests to /v1/ or /api/
+// 4. Catch-all GET requests to /v1/ or /api/
 registerRoute(
     ({ url, request }) => {
-        const isMatch = request.method === 'GET' &&
-            (url.pathname.includes('/v1/'))
-
+        const isMatch = request.method === 'GET' && url.pathname.includes('/v1/')
+        if (isMatch) console.log('[SW Route] Matched /v1/ or /api/:', url.pathname)
         return isMatch
     },
-    new NetworkFirst({
+    new DynamicNetworkCacheStrategy({
         cacheName: 'api-cache',
+        timeoutMs: 500,
+        debounceMs: 5000,
         plugins: [
             new CacheableResponsePlugin({
                 statuses: [0, 200]

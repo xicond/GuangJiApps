@@ -41,6 +41,7 @@
             v-model="form.username"
             placeholder="Enter username"
             :prefix-icon="User"
+            :disabled="loading || isLockedOut"
             clearable
           />
         </el-form-item>
@@ -51,14 +52,15 @@
             type="password"
             placeholder="Enter password"
             :prefix-icon="Lock"
+            :disabled="loading || isLockedOut"
             show-password
             clearable
           />
         </el-form-item>
 
         <el-alert
-          v-if="errorMessage"
-          :title="errorMessage"
+          v-if="errorMessage || isLockedOut"
+          :title="isLockedOut ? `${errorMessage || 'Terlalu banyak percobaan login.'} Silakan coba lagi dalam ${formattedCountdown}.` : errorMessage"
           type="error"
           show-icon
           :closable="false"
@@ -70,9 +72,11 @@
             type="primary"
             class="login-button"
             :loading="loading"
+            :disabled="loading || isLockedOut"
             @click="handleLogin"
           >
-            Sign In
+            <template v-if="isLockedOut">Coba Lagi dalam {{ formattedCountdown }}</template>
+            <template v-else>Sign In</template>
           </el-button>
         </el-form-item>
       </el-form>
@@ -81,9 +85,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import { useAuthStore, type LoginErrorResult } from '../stores/auth'
 import { setMode, currentMode, isDark, type ThemeMode } from '../theme'
 import { User, Lock, Sunny, Moon, Monitor } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -104,6 +108,44 @@ const rules: FormRules = {
 
 const loading = ref(false)
 const errorMessage = ref('')
+const lockoutSeconds = ref(0)
+let timerId: ReturnType<typeof setInterval> | null = null
+
+const isLockedOut = computed(() => lockoutSeconds.value > 0)
+
+const formattedCountdown = computed(() => {
+  const m = Math.floor(lockoutSeconds.value / 60)
+  const s = lockoutSeconds.value % 60
+  if (m > 0) {
+    return `${m}m ${s}s`
+  }
+  return `${s}s`
+})
+
+const startLockoutTimer = (seconds: number) => {
+  clearLockoutTimer()
+  lockoutSeconds.value = seconds
+  timerId = setInterval(() => {
+    if (lockoutSeconds.value > 1) {
+      lockoutSeconds.value--
+    } else {
+      clearLockoutTimer()
+      lockoutSeconds.value = 0
+      errorMessage.value = ''
+    }
+  }, 1000)
+}
+
+const clearLockoutTimer = () => {
+  if (timerId !== null) {
+    clearInterval(timerId)
+    timerId = null
+  }
+}
+
+onUnmounted(() => {
+  clearLockoutTimer()
+})
 
 const currentIcon = computed(() => {
   if (currentMode.value === 'system') return Monitor
@@ -115,7 +157,7 @@ const handleThemeChange = (mode: ThemeMode) => {
 }
 
 const handleLogin = async () => {
-  if (!loginFormRef.value) return
+  if (!loginFormRef.value || isLockedOut.value) return
   await loginFormRef.value.validate(async (valid) => {
     if (!valid) return
     loading.value = true
@@ -124,7 +166,14 @@ const handleLogin = async () => {
       await authStore.login(form.value.username, form.value.password)
       router.push('/dashboard')
     } catch (err: unknown) {
-      errorMessage.value = (err instanceof Error ? err.message : null) || 'Login failed'
+      const loginErr = err as LoginErrorResult
+      const retryAfter = loginErr.retryAfter || (loginErr.status === 429 ? 300 : 0)
+      if (retryAfter > 0) {
+        startLockoutTimer(retryAfter)
+        errorMessage.value = loginErr.message || 'Terlalu banyak percobaan login yang salah.'
+      } else {
+        errorMessage.value = (err instanceof Error ? err.message : null) || 'Login failed'
+      }
     } finally {
       loading.value = false
     }

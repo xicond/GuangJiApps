@@ -367,6 +367,8 @@ type Activity struct {
 	ModAct        string    `gorm:"column:ModAct" json:"mod_act" validate:"omitempty,max=1"`
 	ModBy         string    `gorm:"column:ModBy" json:"mod_by" validate:"omitempty,max=25"`
 	ModDate       time.Time `gorm:"column:ModDate" json:"mod_date"`
+
+	EventCategoryInfo *AppLookup `gorm:"foreignKey:EventCategory;references:LookupValue;constraint:false" json:"event_category_info,omitempty" validate:"-"`
 }
 
 func (Activity) TableName() string { return "T_BUS_EVENT" } // TimKerja represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_POSISI'

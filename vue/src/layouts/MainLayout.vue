@@ -85,7 +85,16 @@
               </el-icon>
               <span>Report</span>
             </template>
-            <el-menu-item v-if="hasSubMenu('Report', 'Master')" index="/report/master">Master</el-menu-item>
+            <el-sub-menu v-if="hasSubMenu('Report', 'Master')" index="report-master">
+              <template #title>
+                <span>Master</span>
+              </template>
+              
+              <!-- Level paling bawah menggunakan el-menu-item -->
+              <el-menu-item index="/report/master/umat">Umat</el-menu-item>
+              <el-menu-item index="/report/master/tcs">Tcs</el-menu-item>
+              <el-menu-item index="/report/master/lagu">Lagu</el-menu-item>
+            </el-sub-menu>
             <el-menu-item v-if="hasSubMenu('Report', 'SXY')" index="/report/sxy">Sxy</el-menu-item>
           </el-sub-menu>
         </el-menu>
@@ -207,7 +216,7 @@ const isChangePasswordVisible = ref(false)
 
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMobile = breakpoints.smaller('md')   // True if width < 768px
-const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+// const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 const isTablet = breakpoints.between('md', 'lg')
 
 const isCollapsed = ref(isTablet.value)

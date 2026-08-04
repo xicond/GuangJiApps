@@ -1,5 +1,29 @@
 # Documentation - Completed Tasks
 
+## [Completed] Login Rate Limiter with Redis & Standard Headers (`gin/internal/api/router.go` & `vue/src/views/Login.vue`)
+
+### Summary & Changes Made:
+- **Rate Limiting Engine**: Implemented `LoginRateLimiter` in [ratelimit.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/middleware/ratelimit.go) using `github.com/ulule/limiter/v3` with Redis store default (`REDIS_ADDR`) and memory store fallback if Redis is unconfigured or unreachable.
+- **Rule**: 3 failed login attempts per 5 minutes per Client IP.
+- **Standard Headers**: Configured headers on rate limited response:
+  - `Retry-After`: Seconds remaining in lockout window.
+  - `X-Retry-After`: Seconds remaining in lockout window.
+  - `X-RateLimit-Limit`: `3`.
+  - `X-RateLimit-Remaining`: Remaining allowed attempts.
+  - `X-RateLimit-Reset`: Unix timestamp when window resets.
+- **Lock Out Behavior**:
+  - Automatically checks `limiter.Peek()` before processing login. If `limCtx.Reached` (count >= 3), returns `HTTP 429 Too Many Requests` with retry headers and error message `"Terlalu banyak percobaan login yang salah. Silakan coba lagi dalam 5 menit."`.
+  - On login failure (`401`), increments failed attempt counter (`limiter.Increment()`).
+  - On successful login (`200`), resets failed attempt counter (`limiter.Reset()`) so legitimate users are not locked out later.
+- **Docker Compose**: Added `redis` service (`redis:7-alpine`) and set `REDIS_ADDR=redis:6379` for Gin container in [docker-compose.yml](file:///Users/xicond/Workspace/www/GuangJiApps/docker-compose.yml).
+- **Frontend Vue**: Updated [Login.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/Login.vue) and [auth.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/stores/auth.ts) to handle rate limit responses. When 429 / `retry_after` occurs:
+  - Form inputs and submit button are disabled (`:disabled="loading || isLockedOut"`).
+  - A live countdown timer (`formattedCountdown`) is displayed.
+  - Automatically re-enables login once the countdown reaches 0 seconds.
+- **Verification**: Tested with unit test `TestLoginRateLimiter` in [router_test.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router_test.go), passing 100%.
+
+---
+
 ## [Completed] Fixed Dev Service Worker TypeScript Import Transpilation (`vue/vite.config.ts`)
 
 ### Problem & Root Cause:

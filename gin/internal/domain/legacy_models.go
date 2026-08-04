@@ -125,8 +125,8 @@ type Admin struct {
 	PhoneNumber  *string   `gorm:"column:PhoneNumber" json:"phone_number,omitempty" validate:"omitempty,max=50"`
 	ImgUrl       string    `gorm:"column:ImgUrl" json:"img_url" validate:"omitempty,max=50"`
 	FlagUse      bool      `gorm:"column:FlagUse" json:"flag_use"`
-	DateStart    time.Time `gorm:"column:DateStart" json:"date_start,omitempty"`
-	DateEnd      time.Time `gorm:"column:DateEnd" json:"date_end,omitempty"`
+	DateStart    DateOnly  `gorm:"column:DateStart" json:"date_start,omitempty"`
+	DateEnd      DateOnly  `gorm:"column:DateEnd" json:"date_end,omitempty"`
 	LoginDesc    *string   `gorm:"column:LoginDesc" json:"login_desc,omitempty" validate:"omitempty,max=350"`
 	LastLogin    time.Time `gorm:"column:LastLogin" json:"last_login"`
 	DepartmentId int32     `gorm:"column:DepartmentId" json:"department_id"`
@@ -250,7 +250,7 @@ type Umat struct {
 	JenisKelaminInfo     *AppLookup `gorm:"foreignKey:JenisKelamin;references:LookupValue;constraint:false" json:"jenis_kelamin_info,omitempty" validate:"-"`
 	Pekerjaan            string     `gorm:"column:pekerjaan" json:"pekerjaan" validate:"omitempty,max=3"`
 	Pendidikan           string     `gorm:"column:pendidikan" json:"pendidikan" validate:"omitempty,max=3"`
-	TanggalChiutaoInt    time.Time  `gorm:"column:tanggalchiutaoint" json:"tanggal_chiutao_int"`
+	TanggalChiutaoInt    DateOnly   `gorm:"column:tanggalchiutaoint" json:"tanggal_chiutao_int"`
 	TanggalChiutaoMan    string     `gorm:"column:tanggalchiutaoman" json:"tanggal_chiutao_man" validate:"omitempty,max=6"`
 	TahunChiutaoMandarin string     `gorm:"column:tahunchiutaomandarin" json:"tahun_chiutao_mandarin" validate:"omitempty,max=20"`
 	WaktuChiutaoMandarin string     `gorm:"column:waktuchiutaomandarin" json:"waktu_chiutao_mandarin" validate:"omitempty,max=3"`
@@ -266,18 +266,18 @@ type Umat struct {
 	FotangAktif         string    `gorm:"column:fotangaktif" json:"fotang_aktif" validate:"omitempty,max=3"`
 	Sd2                 bool      `gorm:"column:sd2" json:"sd2"`
 	TempatSd2           string    `gorm:"column:tempatsd2" json:"tempat_sd2" validate:"omitempty,max=3"`
-	TanggalSd2          time.Time `gorm:"column:tanggalsd2" json:"tanggal_sd2"`
+	TanggalSd2          DateOnly  `gorm:"column:tanggalsd2" json:"tanggal_sd2"`
 	Sd3                 bool      `gorm:"column:sd3" json:"sd3"`
 	TempatSd3           string    `gorm:"column:tempatsd3" json:"tempat_sd3" validate:"omitempty,max=3"`
-	TanggalSd3          time.Time `gorm:"column:tanggalsd3" json:"tanggal_sd3"`
+	TanggalSd3          DateOnly  `gorm:"column:tanggalsd3" json:"tanggal_sd3"`
 	KelasUmum           string    `gorm:"column:kelasumum" json:"kelas_umum" validate:"omitempty,max=3"`
 	KelasKhusus         string    `gorm:"column:kelaskhusus" json:"kelas_khusus" validate:"omitempty,max=3"`
 	ChingKhou           bool      `gorm:"column:chingkhou" json:"ching_khou"`
-	TanggalChingKhou    time.Time `gorm:"column:tanggalchingkhou" json:"tanggal_ching_khou"`
-	TanggalAncuo        time.Time `gorm:"column:tanggalancuo" json:"tanggal_ancuo"`
+	TanggalChingKhou    DateOnly  `gorm:"column:tanggalchingkhou" json:"tanggal_ching_khou"`
+	TanggalAncuo        DateOnly  `gorm:"column:tanggalancuo" json:"tanggal_ancuo"`
 	NamaCetyaRumah      string    `gorm:"column:namacetyarumah" json:"nama_cetya_rumah" validate:"omitempty,max=50"`
 	Meninggal           bool      `gorm:"column:meninggal" json:"meninggal"`
-	TanggalMeninggal    time.Time `gorm:"column:tanggalmeninggal" json:"tanggal_meninggal"`
+	TanggalMeninggal    DateOnly  `gorm:"column:tanggalmeninggal" json:"tanggal_meninggal"`
 	TimKerja            string    `gorm:"column:timkerja" json:"tim_kerja" validate:"omitempty,max=3"`
 	Posisi              string    `gorm:"column:posisi" json:"posisi" validate:"omitempty,max=3"`
 	StatusUmat          string    `gorm:"column:statusumat" json:"status_umat" validate:"omitempty,max=3"`
@@ -295,11 +295,11 @@ type Umat struct {
 	Ikrar5              bool      `gorm:"column:ikrar5" json:"ikrar_5"`
 	Ikrar6              bool      `gorm:"column:ikrar6" json:"ikrar_6"`
 	RenChaiPan          bool      `gorm:"column:RenChaiPan" json:"ren_chai_pan"`
-	TanggalRenChaiPan   time.Time `gorm:"column:TanggalRenChaiPan" json:"tanggal_ren_chai_pan"`
+	TanggalRenChaiPan   DateOnly  `gorm:"column:TanggalRenChaiPan" json:"tanggal_ren_chai_pan"`
 	LienCiangPan        bool      `gorm:"column:LienCiangPan" json:"lien_ciang_pan"`
-	TanggalLienCiangPan time.Time `gorm:"column:TanggalLienCiangPan" json:"tanggal_lien_ciang_pan"`
+	TanggalLienCiangPan DateOnly  `gorm:"column:TanggalLienCiangPan" json:"tanggal_lien_ciang_pan"`
 	CiangYenPan         bool      `gorm:"column:CiangYenPan" json:"ciang_yen_pan"`
-	TanggalCiangYenPan  time.Time `gorm:"column:TanggalCiangYenPan" json:"tanggal_ciang_yen_pan"`
+	TanggalCiangYenPan  DateOnly  `gorm:"column:TanggalCiangYenPan" json:"tanggal_ciang_yen_pan"`
 	ActiveStatus        bool      `gorm:"column:ActiveStatus" json:"active_status"`
 	NamaFotangLain      string    `gorm:"column:NamaFotangLain" json:"nama_fotang_lain" validate:"omitempty,max=50"`
 	NamaTcsLain         string    `gorm:"column:NamaTcsLain" json:"nama_tcs_lain" validate:"omitempty,max=50"`
@@ -628,6 +628,21 @@ type SxyDonaturResponse struct {
 	UpdatedDate   time.Time `gorm:"column:updateddate" json:"updated_date"`
 }
 
+type SxyDonasiReport struct {
+	NoKwitansi      string    `gorm:"column:nokwitansi" json:"no_kwitansi"`
+	Tanggal         DateOnly  `gorm:"column:tanggal" json:"tanggal"`
+	TanggalTransfer time.Time `gorm:"column:tanggaltransfer" json:"tanggal_transfer"`
+
+	AtasNama       string  `gorm:"column:atasnama" json:"atas_nama"`
+	Donatur        string  `gorm:"column:donatur" json:"donatur"`
+	PenggalangDana string  `gorm:"column:penggalang_dana" json:"penggalang_dana"`
+	TipeSumbangan  string  `gorm:"column:tipe_sumbangan" json:"tipe_sumbangan"`
+	Jumlah         float64 `gorm:"column:jumlah" json:"jumlah"`
+	NoKupon        string  `gorm:"column:nokupon" json:"nokupon"`
+	Keterangan     string  `gorm:"column:keterangan" json:"keterangan"`
+	Fotang         string  `gorm:"column:Fotang" json:"fotang"`
+}
+
 func (SxyDonatur) TableName() string { return "T_SXY_MST_DONATUR" }
 
 // ==========================================// 3. SPECIAL CUSTOM TYPE & DONATION MODELS// ==========================================// Kelas represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_KELASKHUSUS'
@@ -919,7 +934,7 @@ func (KelasAbsensi) TableName() string {
 type DonasiSxy struct {
 	ID              int32     `gorm:"primaryKey;column:id" json:"id"`
 	NoKwitansi      string    `gorm:"column:nokwitansi" json:"no_kwitansi" validate:"required,max=50"`
-	Tanggal         time.Time `gorm:"column:tanggal" json:"tanggal"`
+	Tanggal         DateOnly  `gorm:"column:tanggal" json:"tanggal"`
 	Donatur         int32     `gorm:"column:donatur" json:"donatur_id"`
 	Penggalang      int32     `gorm:"column:penggalang" json:"penggalang_id"`
 	Jumlah          float64   `gorm:"column:jumlah" json:"jumlah" validate:"omitempty,gte=0"` // Maps NUMERIC(18,0) cleanly
@@ -931,27 +946,27 @@ type DonasiSxy struct {
 	CreatedDate     time.Time `gorm:"column:createddate" json:"created_date"`
 	UpdatedBy       int32     `gorm:"column:updatedby" json:"updated_by"`
 	UpdatedDate     time.Time `gorm:"column:updateddate" json:"updated_date"`
-	TanggalTransfer time.Time `gorm:"column:tanggaltransfer" json:"tanggal_transfer"`
+	TanggalTransfer DateOnly  `gorm:"column:tanggaltransfer" json:"tanggal_transfer"`
 	AtasNama        string    `gorm:"column:atasnama" json:"atas_nama" validate:"omitempty,max=500"`
 	TtkSent         bool      `gorm:"column:ttksent" json:"ttk_sent"`
 }
 
 type DonasiSxyResponse struct {
-	ID                 int32      `gorm:"primaryKey;column:id" json:"id"`
-	NoKwitansi         string     `gorm:"column:nokwitansi" json:"no_kwitansi"`
-	NoKupon            *string    `gorm:"column:nokupon" json:"no_kupon,omitempty"`
-	Tanggal            DateOnly   `gorm:"column:tanggal" json:"tanggal"`
-	Keterangan         *string    `gorm:"column:keterangan" json:"keterangan,omitempty"`
-	Penggalang         int32      `gorm:"column:penggalang" json:"penggalang_id"`
-	TipeSumbangan      int32      `gorm:"column:tipesumbangan" json:"tipe_sumbangan"`
-	Jumlah             float64    `gorm:"column:jumlah" json:"jumlah"` // Maps NUMERIC(18,0) cleanly
-	TipeSummbanganDesc *string    `gorm:"column:tipesumbangandesc" json:"tipe_sumbangan_desc,omitempty"`
-	NamaPenggalang     *string    `gorm:"column:namapenggalang" json:"nama_penggalang,omitempty"`
-	Donatur            int32      `gorm:"column:donatur" json:"donatur_id"`
-	NamaDonatur        *string    `gorm:"column:namadonatur" json:"nama_donatur,omitempty"`
-	TanggalTransfer    *time.Time `gorm:"column:tanggaltransfer" json:"tanggal_transfer,omitempty"`
-	AtasNama           *string    `gorm:"column:atasnama" json:"atas_nama,omitempty"`
-	EmailPenggalang    *string    `gorm:"column:emailpenggalang" json:"email_penggalang,omitempty"`
+	ID                 int32     `gorm:"primaryKey;column:id" json:"id"`
+	NoKwitansi         string    `gorm:"column:nokwitansi" json:"no_kwitansi"`
+	NoKupon            *string   `gorm:"column:nokupon" json:"no_kupon,omitempty"`
+	Tanggal            DateOnly  `gorm:"column:tanggal" json:"tanggal"`
+	Keterangan         *string   `gorm:"column:keterangan" json:"keterangan,omitempty"`
+	Penggalang         int32     `gorm:"column:penggalang" json:"penggalang_id"`
+	TipeSumbangan      int32     `gorm:"column:tipesumbangan" json:"tipe_sumbangan"`
+	Jumlah             float64   `gorm:"column:jumlah" json:"jumlah"` // Maps NUMERIC(18,0) cleanly
+	TipeSummbanganDesc *string   `gorm:"column:tipesumbangandesc" json:"tipe_sumbangan_desc,omitempty"`
+	NamaPenggalang     *string   `gorm:"column:namapenggalang" json:"nama_penggalang,omitempty"`
+	Donatur            int32     `gorm:"column:donatur" json:"donatur_id"`
+	NamaDonatur        *string   `gorm:"column:namadonatur" json:"nama_donatur,omitempty"`
+	TanggalTransfer    *DateOnly `gorm:"column:tanggaltransfer" json:"tanggal_transfer,omitempty"`
+	AtasNama           *string   `gorm:"column:atasnama" json:"atas_nama,omitempty"`
+	EmailPenggalang    *string   `gorm:"column:emailpenggalang" json:"email_penggalang,omitempty"`
 }
 
 func (DonasiSxy) TableName() string { return "T_SXY_TRANSAKSI" }

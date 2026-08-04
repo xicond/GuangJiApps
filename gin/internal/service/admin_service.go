@@ -132,10 +132,10 @@ func (s *AdminService) Create(payload domain.Admin, c *gin.Context) (domain.Admi
 
 	payload.FlagUse = true
 	if payload.DateStart.IsZero() {
-		payload.DateStart = time.Now()
+		payload.DateStart = domain.DateOnly{Time: time.Now()}
 	}
 	if payload.DateEnd.IsZero() {
-		payload.DateEnd = time.Now().AddDate(10, 0, 0)
+		payload.DateEnd = domain.DateOnly{Time: time.Now().AddDate(10, 0, 0)}
 	}
 
 	if err := s.db.Create(&payload).Error; err != nil {

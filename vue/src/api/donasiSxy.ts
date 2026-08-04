@@ -3,7 +3,9 @@ import type {
   DonasiSxy,
   DonasiSxyQueryParams,
   DonasiSxyListResponse,
-  DonasiSxySingleResponse
+  DonasiSxySingleResponse,
+  SxyReportQueryParams,
+  SxyReportListResponse
 } from '../types/donasiSxy'
 
 export const donasiSxyApi = {
@@ -67,7 +69,54 @@ export const donasiSxyApi = {
   async deleteDonasiSxy(id: number): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`/v1/donasi-sxy/${id}`)
     return response.data
+  },
+
+  /**
+   * Fetch paginated Sxy Report.
+   */
+  async getSxyReport(
+    params: SxyReportQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<SxyReportListResponse> {
+    const cleanParams: Record<string, any> = {
+      page: params.page || 1,
+      limit: params.limit || 10
+    }
+    if (params.donatur) cleanParams.donatur = params.donatur
+    if (params.penggalang) cleanParams.penggalang = params.penggalang
+    if (params.start_date) cleanParams.start_date = params.start_date
+    if (params.end_date) cleanParams.end_date = params.end_date
+    if (params.fotang) cleanParams.fotang = params.fotang
+
+    const response = await apiClient.get<SxyReportListResponse>('/v1/donasi-sxy/report', {
+      params: cleanParams,
+      signal
+    })
+    return response.data
+  },
+
+  /**
+   * Download Sxy Report Excel binary file.
+   */
+  async downloadSxyReportExcel(
+    params: SxyReportQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<Blob> {
+    const cleanParams: Record<string, any> = {}
+    if (params.donatur) cleanParams.donatur = params.donatur
+    if (params.penggalang) cleanParams.penggalang = params.penggalang
+    if (params.start_date) cleanParams.start_date = params.start_date
+    if (params.end_date) cleanParams.end_date = params.end_date
+    if (params.fotang) cleanParams.fotang = params.fotang
+
+    const response = await apiClient.get<Blob>('/v1/donasi-sxy/report/excel', {
+      params: cleanParams,
+      responseType: 'blob',
+      signal
+    })
+    return response.data
   }
 }
 
 export default donasiSxyApi
+

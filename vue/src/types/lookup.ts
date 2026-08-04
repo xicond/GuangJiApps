@@ -1,8 +1,9 @@
 export interface AppLookup {
-  lookup_id: string
+  lookup_id?: string
   category_id?: string
-  lookup_value: string
+  lookup_value?: string
   lookup_description?: string
+  [key: string]: unknown
 }
 
 export interface LookupQueryParams {

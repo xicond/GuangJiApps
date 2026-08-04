@@ -38,21 +38,6 @@ func (s *PenggalangDanaService) List(page int, filters map[string]string, limit 
 		page = 1
 	}
 
-	if s.db.Dialector.Name() == "sqlite" {
-		var count int64
-		s.db.Model(&domain.PenggalangDana{}).Count(&count)
-		var list []domain.PenggalangDana
-		s.db.Limit(limit).Offset((page - 1) * limit).Find(&list)
-		for _, p := range list {
-			items = append(items, domain.PenggalangDanaResponse{
-				ID:   p.ID,
-				No:   p.No,
-				Nama: p.Nama,
-			})
-		}
-		return items, count, nil
-	}
-
 	allowedFilters := map[string]string{
 		"nama":     "nama",
 		"mandarin": "mandarin",
@@ -177,7 +162,7 @@ func (s *PenggalangDanaService) Create(payload domain.PenggalangDana, c *gin.Con
 	s.db.Table("T_SXY_MST_PENGGALANG").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
 	payload.ID = maxID + 1
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {
@@ -227,7 +212,7 @@ func (s *PenggalangDanaService) Update(id string, payload domain.PenggalangDana,
 		return domain.PenggalangDana{}, err
 	}
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {
@@ -268,7 +253,7 @@ func (s *PenggalangDanaService) Delete(id string, c *gin.Context) error {
 		return err
 	}
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {

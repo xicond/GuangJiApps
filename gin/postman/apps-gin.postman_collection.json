@@ -4064,6 +4064,115 @@
               ]
             }
           }
+        },
+        {
+          "name": "Report - SXY List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/donasi-sxy/report?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "report",
+                "sxy"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2024-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "end_date",
+                  "value": "2024-12-31",
+                  "disabled": true
+                },
+                {
+                  "key": "donatur",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "penggalang",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "fotang",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Report - SXY Excel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/donasi-sxy/report/excel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "report",
+                "sxy",
+                "excel"
+              ],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "2024-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "end_date",
+                  "value": "2024-12-31",
+                  "disabled": true
+                },
+                {
+                  "key": "donatur",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "penggalang",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "fotang",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          }
         }
       ]
     }

@@ -6,7 +6,7 @@
           <div class="accordion-header" @click.stop>
             <div class="header-title">
               <el-icon class="header-icon"><Avatar /></el-icon>
-              <span>{{ isDesktop ? 'Daftar Pengabdi Kelas' : 'Pengabdi' }}</span>
+              <span>{{ isDesktop ? 'Daftar Pengabdi' : 'Pengabdi' }}</span>
               <el-tag size="small" type="info" class="ml-2">{{ total }} Pengabdi</el-tag>
             </div>
             <div class="header-actions" @click.stop>
@@ -115,7 +115,7 @@
     <!-- Dialog Popup Add / Edit Pengabdi -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'add' ? 'Tambah Pengabdi Kelas' : 'Edit Pengabdi Kelas'"
+      :title="dialogMode === 'add' ? 'Tambah Pengabdi' : 'Edit Pengabdi'"
       width="720px"
       destroy-on-close
     >
@@ -189,6 +189,11 @@
           </el-col>
         </el-row>
 
+        <el-form-item label="Keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
+          <el-input v-model="form.keterangan" placeholder="Keterangan pengabdi" maxlength="200" />
+          <FieldErrors :errors="getFieldErrors('keterangan')" />
+        </el-form-item>
+
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Sumbangan" :error="hasFieldError('sumbangan') ? ' ' : undefined">
@@ -210,11 +215,6 @@
             </el-form-item>
           </el-col>
         </el-row>
-
-        <el-form-item label="Keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
-          <el-input v-model="form.keterangan" placeholder="Keterangan pengabdi" maxlength="200" />
-          <FieldErrors :errors="getFieldErrors('keterangan')" />
-        </el-form-item>
 
         <!-- Logistik Optional Fields (Multiply by Number of Days) -->
         <el-divider content-position="left">Data Logistik / Kehadiran ({{ daysCount }} Hari)</el-divider>

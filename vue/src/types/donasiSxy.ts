@@ -42,3 +42,38 @@ export interface DonasiSxySingleResponse {
   data: DonasiSxy
   resource?: string
 }
+
+export interface SxyDonasiReportItem {
+  no_kwitansi?: string
+  tanggal?: string
+  tanggal_transfer?: string
+  atas_nama?: string
+  donatur?: string
+  penggalang_dana?: string
+  tipe_sumbangan?: string
+  jumlah?: number
+  nokupon?: string
+  keterangan?: string
+  fotang?: string
+}
+
+export interface SxyReportQueryParams {
+  page?: number
+  limit?: number
+  donatur?: string
+  penggalang?: string
+  start_date?: string
+  end_date?: string
+  fotang?: string | number
+}
+
+export interface SxyReportListMeta extends PaginatedMeta {
+  total_jumlah?: number
+}
+
+export interface SxyReportListResponse {
+  data: SxyDonasiReportItem[]
+  meta: SxyReportListMeta
+  resource?: string
+}
+

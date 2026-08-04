@@ -1,8 +1,13 @@
 package service
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -38,15 +43,18 @@ func (s *nullStringScanner) Scan(value interface{}) error {
 }
 
 type DonasiSxyService struct {
-	db       *gorm.DB
-	resource string
+	db                   *gorm.DB
+	resource             string
+	reportServerURL      string
+	reportServerUsername string
+	reportServerPassword string
 }
 
 func NewDonasiSxyService(db *gorm.DB) *DonasiSxyService {
 	if db == nil {
 		db = database.MustOpen("")
 	}
-	return &DonasiSxyService{db: db, resource: "donasi-sxy"}
+	return &DonasiSxyService{db: db, resource: "donasi-sxy", reportServerURL: getReportServerURL(), reportServerUsername: getReportServerUsername(), reportServerPassword: getReportServerPassword()}
 }
 
 func isValidDate(s string) bool {
@@ -77,21 +85,6 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 	}
 	if page <= 0 {
 		page = 1
-	}
-
-	if s.db.Dialector.Name() == "sqlite" {
-		var count int64
-		s.db.Model(&domain.DonasiSxy{}).Count(&count)
-		var list []domain.DonasiSxy
-		s.db.Limit(limit).Offset((page - 1) * limit).Find(&list)
-		for _, d := range list {
-			items = append(items, domain.DonasiSxyResponse{
-				ID:         d.ID,
-				NoKwitansi: d.NoKwitansi,
-				Jumlah:     d.Jumlah,
-			})
-		}
-		return items, count, nil
 	}
 
 	allowedFilters := map[string]bool{
@@ -238,7 +231,7 @@ func (s *DonasiSxyService) Create(payload domain.DonasiSxy, c *gin.Context) (dom
 	s.db.Table("T_SXY_TRANSAKSI").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
 	payload.ID = maxID + 1
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {
@@ -288,7 +281,7 @@ func (s *DonasiSxyService) Update(id string, payload domain.DonasiSxy, c *gin.Co
 		return domain.DonasiSxy{}, err
 	}
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {
@@ -331,7 +324,7 @@ func (s *DonasiSxyService) Delete(id string, c *gin.Context) error {
 		return err
 	}
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {
@@ -347,5 +340,299 @@ func (s *DonasiSxyService) Delete(id string, c *gin.Context) error {
 	if err := s.db.Save(&item).Error; err != nil {
 		return fmt.Errorf("failed to delete record: %w", err)
 	}
+	return nil
+}
+
+func (s *DonasiSxyService) Report(page int, filters map[string]string, limit int) ([]domain.SxyDonasiReport, float64, int64, error) {
+	items := make([]domain.SxyDonasiReport, 0)
+	var total int64
+	var totalJumlah float64
+
+	if limit <= 0 {
+		limit = 10
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	allowedFilters := map[string]bool{
+		"donatur":    true,
+		"penggalang": true,
+		"start_date": true,
+		"end_date":   true,
+		"fotang":     true,
+	}
+
+	var donatur int = 0
+	var penggalang int = 0
+	var startDate interface{} = nil
+	var endDate interface{} = nil
+	var fotang int = 0
+
+	for field, value := range filters {
+		if value == "" {
+			continue
+		}
+		if _, exists := allowedFilters[field]; exists {
+			if field == "donatur" {
+				donatur = toInt(value)
+			}
+			if field == "penggalang" {
+				penggalang = toInt(value)
+			}
+			if field == "start_date" {
+				startDate = value
+			}
+			if field == "end_date" {
+				endDate = value
+			}
+			if field == "fotang" {
+				fotang = toInt(value)
+			}
+		}
+	}
+
+	var findErr error
+
+	rows, err := s.db.Raw("EXEC SP_SXY_RPT_TRANSAKSI ?, ?, ?, ?, ?, ?, ?",
+		donatur,
+		penggalang,
+		startDate,
+		endDate,
+		fotang,
+		limit, // @PageSize
+		page,  // @CurrentPage
+	).Rows()
+
+	// Log query and values
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	log.Printf("[SQL] %s | Query:\n%s\n", timestamp, s.db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return tx.Raw("EXEC SP_SXY_RPT_TRANSAKSI ?, ?, ?, ?, ?, ?, ?",
+			donatur,
+			penggalang,
+			startDate,
+			endDate,
+			fotang,
+			limit, // @PageSize
+			page,  // @CurrentPage
+		)
+	}))
+
+	if err != nil {
+		return nil, 0, 0, fmt.Errorf("database query error: %w", err)
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			findErr = errors.New("sxy report tidak ditemukan")
+		} else {
+			findErr = fmt.Errorf("database error: %w", err)
+		}
+		return nil, 0, 0, findErr
+	}
+
+	for rows.Next() {
+		var item domain.SxyDonasiReport
+		v := reflect.ValueOf(&item).Elem()
+		t := v.Type()
+
+		// Siapkan slice pointer untuk rows.Scan sepanjang jumlah kolom
+		valuePtrs := make([]interface{}, len(cols))
+
+		// Variabel penampung sementara untuk kolom khusus seperti TotalRow yang tidak ada di struct
+		var totalRowScan int64
+
+		for i, colName := range cols {
+			cleanCol := strings.ToLower(strings.TrimSpace(colName))
+
+			switch cleanCol {
+			case "totalrow":
+				valuePtrs[i] = &totalRowScan
+			case "totaljumlah":
+				valuePtrs[i] = &totalJumlah
+			default:
+				matched := false
+				// Cari field di struct berdasarkan tag gorm "column" atau nama field
+				for j := 0; j < t.NumField(); j++ {
+					field := t.Field(j)
+					gormTag := field.Tag.Get("gorm")
+
+					// Cocokkan dengan tag kolom GORM atau nama struct (case-insensitive)
+					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
+						strings.ToLower(field.Name) == cleanCol {
+						fieldVal := v.Field(j)
+						if fieldVal.Kind() == reflect.String {
+							valuePtrs[i] = &nullStringScanner{target: fieldVal.Addr().Interface().(*string)}
+						} else {
+							valuePtrs[i] = fieldVal.Addr().Interface()
+						}
+						matched = true
+						break
+					}
+				}
+				// Jika kolom database tidak ada di struct, tampung ke dummy agar Scan tidak error
+				if !matched {
+					var dummy interface{}
+					valuePtrs[i] = &dummy
+				}
+			}
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			log.Printf("[ERROR] Report rows.Scan error: %v", err)
+			continue
+		}
+
+		// Ambil total row jika ada
+		if totalRowScan != 0 {
+			total = totalRowScan
+		}
+
+		items = append(items, item)
+	} /*
+
+		if findErr != nil {
+			return []domain.SxyDonasiReport{}, 0, 0, findErr
+		} */
+
+	return items, totalJumlah, total, nil
+}
+
+func (s *DonasiSxyService) ReportExcel(filters map[string]string, c *gin.Context) error {
+
+	baseURL := s.reportServerURL
+	if baseURL == "" {
+		baseURL = getReportServerURL()
+	}
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	username := s.reportServerUsername
+	if username == "" {
+		username = getReportServerUsername()
+	}
+	password := s.reportServerPassword
+	if password == "" {
+		password = getReportServerPassword()
+	}
+
+	if username != "" {
+		parsedURL, err := url.Parse(baseURL)
+		if err == nil {
+			parsedURL.User = url.UserPassword(username, password)
+			baseURL = parsedURL.String()
+		} else {
+			schemeParts := strings.SplitN(baseURL, "://", 2)
+			if len(schemeParts) == 2 {
+				baseURL = fmt.Sprintf("%s://%s:%s@%s", schemeParts[0], url.QueryEscape(username), url.QueryEscape(password), schemeParts[1])
+			}
+		}
+	}
+
+	startDate := filters["start_date"]
+	if startDate == "" {
+		startDate = filters["startDate"]
+	}
+	endDate := filters["end_date"]
+	if endDate == "" {
+		endDate = filters["endDate"]
+	}
+	penggalang := filters["penggalang"]
+	donatur := filters["donatur"]
+	fotang := filters["fotang"]
+
+	// &SubWhId=%s
+	reportURL := fmt.Sprintf("%s/ReportServer?%%2fGuangJiReport%%2frpt_sxy_transaksi&startDate=%s&endDate=%s&penggalang=%s&donatur=%s&fotang=%s&rs:Command=Render&rs:Format=EXCELOPENXML",
+		baseURL,
+		url.QueryEscape(startDate),
+		url.QueryEscape(endDate),
+		url.QueryEscape(penggalang),
+		url.QueryEscape(donatur),
+		url.QueryEscape(fotang),
+	)
+
+	var reqCtx = c.Request.Context()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, reportURL, nil)
+	if err != nil {
+		return fmt.Errorf("gagal membuat request report: %w", err)
+	}
+
+	if username != "" {
+		req.SetBasicAuth(username, password)
+	}
+
+	client := defaultReportClient
+
+	startTime := time.Now()
+	resp, err := client.Do(req)
+	fetchDuration := time.Since(startTime)
+	if err != nil {
+		return fmt.Errorf("gagal mengambil report dari SSRS (%v): %w", fetchDuration, err)
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized && username != "" {
+		authHeader := resp.Header.Get("WWW-Authenticate")
+		if strings.HasPrefix(authHeader, "Digest ") {
+			resp.Body.Close()
+
+			req2, err := http.NewRequestWithContext(reqCtx, http.MethodGet, reportURL, nil)
+			if err != nil {
+				return fmt.Errorf("gagal membuat digest request: %w", err)
+			}
+
+			digestVal := formatDigestAuth(authHeader, username, password, http.MethodGet, req2.URL.RequestURI())
+			req2.Header.Set("Authorization", digestVal)
+
+			resp, err = client.Do(req2)
+			if err != nil {
+				return fmt.Errorf("gagal mengambil report dengan Digest auth: %w", err)
+			}
+		}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("report server mengembalikan HTTP %d (fetch %v)", resp.StatusCode, fetchDuration)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	}
+
+	contentDisposition := resp.Header.Get("Content-Disposition")
+	if contentDisposition == "" {
+		hash := sha256.Sum256([]byte(startDate + endDate + penggalang + donatur + fotang))
+		filename := fmt.Sprintf("rpt_sxy_transaksi_%x.xlsx", hash[:4])
+		contentDisposition = fmt.Sprintf("attachment; filename=\"%s\"", filename)
+	}
+
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", contentDisposition)
+	if resp.ContentLength > 0 {
+		c.Header("Content-Length", strconv.FormatInt(resp.ContentLength, 10))
+	}
+	c.Status(http.StatusOK)
+
+	if flusher, ok := c.Writer.(http.Flusher); ok {
+		flusher.Flush()
+	}
+
+	bufPtr := copyBufferPool.Get().(*[]byte)
+	defer copyBufferPool.Put(bufPtr)
+
+	streamStart := time.Now()
+	nBytes, err := io.CopyBuffer(c.Writer, resp.Body, *bufPtr)
+	streamDuration := time.Since(streamStart)
+	totalDuration := time.Since(startTime)
+
+	log.Printf("[REPORT PERF] SSRS Fetch: %v, Client Stream (%d bytes): %v, Total: %v",
+		fetchDuration, nBytes, streamDuration, totalDuration)
+
+	if err != nil {
+		return fmt.Errorf("gagal stream report ke client: %w", err)
+	}
+
 	return nil
 }

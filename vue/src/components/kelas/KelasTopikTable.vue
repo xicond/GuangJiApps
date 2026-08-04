@@ -124,7 +124,7 @@
     <!-- Dialog Popup Add / Edit Topik -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'add' ? 'Tambah Topik Kelas' : 'Edit Topik Kelas'"
+      :title="dialogMode === 'add' ? 'Tambah Topik' : 'Edit Topik'"
       width="640px"
       destroy-on-close
     >
@@ -316,6 +316,7 @@ interface TopikFormState {
 const form = ref<TopikFormState>({
   kode_topik: '',
   urutan: 1,
+  durasi: 30,
   topik_date: '',
   penceramah_ext: '',
   penterjemah: '',
@@ -458,7 +459,7 @@ function openAddDialog() {
     penceramah: undefined,
     penceramah_ext: '',
     penterjemah: '',
-    durasi: 60,
+    durasi: 30,
     keterangan: ''
   }
   umatOptions.value = []

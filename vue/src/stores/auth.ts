@@ -19,7 +19,7 @@ export interface User {
   username?: string
   name?: string
   role?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
@@ -72,9 +72,9 @@ export const useAuthStore = defineStore('auth', () => {
         return true
       }
       return false
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error)
-      const msg = error.response?.data?.error || error.message || 'Login failed'
+      const msg = (axios.isAxiosError(error) && error.response?.data?.error) || (error instanceof Error ? error.message : 'Login failed')
       throw new Error(msg)
     }
   }
@@ -91,9 +91,9 @@ export const useAuthStore = defineStore('auth', () => {
         }
       })
       return response.status === 200
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Change password error:', error)
-      const msg = error.response?.data?.error || error.message || 'Failed to change password'
+      const msg = (axios.isAxiosError(error) && error.response?.data?.error) || (error instanceof Error ? error.message : 'Failed to change password')
       throw new Error(msg)
     }
   }

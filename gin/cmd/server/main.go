@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
 	"strings" // WAJIB: Tambahkan import strings
@@ -15,16 +14,7 @@ import (
 func main() {
 	// 1. Tangkap port dari argument flag CLI (misal: --port=111)
 	//    Cek apakah port dikirim lewat argumen, jika tidak baru cek os.Getenv, jika tidak baru pakai default
-	cliPort := flag.String("port", "", "port dinamis")
-	flag.Parse()
-
-	// 2. Ambil nilainya
-	port := *cliPort
-
-	// 3. Jika argumen kosong, baru cek os.Getenv sebagai cadangan
-	if port == "" {
-		port = os.Getenv("PORT")
-	}
+	port := os.Getenv("PORT")
 
 	cfg := config.Load()
 	db, err := database.Open(cfg.DatabaseDSN)

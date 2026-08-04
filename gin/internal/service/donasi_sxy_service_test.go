@@ -24,7 +24,7 @@ func TestDonasiSxyService(t *testing.T) {
 	// 1. Create
 	donasi := domain.DonasiSxy{
 		NoKwitansi: "KW001",
-		Tanggal:    time.Now(),
+		Tanggal:    domain.DateOnly{Time: time.Now()},
 		Donatur:    1,
 		Penggalang: 1,
 		Jumlah:     500000,

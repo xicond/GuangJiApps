@@ -1,5 +1,83 @@
 # Documentation - Completed Tasks
 
+## [Completed] Fixed Dev Service Worker TypeScript Import Transpilation (`vue/vite.config.ts`)
+
+### Problem & Root Cause:
+When using `VitePWA` with `devOptions.type = 'module'` and `strategies: 'injectManifest'`, Vite served `sw.ts` as an ES Module in dev mode. When `sw.ts` imported local `.ts` strategy files (`import { DynamicNetworkCacheStrategy } from './strategies/dynamicnetworkcache'`), Vite rewrote the import path to `/src/strategies/dynamicnetworkcache.ts`.
+Browsers cannot execute uncompiled TypeScript (`.ts`) ES module imports directly inside Service Workers, causing the browser Service Worker initialization to fail with a syntax/mime-type error, preventing all `registerRoute` definitions from executing.
+
+### Solution:
+Updated `devOptions.type` from `'module'` to `'classic'` in [vite.config.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/vite.config.ts).
+This causes Vite and `esbuild` to bundle `sw.ts` and all imported local TypeScript modules into a single standalone JavaScript file (`dev-sw.js`), resolving all import paths into plain JavaScript and allowing `registerRoute` and `DynamicNetworkCacheStrategy` to execute cleanly in browser Service Workers.
+
+---
+
+## [Completed] Added Debug Logging & Improved Route Matching (`vue/src/sw.ts` & `vue/src/strategies/dynamicnetworkcache.ts`)
+
+### Changes Made:
+- Added explicit console logging in [sw.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/sw.ts) for matched routes (`[SW Route] Matched /v1/ or /api/: ...`).
+- Added console logging in [dynamicnetworkcache.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/strategies/dynamicnetworkcache.ts) (`[SW DynamicNetworkCacheStrategy] Intercepting: GET ...`).
+- Expanded route matcher in `sw.ts` to cover both `/v1/` and `/api/` endpoints cleanly under `DynamicNetworkCacheStrategy`.
+
+---
+
+## [Completed] Registered `DynamicNetworkCacheStrategy` for Default GET `/v1/` Routes (`vue/src/sw.ts`)
+
+### Changes Made:
+- Updated `vue/src/sw.ts` default route matcher for GET `/v1/` endpoints (such as `/v1/penggalang-dana?page=3&limit=10`) from standard Workbox `NetworkFirst` to `DynamicNetworkCacheStrategy`.
+- Set default `timeoutMs: 500` and `debounceMs: 5000` for general `/v1/` API endpoints under `api-cache`.
+- Verified type safety via `npm run type-check` (`vue-tsc --noEmit`), passing with 0 errors.
+
+---
+
+## [Completed] TypeScript `any` Type Reduction Across `vue/src` (`vue/src`)
+
+### Changes Made:
+- **`lookupCache.ts`**: Replaced `any` types in `cachedFetchLookup` with generic types `<T = unknown, P = Record<string, unknown>>` and typed `CacheEntry<T>`.
+- **`useQuickStreamSpeedTest.ts`**: Replaced `catch (error: any)` with `catch (error: unknown)` and `error instanceof Error` type guard.
+- **`auth.ts`**: Replaced `[key: string]: any` with `[key: string]: unknown` in `User` interface, and replaced `catch (error: any)` with `catch (error: unknown)` using `axios.isAxiosError(error)`.
+- **`KelasForm.vue` & `UmatForm.vue`**: Removed `as any` from `trimTargetFields` helper functions by typing `trimmed` as `Record<string, unknown>`.
+- **`ChangePasswordModal.vue`, `Login.vue`, `ChangePasswordView.vue`**: Replaced `catch (error: any)` / `catch (err: any)` with `catch (error: unknown)` and proper error messaging.
+- **`KelasDonasiBarangTable.vue`**: Replaced `catch (err: any)` with `catch (err: unknown)` using `axios.isAxiosError(err)`.
+- **`dynamicnetworkcache.ts`**: Imported `StrategyHandler` from `workbox-strategies` to strongly type `handler` parameters and return values.
+- **Verification**: Executed `npm run type-check` (`vue-tsc --noEmit`), completing with 0 errors.
+
+---
+
+## [Completed] Workbox `StrategyHandler` Integration (`vue/src/strategies/dynamicnetworkcache.ts`)
+
+### Changes Made:
+- Imported `StrategyHandler` directly from `workbox-strategies`.
+- Replaced `any` parameter types on `handler: StrategyHandler` across `_handle` and `triggerDebouncedBackgroundUpdate`.
+- `handler.cachePut(key, response)` now strongly types its return value as `Promise<boolean>` instead of `any`.
+- Verified type safety via `npm run type-check` (`vue-tsc --noEmit`), passing with 0 errors.
+
+---
+
+## [Completed] Non-Blocking Async `handler.cachePut` via `handler.waitUntil` (`vue/src/strategies/dynamicnetworkcache.ts`)
+
+### Changes Made:
+Updated `DynamicNetworkCacheStrategy` to use `handler.waitUntil` for `cachePut`:
+- `handler.cachePut(request, networkResponse.clone())` is executed inside `.then()` without `await`, returning `Response` immediately to Axios/main thread with zero delay.
+- Passed the `putPromise` to `handler.waitUntil(putPromise)` to extend Service Worker lifecycle in background, guaranteeing IndexedDB cache write completes safely even if the main thread receives the response earlier.
+
+---
+
+## [Completed] Non-Blocking Parallel `DynamicNetworkCacheStrategy` with Fallback Race (`vue/src/strategies/dynamicnetworkcache.ts`)
+
+### Changes Made:
+Refactored `DynamicNetworkCacheStrategy._handle` to include a secondary `Promise.race` fallback on `timeoutMs`:
+1. **Concurrent Initialization**: Starts `cachePromise` (`handler.cacheMatch`) and `networkPromise` (`handler.fetch`) concurrently at step 0 without blocking.
+2. **Fast Network Path (< `timeoutMs`)**: Races `networkPromise` against `timeoutMs`. If `networkPromise` finishes first, clears timer and returns `networkResponse` immediately. Background `cachePut` is performed non-blockingly via `.then(...)`.
+3. **Fallback Race Path (Network Not Finished Before `timeoutMs`)**:
+   - Races `cachePromise` against `networkPromise`.
+   - **If `cachePromise` wins**:
+     - Checks if cached response exists (`if (cachedResponse)`). If present, returns `cachedResponse` immediately while `networkPromise` continues renewing the cache in the background.
+     - If cache does not exist, awaits `networkPromise` to complete and add to cache.
+   - **If `networkPromise` wins**: Returns `networkResponse` directly.
+
+---
+
 ## [Completed] Form Submission Page Disabling & Finally Block Enforcement
 
 ### Changes Made:
@@ -158,5 +236,3 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
    - Replaced unsafe `int32(c.MustGet("userID").(int))` type assertions on lines 226, 328, and 358 with `getUserID(c)`.
    - `c.Set("userID", claims["sub"])` in `AuthMiddleware` stores `userID` from JWT claims as a `float64` (Standard JSON unmarshaling type in `golang-jwt`), causing `.(int)` to panic with `interface conversion: interface {} is float64, not int`.
    - Using `getUserID(c)` safely handles `float64`, `int`, `int32`, `string` or fallback `1` without panicking.
-
-

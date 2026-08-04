@@ -48,17 +48,19 @@ import { ref, computed, watch, onMounted } from 'vue'
 import type { AppLookup, LookupQueryParams } from '../../types/lookup'
 import { cachedFetchLookup } from '../../utils/lookupCache'
 
+type LookupOptionItem = Record<string, any>
+
 const props = withDefaults(
   defineProps<{
     modelValue?: string | number
     placeholder?: string
-    fetchApi: (params: LookupQueryParams | any, signal?: AbortSignal) => Promise<any>
+    fetchApi: (params: any, signal?: AbortSignal) => Promise<{ data?: any[]; meta?: any }>
     valueKey?: string
     labelKey?: string
-    labelFormatter?: (item: any) => string
+    labelFormatter?: (item: LookupOptionItem) => string
     clearable?: boolean
     pageSize?: number
-    initialOption?: any
+    initialOption?: LookupOptionItem
   }>(),
   {
     modelValue: '',
@@ -75,7 +77,7 @@ const emit = defineEmits<{
   (e: 'change', value: string | number | undefined): void
 }>()
 
-const options = ref<any[]>([])
+const options = ref<LookupOptionItem[]>([])
 const loading = ref(false)
 const page = ref(1)
 const total = ref(0)
@@ -89,23 +91,23 @@ const maxPage = computed(() => {
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 let currentAbortController: AbortController | null = null
 
-function getOptionValue(item: any): string | number {
+function getOptionValue(item?: LookupOptionItem): string | number {
   if (!item) return ''
   const val = item[props.valueKey]
-  return val !== undefined && val !== null ? val : item.lookup_value || item.id || ''
+  return val !== undefined && val !== null ? (val as string | number) : (item.lookup_value as string | number) || (item.id as string | number) || ''
 }
 
-function getOptionLabel(item: any): string {
+function getOptionLabel(item?: LookupOptionItem): string {
   if (!item) return ''
   if (props.labelFormatter) {
     return props.labelFormatter(item)
   }
   const label = item[props.labelKey]
   if (label !== undefined && label !== null && label !== '') return String(label)
-  return item.lookup_description || item.lookup_value || item.lookup_id || item.nama_indonesia || ''
+  return String(item.lookup_description || item.lookup_value || item.lookup_id || item.nama_indonesia || '')
 }
 
-function ensureInitialOption(opt?: AppLookup) {
+function ensureInitialOption(opt?: AppLookup | LookupOptionItem) {
   if (!opt) return
   const val = getOptionValue(opt)
   if (val === undefined || val === null || val === '') return
@@ -154,8 +156,8 @@ async function loadData(targetPage = 1, query = '', forceRefresh = false) {
     }
     await checkAndFetchMissingSelectedValue()
     total.value = res.meta?.total || options.value.length
-  } catch (err: any) {
-    if (err.name === 'AbortError' || err.name === 'CanceledError') return
+  } catch (err: unknown) {
+    if (err instanceof Error && (err.name === 'AbortError' || err.name === 'CanceledError')) return
     console.error('Error fetching lookup options:', err)
   } finally {
     loading.value = false

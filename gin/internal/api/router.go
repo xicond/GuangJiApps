@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -52,14 +53,9 @@ func FilterSuccessLogMiddleware() gin.HandlerFunc {
 		path := c.Request.URL.Path
 		rawQuery := c.Request.URL.RawQuery
 
-		// Proses request handler
-		c.Next()
-
-		// Ambil status code setelah handler selesai dieksekusi
-		status := c.Writer.Status()
-
-		// Hanya cetak log jika status code >= 400 (Abaikan 2xx dan 3xx)
-		if status >= 400 {
+		// Gunakan defer untuk memastikan log tereksekusi meskipun terjadi panic / fatal error
+		defer func() {
+			timestamp := time.Now().Format("2006-01-02 15:04:05")
 			latency := time.Since(start)
 			clientIP := c.ClientIP()
 			method := c.Request.Method
@@ -68,18 +64,29 @@ func FilterSuccessLogMiddleware() gin.HandlerFunc {
 				path = path + "?" + rawQuery
 			}
 
-			// Format waktu saat log dicetak
-			timestamp := time.Now().Format("2006-01-02 15:04:05")
+			// 1. Tangkap jika terjadi Panic / Fatal Error
+			if err := recover(); err != nil {
+				log.Printf("[PANIC] %s | 500 | %13v | %15s | %-7s %s | Err: %v\n",
+					timestamp, latency, clientIP, method, path, err,
+				)
+				// Cetak stack trace lengkap ke terminal/error output
+				debug.PrintStack()
 
-			log.Printf("[HTTP] %s | %3d | %13v | %15s | %-7s %s\n",
-				timestamp,
-				status,
-				latency,
-				clientIP,
-				method,
-				path,
-			)
-		}
+				// Kirim respon 500 ke client agar tidak menggantung
+				c.AbortWithStatus(500)
+				return
+			}
+
+			// 2. Tangkap HTTP Error biasa (Status >= 400)
+			status := c.Writer.Status()
+			if status >= 400 {
+				log.Printf("[HTTP] %s | %3d | %13v | %15s | %-7s %s\n",
+					timestamp, status, latency, clientIP, method, path,
+				)
+			}
+		}()
+
+		c.Next()
 	}
 }
 
@@ -2167,6 +2174,32 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Donasi Sxy"})
 	})
+	protected.GET("/donasi-sxy/report", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, totalJumlah, total, err := donasiSxyService.Report(page, filters, limit)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"data": items,
+			"meta": gin.H{
+				"page":         page,
+				"limit":        limit,
+				"total":        total,
+				"total_jumlah": totalJumlah,
+			},
+			"resource": "SxyDonasiReport",
+		})
+	})
+	protected.GET("/donasi-sxy/report/excel", func(c *gin.Context) {
+		_, _, filters := parsePaginationAndFilters(c)
+		if err := donasiSxyService.ReportExcel(filters, c); err != nil {
+			respondError(c, err)
+			return
+		}
+	})
 	protected.GET("/donasi-sxy/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
@@ -2273,8 +2306,8 @@ func getPathAndMethod(c *gin.Context) (string, string) {
 }
 
 func respondValidationError(c *gin.Context, err error) {
-	path, method := getPathAndMethod(c)
-	log.Printf("[API VALIDATION ERROR 400] path=%s method=%s err=%v", path, method, err)
+	// path, method := getPathAndMethod(c)
+	// log.Printf("[API VALIDATION ERROR 400] path=%s method=%s err=%v", path, method, err)
 	c.JSON(http.StatusBadRequest, gin.H{
 		"error":   err.Error(),
 		"details": FormatValidationError(err),
@@ -2286,10 +2319,10 @@ func respondError(c *gin.Context, err error) {
 		return
 	}
 	path, method := getPathAndMethod(c)
-	log.Printf("[API ERROR HANDLER] path=%s method=%s type=%T err=%+v", path, method, err, err)
+	// log.Printf("[API ERROR HANDLER] path=%s method=%s type=%T err=%+v", path, method, err, err)
 	var vErr *service.ValidationError
 	if errors.As(err, &vErr) {
-		log.Printf("[API ERROR -> 400 VALIDATION] matched *service.ValidationError: %+v", vErr)
+		// log.Printf("[API ERROR -> 400 VALIDATION] matched *service.ValidationError: %+v", vErr)
 		respondValidationError(c, err)
 		return
 	}
@@ -2311,7 +2344,7 @@ func respondError(c *gin.Context, err error) {
 		strings.Contains(errStr, "conflicted") ||
 		strings.Contains(errStr, "truncated") ||
 		strings.Contains(errStr, "duplicate") {
-		log.Printf("[API ERROR -> 400 BAD REQUEST] matched error string pattern: %s", errStr)
+		// log.Printf("[API ERROR -> 400 BAD REQUEST] matched error string pattern: %s", errStr)
 		respondValidationError(c, err)
 		return
 	}

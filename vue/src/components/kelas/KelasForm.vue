@@ -309,13 +309,13 @@ const TRIM_FIELDS: (keyof Kelas)[] = [
 ]
 
 function trimTargetFields(data: Partial<Kelas>): Partial<Kelas> {
-  const trimmed = { ...data }
+  const trimmed: Record<string, unknown> = { ...data }
   for (const field of TRIM_FIELDS) {
     if (typeof trimmed[field] === 'string') {
-      trimmed[field] = (trimmed[field] as string).trim() as any
+      trimmed[field] = (trimmed[field] as string).trim()
     }
   }
-  return trimmed
+  return trimmed as Partial<Kelas>
 }
 
 watch(

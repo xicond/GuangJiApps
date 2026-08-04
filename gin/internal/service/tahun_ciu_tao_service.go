@@ -70,14 +70,6 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 
 	var findErr error
 
-	if s.db.Dialector.Name() == "sqlite" {
-		var count int64
-		s.db.Model(&domain.TahunCiuTao{}).Count(&count)
-		var list []domain.TahunCiuTao
-		s.db.Limit(limit).Offset((page - 1) * limit).Find(&list)
-		return list, count, nil
-	}
-
 	sortDirection := "ASCENDING"
 	rows, err := s.db.Raw("EXEC SP_BUS_YEAR_SEARCH_DATA ?, ?, ?, ?, ?, ?",
 		limit,         // @PageSize

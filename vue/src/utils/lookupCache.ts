@@ -1,25 +1,26 @@
-interface CacheEntry {
+interface CacheEntry<T = unknown> {
   timestamp: number
-  data?: any
-  promise?: Promise<any>
+  data?: T
+  promise?: Promise<T>
 }
 
-const lookupCacheMap = new WeakMap<Function, Map<string, CacheEntry>>()
-const CACHE_TTL_MS = 30000 // 30 seconds TTL for lookup options
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+const lookupCacheMap = new WeakMap<Function, Map<string, CacheEntry<unknown>>>()
+const CACHE_TTL_MS = 60000 // 30 seconds TTL for lookup options
 
 /**
  * Executes a lookup API function with in-flight deduplication and short-term caching.
  */
-export async function cachedFetchLookup(
-  fetchApiFn: (params: any, signal?: AbortSignal) => Promise<any>,
-  params: Record<string, any>,
+export async function cachedFetchLookup<T = unknown, P = Record<string, unknown>>(
+  fetchApiFn: (params: P, signal?: AbortSignal) => Promise<T>,
+  params: P,
   signal?: AbortSignal,
   forceRefresh = false
-): Promise<any> {
-  let fnCache = lookupCacheMap.get(fetchApiFn)
+): Promise<T> {
+  let fnCache = lookupCacheMap.get(fetchApiFn) as Map<string, CacheEntry<T>> | undefined
   if (!fnCache) {
-    fnCache = new Map<string, CacheEntry>()
-    lookupCacheMap.set(fetchApiFn, fnCache)
+    fnCache = new Map<string, CacheEntry<T>>()
+    lookupCacheMap.set(fetchApiFn, fnCache as Map<string, CacheEntry<unknown>>)
   }
 
   const key = JSON.stringify(params)
@@ -27,20 +28,17 @@ export async function cachedFetchLookup(
   const existing = fnCache.get(key)
 
   if (!forceRefresh && existing) {
-    // Return in-flight promise if currently fetching
     if (existing.promise) {
       return existing.promise
     }
-    // Return cached response if within TTL
-    if (existing.data && now - existing.timestamp < CACHE_TTL_MS) {
+    if (existing.data !== undefined && now - existing.timestamp < CACHE_TTL_MS) {
       return existing.data
     }
   }
 
-  // Create new request promise
   const promise = (async () => {
     try {
-      const res = await fetchApiFn(params)
+      const res = await fetchApiFn(params, signal)
       fnCache!.set(key, { timestamp: Date.now(), data: res })
       return res
     } catch (err) {

@@ -243,7 +243,7 @@ func TestKelasServiceReport(t *testing.T) {
 	c.Request, _ = http.NewRequest("GET", "/kelas/26040001/report", nil)
 	c.Set("userID", int32(999999))
 
-	err = svc.Report("26040001", "", c)
+	err = svc.Report("26040001", c)
 	if err != nil {
 		t.Fatalf("Report streaming failed: %v", err)
 	}

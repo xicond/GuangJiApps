@@ -138,6 +138,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { Box, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import axios from 'axios'
 import { kelasApi } from '../../api/kelas'
 import FieldErrors from '../common/FieldErrors.vue'
 import type { KelasDonasiBarang } from '../../types/kelas'
@@ -287,13 +288,14 @@ async function submitForm() {
 
     dialogVisible.value = false
     if (isExpanded.value) fetchDonasiBarang()
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error submitting donasi barang form:', err)
-    if (err.response?.data?.details) {
+    if (axios.isAxiosError(err) && err.response?.data?.details) {
       dialogFieldErrors.value = err.response.data.details
       ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
     } else {
-      ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data donasi barang')
+      const msg = (axios.isAxiosError(err) && err.response?.data?.error) || (err instanceof Error ? err.message : 'Gagal menyimpan data donasi barang')
+      ElMessage.error(msg)
     }
   } finally {
     submitting.value = false
@@ -308,9 +310,10 @@ async function handleDelete(row: KelasDonasiBarang) {
     await kelasApi.deleteKelasDonasiBarang(detailId, props.kelasId)
     ElMessage.success('Donasi barang berhasil dihapus')
     if (isExpanded.value) fetchDonasiBarang()
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error deleting donasi barang:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal menghapus data donasi barang')
+    const msg = (axios.isAxiosError(err) && err.response?.data?.error) || (err instanceof Error ? err.message : 'Gagal menghapus data donasi barang')
+    ElMessage.error(msg)
   }
 }
 

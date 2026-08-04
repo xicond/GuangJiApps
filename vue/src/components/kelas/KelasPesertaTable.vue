@@ -130,7 +130,7 @@
     <!-- Dialog Popup Add / Edit Peserta -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogMode === 'add' ? 'Tambah Peserta Kelas' : 'Edit Peserta Kelas'"
+      :title="dialogMode === 'add' ? 'Tambah Peserta' : 'Edit Peserta'"
       width="720px"
       destroy-on-close
     >
@@ -172,7 +172,7 @@
           <FieldErrors :errors="getFieldErrors('id_peserta')" />
         </el-form-item>
 
-        <el-form-item label="Status Lulus" :error="hasFieldError('lulus') ? ' ' : undefined">
+        <el-form-item v-if="dialogMode !== 'add'" label="Status Lulus" :error="hasFieldError('lulus') ? ' ' : undefined">
           <el-switch
             v-model="form.lulus"
             active-text="Lulus"
@@ -181,7 +181,7 @@
           <FieldErrors :errors="getFieldErrors('lulus')" />
         </el-form-item>
 
-        <el-form-item label="Keterangan Lulus" :error="hasFieldError('keterangan_lulus') ? ' ' : undefined">
+        <el-form-item v-if="dialogMode !== 'add'" label="Keterangan Lulus" :error="hasFieldError('keterangan_lulus') ? ' ' : undefined">
           <el-input
             v-model="form.keterangan_lulus"
             placeholder="Catatan / keterangan kelulusan"

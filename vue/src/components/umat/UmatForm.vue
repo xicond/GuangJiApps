@@ -662,13 +662,13 @@ const TRIM_FIELDS: (keyof Umat)[] = [
 ]
 
 function trimTargetFields(data: Partial<Umat>): Partial<Umat> {
-  const trimmed = { ...data }
+  const trimmed: Record<string, unknown> = { ...data }
   for (const field of TRIM_FIELDS) {
     if (typeof trimmed[field] === 'string') {
-      trimmed[field] = (trimmed[field] as string).trim() as any
+      trimmed[field] = (trimmed[field] as string).trim()
     }
   }
-  return trimmed
+  return trimmed as Partial<Umat>
 }
 
 // Watch props for initial data updates on edit page

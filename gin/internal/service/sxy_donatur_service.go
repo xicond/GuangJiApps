@@ -37,21 +37,6 @@ func (s *SxyDonaturService) List(page int, filters map[string]string, limit int)
 	if page <= 0 {
 		page = 1
 	}
-
-	if s.db.Dialector.Name() == "sqlite" {
-		var count int64
-		s.db.Model(&domain.SxyDonatur{}).Count(&count)
-		var list []domain.SxyDonatur
-		s.db.Limit(limit).Offset((page - 1) * limit).Find(&list)
-		for _, d := range list {
-			items = append(items, domain.SxyDonaturResponse{
-				ID:   d.ID,
-				No:   d.No,
-				Nama: d.Nama,
-			})
-		}
-		return items, count, nil
-	}
 	// offset := (page - 1) * limit
 
 	allowedFilters := map[string]string{
@@ -250,7 +235,7 @@ func (s *SxyDonaturService) Create(payload domain.SxyDonatur, c *gin.Context) (d
 	s.db.Table("T_SXY_MST_DONATUR").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
 	payload.ID = maxID + 1
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {
@@ -300,7 +285,7 @@ func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur, c *gin.
 		return domain.SxyDonatur{}, err
 	}
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {
@@ -341,7 +326,7 @@ func (s *SxyDonaturService) Delete(id string, c *gin.Context) error {
 		return err
 	}
 
-	userID := int32(1)
+	userID := int32(0)
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
 			if uid, ok := val.(int); ok {

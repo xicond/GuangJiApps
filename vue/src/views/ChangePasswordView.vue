@@ -120,8 +120,8 @@ const handleSubmit = async () => {
         await authStore.changePassword(form.oldPassword, form.newPassword)
         ElMessage.success('Password changed successfully')
         router.push('/dashboard')
-      } catch (error: any) {
-        ElMessage.error(error.message || 'Failed to change password')
+      } catch (error: unknown) {
+        ElMessage.error((error instanceof Error ? error.message : null) || 'Failed to change password')
       } finally {
         loading.value = false
       }

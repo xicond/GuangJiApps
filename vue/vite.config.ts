@@ -19,16 +19,16 @@ export default defineConfig(({ mode }) => {
         filename: 'sw.ts',
         devOptions: {
           enabled: true,
-          type: 'module',
+          type: 'classic',
           suppressWarnings: false, 
           navigateFallbackAllowlist: [/^\//], // Allows caching navigation routes
         },
         workbox: {
           navigateFallback: 'index.html',
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,json}']
+          globPatterns: ['**/*.{js,ts,css,html,ico,png,svg,json}']
         },
         injectManifest: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,json}']
+          globPatterns: ['**/*.{js,ts,css,html,ico,png,svg,json}']
         },
         manifest: {
           name: 'GuangJi Apps',

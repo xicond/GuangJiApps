@@ -47,9 +47,9 @@ export function useQuickStreamSpeedTest() {
                     receivedBytes += value.length // Akumulasi ukuran chunk (dalam Bytes)
                 }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             // AbortError adalah hal yang disengaja saat timer 1 detik memutus koneksi
-            if (error.name !== 'AbortError') {
+            if (error instanceof Error && error.name !== 'AbortError') {
                 console.error('Speed test error:', error)
             }
         } finally {

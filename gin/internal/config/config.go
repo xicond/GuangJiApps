@@ -39,7 +39,9 @@ func Load() Config {
 	}
 
 	if cfg.GinMode == "release" {
-		log.Println("running in release mode")
+		// log.Println("running in release mode")
+	} else {
+		log.Println("running in debug mode")
 	}
 
 	return cfg

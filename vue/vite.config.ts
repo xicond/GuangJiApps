@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => {
         filename: 'sw.ts',
         devOptions: {
           enabled: true,
-          type: 'classic',
-          suppressWarnings: false, 
+          type: 'module',
+          suppressWarnings: false,
           navigateFallbackAllowlist: [/^\//], // Allows caching navigation routes
         },
         workbox: {
@@ -44,12 +44,12 @@ export default defineConfig(({ mode }) => {
               type: 'image/png',
               purpose: 'any'
             },
-          /* {
-            src: 'favicon_512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }, */
+            /* {
+              src: 'favicon_512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable'
+            }, */
             {
               src: 'favicon.ico',
               sizes: '192x192',

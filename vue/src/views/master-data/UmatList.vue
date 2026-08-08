@@ -6,13 +6,7 @@
         <h2 class="page-title">Master Data Umat</h2>
         <p class="page-subtitle">Kelola daftar data umat, pencarian, serta pembaruan profil</p>
       </div>
-      <el-button
-        type="primary"
-        size="large"
-        :icon="Plus"
-        class="create-btn"
-        @click="handleCreate"
-      >
+      <el-button type="primary" size="large" :icon="Plus" class="create-btn" @click="handleCreate">
         Tambah Umat Baru
       </el-button>
     </div>
@@ -20,60 +14,42 @@
     <!-- Filter Card -->
     <el-card shadow="never" class="filter-card">
       <div class="filter-header">
-        <el-icon class="filter-icon"><Search /></el-icon>
+        <el-icon class="filter-icon">
+          <Search />
+        </el-icon>
         <span class="filter-title">Filter & Pencarian Data</span>
       </div>
 
       <el-row :gutter="16" class="filter-row">
         <!-- Filter Alias -->
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Alias" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.alias"
-              placeholder="Cari berdasarkan alias..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Alias" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.alias" placeholder="Cari berdasarkan alias..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <!-- Filter Nama Indonesia -->
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Indonesia" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.namaindonesia"
-              placeholder="Cari nama indonesia..."
-              clearable
-              :prefix-icon="User"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Nama Indonesia" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.namaindonesia" placeholder="Cari nama indonesia..." clearable :prefix-icon="User"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <!-- Filter Nama Mandarin -->
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Mandarin" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.namamandarin"
-              placeholder="Cari nama mandarin..."
-              clearable
-              :prefix-icon="Reading"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Nama Mandarin" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.namamandarin" placeholder="Cari nama mandarin..." clearable
+              :prefix-icon="Reading" @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <!-- Filter Tahun Ciu Tao Mandarin -->
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Tahun Ciu Tao Mandarin" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.tahunchiutaomandarin"
-              placeholder="Exact match tahun (e.g. 2024)..."
-              clearable
-              :prefix-icon="Calendar"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Tahun Ciu Tao Mandarin" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.tahunchiutaomandarin" placeholder="Exact match tahun (e.g. 2024)..." clearable
+              :prefix-icon="Calendar" @input="onFilterChange" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -85,19 +61,12 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="umatList"
-        stripe
-        border
-        height="475"
-        style="width: 100%"
-        empty-text="Tidak ada data umat yang ditemukan"
-      >
-        <!-- <el-table-column prop="id" label="ID" width="80" align="center" sortable /> -->
+      <el-table v-loading="loading" :data="umatList" stripe border height="475" style="width: 100%"
+        empty-text="Tidak ada data umat yang ditemukan">
+        <!-- <el-table-column prop="id" label="ID" width="80" align="center" /> -->
         <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="80" fixed="left" />
-       
-        <el-table-column prop="kode" label="Kode" width="150" sortable :fixed="isMobile ? false : 'left'">
+
+        <el-table-column prop="kode" label="Kode" width="150" :fixed="isMobile ? false : 'left'">
           <template #default="{ row }">
             <el-tag size="small" type="info" class="font-mono">{{ row.kode }}</el-tag>
           </template>
@@ -153,7 +122,7 @@
         <el-table-column prop="jenis_kelamin" label="Jenis Kelamin" min-width="150">
           <template #default="{ row }">
             <el-tag v-if="row.jenis_kelamin" size="small" type="warning" effect="plain">
-            <span>{{ row.jenis_kelamin }}</span>
+              <span>{{ row.jenis_kelamin }}</span>
             </el-tag>
             <span v-else>-</span>
           </template>
@@ -183,30 +152,13 @@
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                circle
-                :icon="Edit"
-                title="Edit Umat"
-                @click="handleEdit(row.id)"
-              />
+              <el-button type="primary" size="small" circle :icon="Edit" title="Edit Umat"
+                @click="handleEdit(row.id)" />
 
-              <el-popconfirm
-                title="Apakah Anda yakin ingin menghapus data umat ini?"
-                confirm-button-text="Ya, Hapus"
-                cancel-button-text="Batal"
-                confirm-button-type="danger"
-                @confirm="handleDelete(row.id)"
-              >
+              <el-popconfirm title="Apakah Anda yakin ingin menghapus data umat ini?" confirm-button-text="Ya, Hapus"
+                cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row.id)">
                 <template #reference>
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    :icon="Delete"
-                    title="Hapus Umat"
-                  />
+                  <el-button type="danger" size="small" circle :icon="Delete" title="Hapus Umat" />
                 </template>
               </el-popconfirm>
             </div>
@@ -216,15 +168,10 @@
 
       <!-- Pagination -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
   </div>

@@ -25,12 +25,12 @@ export const kelasApi = {
     params: LookupQueryParams = {},
     signal?: AbortSignal
   ): Promise<LookupListResponse> {
-    const cleanParams: Record<string, any> = {
+    const cleanParams: Record<string, string | number> = {
       page: params.page || 1,
       limit: params.limit || 10
     }
 
-    if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
+    // if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
     if (params.lookup_value) cleanParams.lookup_value = params.lookup_value
     if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
     if (params.search) cleanParams.search = params.search
@@ -54,9 +54,9 @@ export const kelasApi = {
       limit: params.limit || 10
     }
 
-    if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
-    if (params.lookup_value) cleanParams.lookup_value = params.lookup_value
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
+    // if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
+    // if (params.lookup_value) cleanParams.lookup_value = params.lookup_value
+    // if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
     if (params.kelas) cleanParams.kelas = params.kelas
     if (params.start_date) cleanParams.start_date = params.start_date
     if (params.end_date) cleanParams.end_date = params.end_date

@@ -154,7 +154,7 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 	go func(userID int32) {
 		if err := s.db.Table("T_Login_Mst").
 			Where("LoginId = ?", userID).
-			Update("LastLogin", time.Now()).Error; err != nil {
+			Update("LastLogin", domain.NowDateTime()).Error; err != nil {
 			log.Printf("[WARNING] Failed to update LastLogin for LoginId %d: %v", userID, err)
 		}
 	}(user.ID)

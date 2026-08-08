@@ -3,7 +3,9 @@ import type {
   Umat,
   UmatQueryParams,
   UmatListResponse,
-  UmatSingleResponse
+  UmatSingleResponse,
+  UmatReportQueryParams,
+  UmatReportResponse
 } from '../types/umat'
 
 export const umatApi = {
@@ -69,6 +71,70 @@ export const umatApi = {
    */
   async deleteUmat(id: number | string): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`/v1/umats/${id}`)
+    return response.data
+  },
+
+  /**
+   * Fetch Umat report list with parameters.
+   */
+  async getUmatReport(
+    params: UmatReportQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<UmatReportResponse> {
+    const cleanParams: Record<string, any> = {
+      page: params.page || 1,
+      limit: params.limit || 10
+    }
+
+    if (params.fotang_aktif) cleanParams.fotang_aktif = params.fotang_aktif
+    if (params.fotang_chiutao) cleanParams.fotang_chiutao = params.fotang_chiutao
+    if (params.nama_mandarin) cleanParams.nama_mandarin = params.nama_mandarin
+    if (params.start_date) cleanParams.start_date = params.start_date
+    if (params.end_date) cleanParams.end_date = params.end_date
+    if (params.nama_indo) cleanParams.nama_indo = params.nama_indo
+    if (params.pengajak) cleanParams.pengajak = params.pengajak
+    if (params.alias) cleanParams.alias = params.alias
+    if (params.usia_dari !== undefined && params.usia_dari !== '') cleanParams.usia_dari = params.usia_dari
+    if (params.usia_sampai !== undefined && params.usia_sampai !== '') cleanParams.usia_sampai = params.usia_sampai
+    if (params.is_lulus_sd) cleanParams.is_lulus_sd = params.is_lulus_sd
+    if (params.is_vege) cleanParams.is_vege = params.is_vege
+    if (params.status_umat) cleanParams.status_umat = params.status_umat
+
+    const response = await apiClient.get<UmatReportResponse>('/v1/umats/report', {
+      params: cleanParams,
+      signal
+    })
+    return response.data
+  },
+
+  /**
+   * Download Umat report as Excel file blob.
+   */
+  async downloadUmatReportExcel(
+    params: UmatReportQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<Blob> {
+    const cleanParams: Record<string, any> = {}
+
+    if (params.fotang_aktif) cleanParams.fotang_aktif = params.fotang_aktif
+    if (params.fotang_chiutao) cleanParams.fotang_chiutao = params.fotang_chiutao
+    if (params.nama_mandarin) cleanParams.nama_mandarin = params.nama_mandarin
+    if (params.start_date) cleanParams.start_date = params.start_date
+    if (params.end_date) cleanParams.end_date = params.end_date
+    if (params.nama_indo) cleanParams.nama_indo = params.nama_indo
+    if (params.pengajak) cleanParams.pengajak = params.pengajak
+    if (params.alias) cleanParams.alias = params.alias
+    if (params.usia_dari !== undefined && params.usia_dari !== '') cleanParams.usia_dari = params.usia_dari
+    if (params.usia_sampai !== undefined && params.usia_sampai !== '') cleanParams.usia_sampai = params.usia_sampai
+    if (params.is_lulus_sd) cleanParams.is_lulus_sd = params.is_lulus_sd
+    if (params.is_vege) cleanParams.is_vege = params.is_vege
+    if (params.status_umat) cleanParams.status_umat = params.status_umat
+
+    const response = await apiClient.get('/v1/umats/report/excel', {
+      params: cleanParams,
+      responseType: 'blob',
+      signal
+    })
     return response.data
   }
 }

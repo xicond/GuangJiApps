@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -123,7 +122,7 @@ func (s *ActivityService) Create(payload domain.Activity, c *gin.Context) (domai
 	payload.Status = true
 	payload.ModAct = "I"
 	payload.ModBy = userIDStr
-	payload.ModDate = time.Now()
+	payload.ModDate = domain.NowDateTime()
 
 	if err := s.db.Create(&payload).Error; err != nil {
 		return domain.Activity{}, fmt.Errorf("failed to create record: %w", err)
@@ -165,7 +164,7 @@ func (s *ActivityService) Update(id string, payload domain.Activity, c *gin.Cont
 	item.Description = payload.Description
 	item.ModAct = "U"
 	item.ModBy = userIDStr
-	item.ModDate = time.Now()
+	item.ModDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
 		return domain.Activity{}, fmt.Errorf("failed to update record: %w", err)
@@ -194,7 +193,7 @@ func (s *ActivityService) Delete(id string, c *gin.Context) error {
 	item.Status = false
 	item.ModAct = "D"
 	item.ModBy = userIDStr
-	item.ModDate = time.Now()
+	item.ModDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
 		return fmt.Errorf("failed to delete record: %w", err)

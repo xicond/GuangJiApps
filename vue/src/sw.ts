@@ -27,7 +27,7 @@ precacheAndRoute(self.__WB_MANIFEST || [])
 registerRoute(
     ({ url, request }) => {
         const isMatch = request.method === 'GET' && url.pathname.includes('/v1/lookup/')
-        if (isMatch) console.log('[SW Route] Matched lookup:', url.pathname)
+        // if (isMatch) console.log('[SW Route] Matched lookup:', url.pathname)
         return isMatch
     },
     new DynamicNetworkCacheStrategy({
@@ -49,7 +49,7 @@ registerRoute(
 registerRoute(
     ({ url, request }) => {
         const isMatch = request.method === 'GET' && url.pathname.includes('/umat')
-        if (isMatch) console.log('[SW Route] Matched umat:', url.pathname)
+        // if (isMatch) console.log('[SW Route] Matched umat:', url.pathname)
         return isMatch
     },
     new DynamicNetworkCacheStrategy({
@@ -71,7 +71,7 @@ registerRoute(
 registerRoute(
     ({ url, request }) => {
         const isMatch = request.method === 'GET' && url.pathname.includes('/v1/') && url.pathname.includes('/report')
-        if (isMatch) console.log('[SW Route] Matched report:', url.pathname)
+        // if (isMatch) console.log('[SW Route] Matched report:', url.pathname)
         return isMatch
     },
     new DynamicNetworkCacheStrategy({
@@ -93,7 +93,7 @@ registerRoute(
 registerRoute(
     ({ url, request }) => {
         const isMatch = request.method === 'GET' && url.pathname.includes('/v1/')
-        if (isMatch) console.log('[SW Route] Matched /v1/ or /api/:', url.pathname)
+        // if (isMatch) console.log('[SW Route] Matched /v1/ or /api/:', url.pathname)
         return isMatch
     },
     new DynamicNetworkCacheStrategy({

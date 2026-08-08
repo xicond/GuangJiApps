@@ -119,6 +119,7 @@ func TestResourceEndpointsAreRegistered(t *testing.T) {
 		{name: "sxy donatur list", path: "/api/v1/sxy-donatur", method: http.MethodGet},
 		{name: "kelas list", path: "/api/v1/kelas", method: http.MethodGet},
 		{name: "fotang lookup", path: "/api/v1/fotang/lookup", method: http.MethodGet},
+		{name: "fotang lookup sxy", path: "/api/v1/fotang/lookup-sxy", method: http.MethodGet},
 		{name: "kelas lookup", path: "/api/v1/kelas/lookup", method: http.MethodGet},
 		{name: "donasi sxy list", path: "/api/v1/donasi-sxy", method: http.MethodGet},
 		{name: "kelas peserta list", path: "/api/v1/kelas/1/peserta", method: http.MethodGet},

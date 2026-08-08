@@ -1,8 +1,15 @@
 package service
 
 import (
+	"crypto/sha256"
+	"database/sql"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,15 +23,24 @@ import (
 )
 
 type UmatService struct {
-	db       *gorm.DB
-	resource string
+	db                   *gorm.DB
+	resource             string
+	reportServerURL      string
+	reportServerUsername string
+	reportServerPassword string
 }
 
 func NewUmatService(db *gorm.DB) *UmatService {
 	if db == nil {
 		db = database.MustOpen("")
 	}
-	return &UmatService{db: db, resource: "umats"}
+	return &UmatService{
+		db:                   db,
+		resource:             "umats",
+		reportServerURL:      getReportServerURL(),
+		reportServerUsername: getReportServerUsername(),
+		reportServerPassword: getReportServerPassword(),
+	}
 }
 
 func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
@@ -221,10 +237,10 @@ func (s *UmatService) Create(payload domain.Umat, c *gin.Context) (domain.Umat, 
 	// item.Kode = CurrentLogin.SubWhName + "-" + item.Id.ToString();
 
 	// 3. Populate matching schema structural constraints
-	payload.Status = true        // Active status mapping
-	payload.ModAct = "I"         // 'I' standard legacy flag for Insert
-	payload.ModBy = getUserID(c) // Default system user ID matching INT type
-	payload.ModDate = time.Now() // Local server time object
+	payload.Status = true                  // Active status mapping
+	payload.ModAct = "I"                   // 'I' standard legacy flag for Insert
+	payload.ModBy = getUserID(c)           // Default system user ID matching INT type
+	payload.ModDate = domain.NowDateTime() // Local server time object
 
 	// 4. Persist the new entity to the database pool
 	if err := s.db.Create(&payload).Error; err != nil {
@@ -324,9 +340,9 @@ func (s *UmatService) Update(id string, payload domain.Umat, c *gin.Context) (do
 	item.ImagePath = payload.ImagePath
 
 	// Legacy metadata mappings
-	item.ModAct = "U"        // 'U' standard legacy flag for Update
-	item.ModBy = getUserID(c) // System user ID (int32)
-	item.ModDate = time.Now() // Actual time.Time object expected by DATETIME column
+	item.ModAct = "U"                   // 'U' standard legacy flag for Update
+	item.ModBy = getUserID(c)           // System user ID (int32)
+	item.ModDate = domain.NowDateTime() // Actual DateTime object expected by DATETIME column
 
 	// 4. Save updates back to SQL Server
 	if err := s.db.Save(&item).Error; err != nil {
@@ -354,13 +370,404 @@ func (s *UmatService) Delete(id string, c *gin.Context) error {
 
 	// Legacy metadata mappings
 	item.Status = false
-	item.ModAct = "D"        // 'D' standard legacy flag for Delete
-	item.ModBy = getUserID(c) // Default system user ID matching INT type
-	item.ModDate = time.Now() // Local server time object
+	item.ModAct = "D"                   // 'D' standard legacy flag for Delete
+	item.ModBy = getUserID(c)           // Default system user ID matching INT type
+	item.ModDate = domain.NowDateTime() // Local server time object
 
 	// 4. Save updates back to SQL Server
 	if err := s.db.Save(&item).Error; err != nil {
 		return fmt.Errorf("failed to update record: %w", err)
 	}
+	return nil
+}
+
+func getFilterOrDefault(filters map[string]string, keys []string, defaultVal string) string {
+	for _, key := range keys {
+		if val, exists := filters[key]; exists && strings.TrimSpace(val) != "" {
+			return strings.TrimSpace(val)
+		}
+	}
+	return defaultVal
+}
+
+type nullFieldScanner struct {
+	target interface{}
+}
+
+func (s *nullFieldScanner) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	if scanner, ok := s.target.(sql.Scanner); ok {
+		return scanner.Scan(value)
+	}
+
+	targetVal := reflect.ValueOf(s.target)
+	if targetVal.Kind() != reflect.Ptr || targetVal.IsNil() {
+		return fmt.Errorf("target must be a non-nil pointer")
+	}
+	elem := targetVal.Elem()
+
+	switch v := value.(type) {
+	case string:
+		if elem.Kind() == reflect.String {
+			elem.SetString(v)
+			return nil
+		}
+		if elem.Kind() == reflect.Bool {
+			vLower := strings.ToLower(strings.TrimSpace(v))
+			elem.SetBool(vLower == "1" || vLower == "true" || vLower == "y" || vLower == "ya")
+			return nil
+		}
+		if elem.Kind() == reflect.Int || elem.Kind() == reflect.Int32 || elem.Kind() == reflect.Int64 {
+			if parsed, err := strconv.ParseInt(v, 10, 64); err == nil {
+				elem.SetInt(parsed)
+			}
+			return nil
+		}
+		if elem.Kind() == reflect.Float32 || elem.Kind() == reflect.Float64 {
+			if parsed, err := strconv.ParseFloat(v, 64); err == nil {
+				elem.SetFloat(parsed)
+			}
+			return nil
+		}
+	case []byte:
+		return s.Scan(string(v))
+	case int64:
+		if elem.Kind() == reflect.Int || elem.Kind() == reflect.Int32 || elem.Kind() == reflect.Int64 {
+			elem.SetInt(v)
+			return nil
+		}
+		if elem.Kind() == reflect.Bool {
+			elem.SetBool(v != 0)
+			return nil
+		}
+		if elem.Kind() == reflect.Float32 || elem.Kind() == reflect.Float64 {
+			elem.SetFloat(float64(v))
+			return nil
+		}
+		if elem.Kind() == reflect.String {
+			elem.SetString(strconv.FormatInt(v, 10))
+			return nil
+		}
+	case int32:
+		return s.Scan(int64(v))
+	case int:
+		return s.Scan(int64(v))
+	case bool:
+		if elem.Kind() == reflect.Bool {
+			elem.SetBool(v)
+			return nil
+		}
+		if elem.Kind() == reflect.Int || elem.Kind() == reflect.Int32 || elem.Kind() == reflect.Int64 {
+			if v {
+				elem.SetInt(1)
+			} else {
+				elem.SetInt(0)
+			}
+			return nil
+		}
+		if elem.Kind() == reflect.String {
+			if v {
+				elem.SetString("true")
+			} else {
+				elem.SetString("false")
+			}
+			return nil
+		}
+	case float64:
+		if elem.Kind() == reflect.Float32 || elem.Kind() == reflect.Float64 {
+			elem.SetFloat(v)
+			return nil
+		}
+		if elem.Kind() == reflect.Int || elem.Kind() == reflect.Int32 || elem.Kind() == reflect.Int64 {
+			elem.SetInt(int64(v))
+			return nil
+		}
+		if elem.Kind() == reflect.String {
+			elem.SetString(fmt.Sprintf("%v", v))
+			return nil
+		}
+	case time.Time:
+		if elem.Kind() == reflect.String {
+			elem.SetString(v.Format("2006-01-02"))
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (s *UmatService) Report(page int, filters map[string]string, limit int) ([]domain.UmatReport, int64, error) {
+	if page <= 0 {
+		page = 1
+	}
+
+	fotangAktif := getFilterOrDefault(filters, []string{"fotang_aktif", "FotangAktif", "fotangAktif"}, "0")
+	fotangChiuTao := getFilterOrDefault(filters, []string{"fotang_chiutao", "fotang_chiu_tao", "FotangChiuTao", "fotangChiuTao"}, "0")
+	namaMandarin := getFilterOrDefault(filters, []string{"nama_mandarin", "NamaMandarin", "namaMandarin"}, "")
+	startDate := getFilterOrDefault(filters, []string{"start_date", "startDate", "StartDate"}, "1970-01-01")
+	endDate := getFilterOrDefault(filters, []string{"end_date", "endDate", "EndDate"}, "1970-01-01")
+	namaIndo := getFilterOrDefault(filters, []string{"nama_indo", "nama_indonesia", "NamaIndo", "namaIndo"}, "")
+	pengajak := getFilterOrDefault(filters, []string{"pengajak", "Pengajak"}, "")
+	alias := getFilterOrDefault(filters, []string{"alias", "Alias"}, "")
+	usiaDari := toInt(getFilterOrDefault(filters, []string{"usia_dari", "UsiaDari", "usiaDari"}, "0"))
+	usiaSampai := toInt(getFilterOrDefault(filters, []string{"usia_sampai", "UsiaSampai", "usiaSampai"}, "0"))
+	isLulusSd := getFilterOrDefault(filters, []string{"is_lulus_sd", "IsLulusSd", "isLulusSd"}, "0")
+	isVege := getFilterOrDefault(filters, []string{"is_vege", "IsVege", "isVege"}, "0")
+	statusUmat := getFilterOrDefault(filters, []string{"status_umat", "StatusUmat", "statusUmat"}, "0")
+
+	var findErr error
+
+	rows, err := s.db.Raw("EXEC SP_BUS_RPT_UMAT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?",
+		fotangAktif,
+		fotangChiuTao,
+		namaMandarin,
+		startDate,
+		endDate,
+		namaIndo,
+		pengajak,
+		alias,
+		usiaDari,
+		usiaSampai,
+		isLulusSd,
+		isVege,
+		statusUmat,
+		limit, // @PageSize
+		page,  // @CurrentPage
+	).Rows()
+
+	// timestamp := time.Now().Format("2006-01-02 15:04:05")
+	// log.Printf("[SQL] %s | Query:\n%s\n", timestamp, s.db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+	// 	return tx.Raw("EXEC SP_BUS_RPT_UMAT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?",
+	// 		fotangAktif,
+	// 		fotangChiuTao,
+	// 		namaMandarin,
+	// 		startDate,
+	// 		endDate,
+	// 		namaIndo,
+	// 		pengajak,
+	// 		alias,
+	// 		usiaDari,
+	// 		usiaSampai,
+	// 		isLulusSd,
+	// 		isVege,
+	// 		statusUmat,
+	// 		limit, // @PageSize
+	// 		page,  // @CurrentPage
+	// 	)
+	// }))
+
+	if err != nil {
+		return nil, 0, fmt.Errorf("database query error: %w", err)
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			findErr = errors.New("umat report tidak ditemukan")
+		} else {
+			findErr = fmt.Errorf("database error: %w", err)
+		}
+		return nil, 0, findErr
+	}
+
+	var items []domain.UmatReport
+	var total int64
+
+	for rows.Next() {
+		var item domain.UmatReport
+		v := reflect.ValueOf(&item).Elem()
+		t := v.Type()
+
+		valuePtrs := make([]interface{}, len(cols))
+		var totalRowScan int64
+
+		for i, colName := range cols {
+			cleanCol := strings.ToLower(strings.TrimSpace(colName))
+
+			switch cleanCol {
+			case "totalrow":
+				valuePtrs[i] = &nullFieldScanner{target: &totalRowScan}
+			default:
+				matched := false
+				for j := 0; j < t.NumField(); j++ {
+					field := t.Field(j)
+					gormTag := field.Tag.Get("gorm")
+
+					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
+						strings.ToLower(field.Name) == cleanCol {
+						fieldVal := v.Field(j)
+						valuePtrs[i] = &nullFieldScanner{target: fieldVal.Addr().Interface()}
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					var dummy interface{}
+					valuePtrs[i] = &dummy
+				}
+			}
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			log.Printf("[ERROR] Umat Report rows.Scan error: %v", err)
+			continue
+		}
+
+		if totalRowScan != 0 {
+			total = totalRowScan
+		}
+
+		items = append(items, item)
+	}
+
+	return items, total, nil
+}
+
+func (s *UmatService) ReportExcel(filters map[string]string, c *gin.Context) error {
+	baseURL := s.reportServerURL
+	if baseURL == "" {
+		baseURL = getReportServerURL()
+	}
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	username := s.reportServerUsername
+	if username == "" {
+		username = getReportServerUsername()
+	}
+	password := s.reportServerPassword
+	if password == "" {
+		password = getReportServerPassword()
+	}
+
+	if username != "" {
+		parsedURL, err := url.Parse(baseURL)
+		if err == nil {
+			parsedURL.User = url.UserPassword(username, password)
+			baseURL = parsedURL.String()
+		} else {
+			schemeParts := strings.SplitN(baseURL, "://", 2)
+			if len(schemeParts) == 2 {
+				baseURL = fmt.Sprintf("%s://%s:%s@%s", schemeParts[0], url.QueryEscape(username), url.QueryEscape(password), schemeParts[1])
+			}
+		}
+	}
+
+	fotangAktif := getFilterOrDefault(filters, []string{"fotang_aktif", "FotangAktif", "fotangAktif"}, "0")
+	fotangChiuTao := getFilterOrDefault(filters, []string{"fotang_chiutao", "fotang_chiu_tao", "FotangChiuTao", "fotangChiuTao"}, "0")
+	namaMandarin := getFilterOrDefault(filters, []string{"nama_mandarin", "NamaMandarin", "namaMandarin"}, "")
+	startDate := getFilterOrDefault(filters, []string{"start_date", "startDate", "StartDate"}, "1970-01-01")
+	endDate := getFilterOrDefault(filters, []string{"end_date", "endDate", "EndDate"}, "1970-01-01")
+	namaIndo := getFilterOrDefault(filters, []string{"nama_indo", "nama_indonesia", "NamaIndo", "namaIndo"}, "")
+	pengajak := getFilterOrDefault(filters, []string{"pengajak", "Pengajak"}, "")
+	alias := getFilterOrDefault(filters, []string{"alias", "Alias"}, "")
+	usiaDari := getFilterOrDefault(filters, []string{"usia_dari", "UsiaDari", "usiaDari"}, "0")
+	usiaSampai := getFilterOrDefault(filters, []string{"usia_sampai", "UsiaSampai", "usiaSampai"}, "0")
+	isLulusSd := getFilterOrDefault(filters, []string{"is_lulus_sd", "IsLulusSd", "isLulusSd"}, "0")
+	isVege := getFilterOrDefault(filters, []string{"is_vege", "IsVege", "isVege"}, "0")
+	statusUmat := getFilterOrDefault(filters, []string{"status_umat", "StatusUmat", "statusUmat"}, "0")
+
+	reportURL := fmt.Sprintf("%s/ReportServer?%%2fGuangJiReport%%2frpt_bus_umat_list&FotangAktif=%s&FotangChiuTao=%s&NamaMandarin=%s&StartDate=%s&EndDate=%s&NamaIndo=%s&Pengajak=%s&Alias=%s&UsiaDari=%s&UsiaSampai=%s&IsLulusSd=%s&IsVege=%s&StatusUmat=%s&rs:Command=Render&rs:Format=EXCELOPENXML",
+		baseURL,
+		url.QueryEscape(fotangAktif),
+		url.QueryEscape(fotangChiuTao),
+		url.QueryEscape(namaMandarin),
+		url.QueryEscape(startDate),
+		url.QueryEscape(endDate),
+		url.QueryEscape(namaIndo),
+		url.QueryEscape(pengajak),
+		url.QueryEscape(alias),
+		url.QueryEscape(usiaDari),
+		url.QueryEscape(usiaSampai),
+		url.QueryEscape(isLulusSd),
+		url.QueryEscape(isVege),
+		url.QueryEscape(statusUmat),
+	)
+
+	var reqCtx = c.Request.Context()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, reportURL, nil)
+	if err != nil {
+		return fmt.Errorf("gagal membuat request report: %w", err)
+	}
+
+	if username != "" {
+		req.SetBasicAuth(username, password)
+	}
+
+	client := defaultReportClient
+
+	startTime := time.Now()
+	resp, err := client.Do(req)
+	fetchDuration := time.Since(startTime)
+	if err != nil {
+		return fmt.Errorf("gagal mengambil report dari SSRS (%v): %w", fetchDuration, err)
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized && username != "" {
+		authHeader := resp.Header.Get("WWW-Authenticate")
+		if strings.HasPrefix(authHeader, "Digest ") {
+			resp.Body.Close()
+
+			req2, err := http.NewRequestWithContext(reqCtx, http.MethodGet, reportURL, nil)
+			if err != nil {
+				return fmt.Errorf("gagal membuat digest request: %w", err)
+			}
+
+			digestVal := formatDigestAuth(authHeader, username, password, http.MethodGet, req2.URL.RequestURI())
+			req2.Header.Set("Authorization", digestVal)
+
+			resp, err = client.Do(req2)
+			if err != nil {
+				return fmt.Errorf("gagal mengambil report dengan Digest auth: %w", err)
+			}
+		}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("report server mengembalikan HTTP %d (fetch %v)", resp.StatusCode, fetchDuration)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	}
+
+	contentDisposition := resp.Header.Get("Content-Disposition")
+	if contentDisposition == "" {
+		hash := sha256.Sum256([]byte(fotangAktif + fotangChiuTao + namaMandarin + startDate + endDate + namaIndo + statusUmat))
+		filename := fmt.Sprintf("rpt_bus_umat_list_%x.xlsx", hash[:4])
+		contentDisposition = fmt.Sprintf("attachment; filename=\"%s\"", filename)
+	}
+
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", contentDisposition)
+	if resp.ContentLength > 0 {
+		c.Header("Content-Length", strconv.FormatInt(resp.ContentLength, 10))
+	}
+	c.Status(http.StatusOK)
+
+	if flusher, ok := c.Writer.(http.Flusher); ok {
+		flusher.Flush()
+	}
+
+	bufPtr := copyBufferPool.Get().(*[]byte)
+	defer copyBufferPool.Put(bufPtr)
+
+	// streamStart := time.Now()
+	_, err = io.CopyBuffer(c.Writer, resp.Body, *bufPtr)
+	// streamDuration := time.Since(streamStart)
+	// totalDuration := time.Since(startTime)
+
+	// log.Printf("[REPORT PERF] SSRS Fetch: %v, Client Stream (%d bytes): %v, Total: %v",
+	// 	fetchDuration, nBytes, streamDuration, totalDuration)
+
+	if err != nil {
+		return fmt.Errorf("gagal stream report ke client: %w", err)
+	}
+
 	return nil
 }

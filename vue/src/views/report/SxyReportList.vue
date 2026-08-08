@@ -23,14 +23,15 @@
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Donatur">
-            <LookupSelect v-model="filters.donatur" placeholder="Pilih Donatur" :fetch-api="umatApi.getUmats"
-              value-key="id" label-key="nama_indonesia" clearable @change="onFilterChange" />
+          <el-form-item label="Donatur" :label-position="isMobile ? 'top' : 'right'">
+            <LookupSelect v-model="filters.donatur" placeholder="Pilih Donatur"
+              :fetch-api="sxyDonaturApi.getSxyDonaturs" value-key="id" label-key="nama" clearable
+              @change="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Penggalang Dana">
+          <el-form-item label="Penggalang Dana" :label-position="isMobile ? 'top' : 'right'">
             <LookupSelect v-model="filters.penggalang" placeholder="Pilih Penggalang Dana"
               :fetch-api="penggalangDanaApi.getPenggalangDanas" value-key="id" label-key="nama" clearable
               @change="onFilterChange" />
@@ -38,14 +39,14 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Fotang">
-            <LookupSelect v-model="filters.fotang" placeholder="Pilih Fotang" :fetch-api="fotangApi.getFotangLookup"
+          <el-form-item label="Fotang" :label-position="isMobile ? 'top' : 'right'">
+            <LookupSelect v-model="filters.fotang" placeholder="Pilih Fotang" :fetch-api="fotangApi.getFotangLookupSxy"
               value-key="lookup_value" label-key="lookup_description" clearable @change="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Rentang Tanggal">
+          <el-form-item label="Rentang Tanggal" :label-position="isMobile ? 'top' : 'right'">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="s/d" start-placeholder="Tgl Mulai"
               end-placeholder="Tgl Selesai" value-format="YYYY-MM-DD" clearable style="width: 100%"
               @change="onDateRangeChange" />
@@ -68,21 +69,21 @@
 
       <el-table v-loading="loading" :data="dataList" stripe border height="500" show-summary
         :summary-method="getSummaries" style="width: 100%" empty-text="Tidak ada data sxy report yang ditemukan">
-        <el-table-column prop="no_kwitansi" label="No Kwitansi" width="140" align="center" sortable fixed="left" />
+        <el-table-column prop="no_kwitansi" label="No Kwitansi" width="140" align="center" fixed="left" />
 
-        <el-table-column prop="tanggal" label="Tanggal Transaksi" width="120" align="center" sortable>
+        <el-table-column prop="tanggal" label="Tanggal Transaksi" width="120" align="center">
           <template #default="{ row }">
             <span>{{ row.tanggal || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="tanggal" label="Tanggal Transfer" width="120" align="center" sortable>
+        <el-table-column prop="tanggal" label="Tanggal Transfer" width="120" align="center">
           <template #default="{ row }">
             <span>{{ row.tanggal_transfer || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="fotang" label="Fotang" width="120" align="center" sortable>
+        <el-table-column prop="fotang" label="Fotang" width="120" align="center">
           <template #default="{ row }">
             <span>{{ row.fotang || '-' }}</span>
           </template>
@@ -134,7 +135,8 @@
       <!-- Pagination -->
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]" :total="pagination.total" layout="total, sizes, prev, pager, next, jumper"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'"
           @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
@@ -143,6 +145,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { ElMessage, ElNotification, ElLoading } from 'element-plus'
 import { Search, Refresh, Download } from '@element-plus/icons-vue'
 import donasiSxyApi from '../../api/donasiSxy'
@@ -151,6 +154,14 @@ import umatApi from '../../api/umat'
 import penggalangDanaApi from '../../api/penggalangDana'
 import type { SxyDonasiReportItem } from '../../types/donasiSxy'
 import LookupSelect from '../../components/common/LookupSelect.vue'
+import sxyDonaturApi from '@/api/sxyDonatur'
+
+// Initialize breakpoints (Tailwind or custom layout mapping)
+const breakpoints = useBreakpoints(breakpointsTailwind)
+
+// Subscribe to reactive states
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 const dataList = shallowRef<SxyDonasiReportItem[]>([])
 const loading = ref(false)

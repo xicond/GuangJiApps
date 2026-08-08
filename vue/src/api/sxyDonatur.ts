@@ -34,7 +34,7 @@ export const sxyDonaturApi = {
    * Fetch single SxyDonatur details by ID.
    */
   async getSxyDonaturById(
-    id: number,
+    id: number | string,
     signal?: AbortSignal
   ): Promise<SxyDonaturSingleResponse> {
     const response = await apiClient.get<SxyDonaturSingleResponse>(`/v1/sxy-donatur/${id}`, { signal })
@@ -53,7 +53,7 @@ export const sxyDonaturApi = {
    * Update an existing SxyDonatur record.
    */
   async updateSxyDonatur(
-    id: number,
+    id: number | string,
     payload: Partial<SxyDonatur>
   ): Promise<SxyDonaturSingleResponse> {
     const response = await apiClient.patch<SxyDonaturSingleResponse>(`/v1/sxy-donatur/${id}`, payload)
@@ -63,7 +63,7 @@ export const sxyDonaturApi = {
   /**
    * Delete a SxyDonatur record by ID.
    */
-  async deleteSxyDonatur(id: number): Promise<{ message: string }> {
+  async deleteSxyDonatur(id: number | string): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`/v1/sxy-donatur/${id}`)
     return response.data
   }

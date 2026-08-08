@@ -1,18 +1,19 @@
 package middleware
 
 import (
-	"context"
 	"log"
+	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 	limiter "github.com/ulule/limiter/v3"
 	memorystore "github.com/ulule/limiter/v3/drivers/store/memory"
 	redisstore "github.com/ulule/limiter/v3/drivers/store/redis"
 
 	"guangjiapps/gin/internal/config"
+	"guangjiapps/gin/internal/database"
 )
 
 type LoginRateLimiter struct {
@@ -29,34 +30,15 @@ func NewLoginRateLimiter(cfg config.Config) *LoginRateLimiter {
 	}
 
 	var store limiter.Store
-	if cfg.RedisAddr != "" {
-		db := 0
-		if d, err := strconv.Atoi(cfg.RedisDB); err == nil {
-			db = d
-		}
-		rdb := redis.NewClient(&redis.Options{
-			Addr:     cfg.RedisAddr,
-			Password: cfg.RedisPassword,
-			DB:       db,
+	if rdb := database.GetRedisClient(cfg); rdb != nil {
+		rs, err := redisstore.NewStoreWithOptions(rdb, limiter.StoreOptions{
+			Prefix: "login_limiter:",
 		})
-
-		ctx, cancel := context.Background(), func() {}
-		ctxTimeout, cancelTimeout := context.WithTimeout(ctx, 2*time.Second)
-		defer cancelTimeout()
-		_ = cancel
-
-		if err := rdb.Ping(ctxTimeout).Err(); err == nil {
-			rs, err := redisstore.NewStoreWithOptions(rdb, limiter.StoreOptions{
-				Prefix: "login_limiter:",
-			})
-			if err == nil {
-				store = rs
-				log.Println("[RateLimiter] Redis store initialized successfully for /login")
-			} else {
-				log.Printf("[RateLimiter] Failed to create Redis store, fallback to memory store: %v\n", err)
-			}
+		if err == nil {
+			store = rs
+			// log.Println("[RateLimiter] Redis store initialized successfully for /login")
 		} else {
-			log.Printf("[RateLimiter] Redis ping failed (%v), fallback to memory store\n", err)
+			log.Printf("[RateLimiter] Failed to create Redis store, fallback to memory store: %v\n", err)
 		}
 	}
 
@@ -71,6 +53,36 @@ func NewLoginRateLimiter(cfg config.Config) *LoginRateLimiter {
 		store:    store,
 		rate:     rate,
 	}
+}
+
+func GetClientIP(c *gin.Context) string {
+	if c == nil || c.Request == nil {
+		return ""
+	}
+	if xff := c.GetHeader("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		ip := strings.TrimSpace(parts[0])
+		if ip != "" && ip != "127.0.0.1" && ip != "::1" && ip != "localhost" {
+			return sanitizeIP(ip)
+		}
+	}
+	if realIP := c.GetHeader("X-Real-IP"); realIP != "" && realIP != "127.0.0.1" && realIP != "::1" {
+		return sanitizeIP(realIP)
+	}
+	if arrIP := c.GetHeader("X-ARR-ClientIP"); arrIP != "" && arrIP != "127.0.0.1" && arrIP != "::1" {
+		return sanitizeIP(arrIP)
+	}
+	if origIP := c.GetHeader("X-Original-For"); origIP != "" && origIP != "127.0.0.1" && origIP != "::1" {
+		return sanitizeIP(origIP)
+	}
+	return c.ClientIP()
+}
+
+func sanitizeIP(ip string) string {
+	if host, _, err := net.SplitHostPort(ip); err == nil {
+		return host
+	}
+	return ip
 }
 
 func (l *LoginRateLimiter) GetKey(c *gin.Context) string {

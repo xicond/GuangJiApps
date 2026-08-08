@@ -3,7 +3,6 @@ package service
 import (
 	"strconv"
 	"testing"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -34,7 +33,7 @@ func TestKelasAbsensiService(t *testing.T) {
 
 	p := domain.KelasAbsensi{
 		TrxId:     trxId,
-		TrxDate:   time.Now(),
+		TrxDate:   domain.NowDateTime(),
 		IdPeserta: idPeserta,
 		Status:    &status,
 	}

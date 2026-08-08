@@ -6,13 +6,7 @@
         <h2 class="page-title">Master Data Tahun Ciu Tao</h2>
         <p class="page-subtitle">Kelola daftar data tahun ciu tao, pencarian, serta pembaruan profil</p>
       </div>
-      <el-button
-        type="primary"
-        size="large"
-        :icon="Plus"
-        class="create-btn"
-        @click="handleCreate"
-      >
+      <el-button type="primary" size="large" :icon="Plus" class="create-btn" @click="handleCreate">
         Tambah Tahun Ciu Tao Baru
       </el-button>
     </div>
@@ -20,32 +14,24 @@
     <!-- Filter Card -->
     <el-card shadow="never" class="filter-card">
       <div class="filter-header">
-        <el-icon class="filter-icon"><Search /></el-icon>
+        <el-icon class="filter-icon">
+          <Search />
+        </el-icon>
         <span class="filter-title">Filter & Pencarian Data</span>
       </div>
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
           <el-form-item label="Tahun Mandarin" :label-position="isMobile ? 'top' : 'right'">
-            <el-input
-              v-model="filters.tahun_mandarin"
-              placeholder="Cari tahun (e.g. 2024)..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+            <el-input v-model="filters.tahun_mandarin" placeholder="Cari tahun (e.g. 2024)..." clearable
+              :prefix-icon="Search" @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
           <el-form-item label="Keterangan" :label-position="isMobile ? 'top' : 'right'">
-            <el-input
-              v-model="filters.description"
-              placeholder="Cari deskripsi..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+            <el-input v-model="filters.description" placeholder="Cari deskripsi..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -57,16 +43,10 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="dataList"
-        stripe
-        border
-        height="475"
-        style="width: 100%"
-        empty-text="Tidak ada data tahun ciu tao yang ditemukan"
-      >
-        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+      <el-table v-loading="loading" :data="dataList" stripe border height="475" style="width: 100%"
+        empty-text="Tidak ada data tahun ciu tao yang ditemukan">
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center"
+          fixed="left" />
 
         <el-table-column prop="tahun_mandarin" label="Tahun Mandarin" min-width="160">
           <template #default="{ row }">
@@ -104,30 +84,13 @@
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                circle
-                :icon="Edit"
-                title="Edit Tahun Ciu Tao"
-                @click="handleEdit(row.tahun_mandarin)"
-              />
+              <el-button type="primary" size="small" circle :icon="Edit" title="Edit Tahun Ciu Tao"
+                @click="handleEdit(row.tahun_mandarin)" />
 
-              <el-popconfirm
-                title="Apakah Anda yakin ingin menghapus data ini?"
-                confirm-button-text="Ya, Hapus"
-                cancel-button-text="Batal"
-                confirm-button-type="danger"
-                @confirm="handleDelete(row.tahun_mandarin)"
-              >
+              <el-popconfirm title="Apakah Anda yakin ingin menghapus data ini?" confirm-button-text="Ya, Hapus"
+                cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row.tahun_mandarin)">
                 <template #reference>
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    :icon="Delete"
-                    title="Hapus Tahun Ciu Tao"
-                  />
+                  <el-button type="danger" size="small" circle :icon="Delete" title="Hapus Tahun Ciu Tao" />
                 </template>
               </el-popconfirm>
             </div>
@@ -137,61 +100,30 @@
 
       <!-- Pagination -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
     <!-- Create / Edit Dialog -->
-    <el-dialog
-      v-model="dialogVisible"
+    <el-dialog v-model="dialogVisible"
       :title="isEditing ? `Edit Tahun Ciu Tao #${editingId}` : 'Tambah Tahun Ciu Tao Baru'"
-      :width="isMobile ? '90%' : '560px'"
-      destroy-on-close
-      @closed="resetForm"
-    >
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="140px"
-        :label-position="isMobile ? 'top' : 'right'"
-      >
+      :width="isMobile ? '90%' : '560px'" destroy-on-close @closed="resetForm">
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="140px"
+        :label-position="isMobile ? 'top' : 'right'">
         <el-form-item label="Tahun Mandarin" prop="tahun_mandarin">
-          <el-input
-            v-model="formData.tahun_mandarin"
-            placeholder="Masukkan tahun (e.g. 2024)"
-            :disabled="isEditing"
-          />
+          <el-input v-model="formData.tahun_mandarin" placeholder="Masukkan tahun (e.g. 2024)" :disabled="isEditing" />
         </el-form-item>
 
         <el-form-item label="Periode Tanggal">
-          <el-date-picker
-            v-model="dateRange"
-            type="daterange"
-            range-separator="s/d"
-            start-placeholder="Tanggal Mulai"
-            end-placeholder="Tanggal Selesai"
-            value-format="YYYY-MM-DD"
-            format="YYYY-MM-DD"
-            style="width: 100%"
-          />
+          <el-date-picker v-model="dateRange" type="daterange" range-separator="s/d" start-placeholder="Tanggal Mulai"
+            end-placeholder="Tanggal Selesai" value-format="YYYY-MM-DD" format="YYYY-MM-DD" style="width: 100%" />
         </el-form-item>
 
         <el-form-item label="Keterangan" prop="description">
-          <el-input
-            v-model="formData.description"
-            type="textarea"
-            :rows="3"
-            placeholder="Masukkan keterangan..."
-          />
+          <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="Masukkan keterangan..." />
         </el-form-item>
 
         <!-- <el-form-item label="Status" prop="status">

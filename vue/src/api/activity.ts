@@ -37,7 +37,7 @@ export const activityApi = {
     id: string,
     signal?: AbortSignal
   ): Promise<ActivitySingleResponse> {
-    const response = await apiClient.get<ActivitySingleResponse>(`/v1/activities/${id}`, { signal })
+    const response = await apiClient.get<ActivitySingleResponse>(`/v1/activity?code=${id}`, { signal })
     return response.data
   },
 
@@ -45,7 +45,7 @@ export const activityApi = {
    * Create a new Activity record.
    */
   async createActivity(payload: Partial<Activity>): Promise<ActivitySingleResponse> {
-    const response = await apiClient.post<ActivitySingleResponse>('/v1/activities', payload)
+    const response = await apiClient.post<ActivitySingleResponse>('/v1/activity', payload)
     return response.data
   },
 
@@ -56,7 +56,7 @@ export const activityApi = {
     id: string,
     payload: Partial<Activity>
   ): Promise<ActivitySingleResponse> {
-    const response = await apiClient.patch<ActivitySingleResponse>(`/v1/activities/${id}`, payload)
+    const response = await apiClient.patch<ActivitySingleResponse>(`/v1/activity?code=${id}`, payload)
     return response.data
   },
 
@@ -64,7 +64,7 @@ export const activityApi = {
    * Delete a Activity record by ID.
    */
   async deleteActivity(id: string): Promise<{ message: string }> {
-    const response = await apiClient.delete<{ message: string }>(`/v1/activities/${id}`)
+    const response = await apiClient.delete<{ message: string }>(`/v1/activity?code=${id}`)
     return response.data
   }
 }

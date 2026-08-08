@@ -16,6 +16,7 @@ import (
 
 	"guangjiapps/gin/internal/api/middleware"
 	"guangjiapps/gin/internal/config"
+	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
 	"guangjiapps/gin/internal/service"
 )
@@ -59,15 +60,21 @@ func FilterSuccessLogMiddleware() gin.HandlerFunc {
 			latency := time.Since(start)
 			clientIP := c.ClientIP()
 			method := c.Request.Method
+			referer := c.Request.Referer()
 
 			if rawQuery != "" {
 				path = path + "?" + rawQuery
 			}
 
+			refStr := ""
+			if referer != "" {
+				refStr = " | Ref: " + referer
+			}
+
 			// 1. Tangkap jika terjadi Panic / Fatal Error
 			if err := recover(); err != nil {
-				log.Printf("[PANIC] %s | 500 | %13v | %15s | %-7s %s | Err: %v\n",
-					timestamp, latency, clientIP, method, path, err,
+				log.Printf("[PANIC] %s | 500 | %13v | %15s | %-7s %s%s | Err: %v\n",
+					timestamp, latency, clientIP, method, path, refStr, err,
 				)
 				// Cetak stack trace lengkap ke terminal/error output
 				debug.PrintStack()
@@ -80,12 +87,25 @@ func FilterSuccessLogMiddleware() gin.HandlerFunc {
 			// 2. Tangkap HTTP Error biasa (Status >= 400)
 			status := c.Writer.Status()
 			if status >= 400 {
-				log.Printf("[HTTP] %s | %3d | %13v | %15s | %-7s %s\n",
-					timestamp, status, latency, clientIP, method, path,
+				log.Printf("[HTTP] %s | %3d | %13v | %15s | %-7s %s%s\n",
+					timestamp, status, latency, clientIP, method, path, refStr,
 				)
 			}
 		}()
 
+		c.Next()
+	}
+}
+
+func ForwardedHeaderMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+			c.Request.URL.Scheme = proto
+		} /*  else if scheme := c.GetHeader("X-Forwarded-Scheme"); scheme != "" {
+			c.Request.URL.Scheme = scheme
+		} else if strings.EqualFold(c.GetHeader("X-Forwarded-Ssl"), "on") || strings.EqualFold(c.GetHeader("Front-End-Https"), "on") {
+			c.Request.URL.Scheme = "https"
+		} */
 		c.Next()
 	}
 }
@@ -123,7 +143,10 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	}
 
 	r := gin.New()
+	r.ForwardedByClientIP = true
+	r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 	r.Use(gin.Recovery())
+	r.Use(ForwardedHeaderMiddleware())
 	if cfg.GinMode != "release" {
 		r.Use(gin.Logger())
 	} else {
@@ -148,6 +171,8 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			"url_yang_diterima_go": c.Request.URL.Path,
 		})
 	})
+
+	rdb := database.GetRedisClient(cfg)
 
 	loginLimiter := middleware.NewLoginRateLimiter(cfg)
 
@@ -241,6 +266,11 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.GET("/admins/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
+		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
+			return
+		}
 		item, err := adminService.Get(c.Param("id"))
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -523,7 +553,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 
 	// Umats
-	protected.GET("/umats", func(c *gin.Context) {
+	protected.GET("/umats", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_UMAT", UpdatedColumn: "moddate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := umatService.List(page, filters, limit)
@@ -532,6 +562,31 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Umat"})
+	})
+	protected.GET("/umats/report", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := umatService.Report(page, filters, limit)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"data": items,
+			"meta": gin.H{
+				"page":  page,
+				"limit": limit,
+				"total": total,
+			},
+			"resource": "UmatReport",
+		})
+	})
+	protected.GET("/umats/report/excel", func(c *gin.Context) {
+		_, _, filters := parsePaginationAndFilters(c)
+		if err := umatService.ReportExcel(filters, c); err != nil {
+			respondError(c, err)
+			return
+		}
 	})
 	protected.GET("/umats/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -595,7 +650,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 
 	// Topics
-	protected.GET("/topics", func(c *gin.Context) {
+	protected.GET("/topics", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_TOPIC", UpdatedColumn: "ModDate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := topicService.List(page, filters, limit)
@@ -677,7 +732,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 
 	// Activities
-	protected.GET("/activities", func(c *gin.Context) {
+	protected.GET("/activities", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_EVENT", UpdatedColumn: "ModDate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := activityService.List(page, filters, limit)
@@ -687,21 +742,16 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Activity"})
 	})
-	protected.GET("/activity/:id", func(c *gin.Context) {
+	protected.GET("/activity", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
-		item, err := activityService.Get(c.Param("id"))
+		item, err := activityService.Get(c.Query("code"))
 		if err != nil {
 			respondError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "Activity"})
 	})
-	protected.POST("/activities", func(c *gin.Context) {
+	protected.POST("/activity", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.Activity
 		if err := c.ShouldBindJSON(&payload); err != nil {
@@ -715,32 +765,22 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Activity"})
 	})
-	protected.PATCH("/activities/:id", func(c *gin.Context) {
+	protected.PATCH("/activity", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
 		var payload domain.Activity
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			respondValidationError(c, err)
 			return
 		}
-		updated, err := activityService.Update(c.Param("id"), payload, c)
+		updated, err := activityService.Update(c.Query("code"), payload, c)
 		if err != nil {
 			respondError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": updated, "resource": "Activity"})
 	})
-	protected.DELETE("/activities/:id", func(c *gin.Context) {
+	protected.DELETE("/activity", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
 		if err := activityService.Delete(c.Param("id"), c); err != nil {
 			respondError(c, err)
 			return
@@ -749,7 +789,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 
 	// Tim Kerja
-	protected.GET("/tim-kerja", func(c *gin.Context) {
+	protected.GET("/tim-kerja", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_POSISI"}, CacheKey: "lookup:B_POSISI"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := timKerjaService.List(page, filters, limit)
@@ -759,7 +799,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Tim Kerja"})
 	})
-	protected.GET("/tim-kerja/lookup", func(c *gin.Context) {
+	protected.GET("/tim-kerja/lookup", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_POSISI"}, CacheKey: "lookup:B_POSISI"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := timKerjaService.Lookup(filters, page, limit)
@@ -784,7 +824,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "TimKerjaLookupSub"})
 	})
-	protected.GET("/tim-kerja/lookup-report", func(c *gin.Context) {
+	protected.GET("/tim-kerja/lookup-report", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_POSISI"}, CacheKey: "lookup:B_POSISI_REPORT"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := timKerjaService.LookupReport(filters, page, limit)
@@ -856,7 +896,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 
 	// Tahun Ciu Tao
-	protected.GET("/tahun-ciu-tao", func(c *gin.Context) {
+	protected.GET("/tahun-ciu-tao/list", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_TAHUN_CIUTAO", UpdatedColumn: "ModDate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := tahunCiuTaoService.List(page, filters, limit)
@@ -866,14 +906,9 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Tahun Ciu Tao"})
 	})
-	protected.GET("/tahun-ciu-tao/:id", func(c *gin.Context) {
+	protected.GET("/tahun-ciu-tao", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
-		item, err := tahunCiuTaoService.Get(c.Param("id"))
+		item, err := tahunCiuTaoService.Get(c.Query("tahun"))
 		if err != nil {
 			respondError(c, err)
 			return
@@ -894,19 +929,14 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "Tahun Ciu Tao"})
 	})
-	protected.PATCH("/tahun-ciu-tao/:id", func(c *gin.Context) {
+	protected.PATCH("/tahun-ciu-tao", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
 		var payload domain.TahunCiuTao
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			respondValidationError(c, err)
 			return
 		}
-		updated, err := tahunCiuTaoService.Update(c.Param("id"), payload, c)
+		updated, err := tahunCiuTaoService.Update(c.Query("tahun"), payload, c)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -915,12 +945,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/tahun-ciu-tao/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
-		if err := tahunCiuTaoService.Delete(c.Param("id"), c); err != nil {
+		if err := tahunCiuTaoService.Delete(c.Query("tahun"), c); err != nil {
 			respondError(c, err)
 			return
 		}
@@ -928,7 +953,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 
 	// Penggalang Dana
-	protected.GET("/penggalang-dana", func(c *gin.Context) {
+	protected.GET("/penggalang-dana", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_SXY_MST_PENGGALANG", UpdatedColumn: "updateddate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := penggalangDanaService.List(page, filters, limit)
@@ -1000,7 +1025,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 
 	// Sxy Donatur
-	protected.GET("/sxy-donatur", func(c *gin.Context) {
+	protected.GET("/sxy-donatur", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_SXY_MST_DONATUR", UpdatedColumn: "updateddate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := sxyDonaturService.List(page, filters, limit)
@@ -1071,7 +1096,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
-	protected.GET("/fotang/lookup", func(c *gin.Context) {
+	protected.GET("/fotang/lookup", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_FOTHANG"}, CacheKey: "lookup:B_FOTHANG"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := fotangService.Lookup(filters, page, limit)
@@ -1082,8 +1107,19 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "FotangLookup"})
 	})
 
+	protected.GET("/fotang/lookup-sxy", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"SXY_FOTHANG"}, CacheKey: "lookup:SXY_FOTHANG"}), func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := fotangService.LookupSxy(filters, page, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "FotangSxyLookup"})
+	})
+
 	// Lookup Endpoints
-	protected.GET("/lookup/waktu-ciu-tao", func(c *gin.Context) {
+	protected.GET("/lookup/waktu-ciu-tao", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_WAKTUCIUTAO"}, CacheKey: "lookup:B_WAKTUCIUTAO"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupWaktuCiuTao(filters, page, limit)
@@ -1093,7 +1129,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupWaktuCiuTao"})
 	})
-	protected.GET("/lookup/gender", func(c *gin.Context) {
+	protected.GET("/lookup/gender", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_GENDER"}, CacheKey: "lookup:B_GENDER"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupGender(filters, page, limit)
@@ -1103,7 +1139,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupGender"})
 	})
-	protected.GET("/lookup/tcs", func(c *gin.Context) {
+	protected.GET("/lookup/tcs", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_TCS"}, CacheKey: "lookup:B_TCS"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupTcs(filters, page, limit)
@@ -1113,7 +1149,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupTcs"})
 	})
-	protected.GET("/lookup/kelas-level", func(c *gin.Context) {
+	protected.GET("/lookup/kelas-level", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_KLS_LEVEL"}, CacheKey: "lookup:B_KLS_LEVEL"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupKelasLevel(filters, page, limit)
@@ -1123,7 +1159,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupTcs"})
 	})
-	protected.GET("/lookup/fotang", func(c *gin.Context) {
+	protected.GET("/lookup/fotang", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_FOTHANG"}, CacheKey: "lookup:B_FOTHANG"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupFotang(filters, page, limit)
@@ -1133,7 +1169,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupFotang"})
 	})
-	protected.GET("/lookup/kelas", func(c *gin.Context) {
+	protected.GET("/lookup/kelas", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_KELASKHUSUS"}, CacheKey: "lookup:B_KELASKHUSUS"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupKelas(filters, page, limit)
@@ -1143,7 +1179,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupKelas"})
 	})
-	protected.GET("/lookup/pendidikan", func(c *gin.Context) {
+	protected.GET("/lookup/pendidikan", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_PENDIDIKAN"}, CacheKey: "lookup:B_PENDIDIKAN"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupPendidikan(filters, page, limit)
@@ -1153,7 +1189,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupPendidikan"})
 	})
-	protected.GET("/lookup/kelas-umum", func(c *gin.Context) {
+	protected.GET("/lookup/kelas-umum", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_KELASUMUM"}, CacheKey: "lookup:B_KELASUMUM"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupKelasUmum(filters, page, limit)
@@ -1163,7 +1199,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupKelasUmum"})
 	})
-	protected.GET("/lookup/pekerjaan", func(c *gin.Context) {
+	protected.GET("/lookup/pekerjaan", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_PEKERJAAN"}, CacheKey: "lookup:B_PEKERJAAN"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupPekerjaan(filters, page, limit)
@@ -1173,7 +1209,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupPekerjaan"})
 	})
-	protected.GET("/lookup/keluarga", func(c *gin.Context) {
+	protected.GET("/lookup/keluarga", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_KELUARGA"}, CacheKey: "lookup:B_KELUARGA"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupKeluarga(filters, page, limit)
@@ -1183,7 +1219,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupKeluarga"})
 	})
-	protected.GET("/lookup/status", func(c *gin.Context) {
+	protected.GET("/lookup/status", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_STATUS"}, CacheKey: "lookup:B_STATUS"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupStatus(filters, page, limit)
@@ -1193,7 +1229,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupStatus"})
 	})
-	protected.GET("/lookup/kategori-topic", func(c *gin.Context) {
+	protected.GET("/lookup/kategori-topic", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_KATEGORI_TOPIK"}, CacheKey: "lookup:B_KATEGORI_TOPIK"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupKategoriTopic(filters, page, limit)
@@ -1203,7 +1239,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupKategoriTopic"})
 	})
-	protected.GET("/lookup/kategori-event", func(c *gin.Context) {
+	protected.GET("/lookup/kategori-event", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_KATEGORI_EVENT"}, CacheKey: "lookup:B_KATEGORI_EVENT"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupKategoriEvent(filters, page, limit)
@@ -1213,7 +1249,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "LookupKategoriEvent"})
 	})
-	protected.GET("/lookup/tipe-sumbangan", func(c *gin.Context) {
+	protected.GET("/lookup/tipe-sumbangan", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"SXY_TIPESUMBANGAN"}, CacheKey: "lookup:SXY_TIPESUMBANGAN"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := lookupService.LookupTipeSumbangan(filters, page, limit)
@@ -1251,7 +1287,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "Kelas"})
 	})
-	protected.GET("/kelas/lookup", func(c *gin.Context) {
+	protected.GET("/kelas/lookup", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_KELASKHUSUS"}, CacheKey: "lookup:B_KELASKHUSUS"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := kelasService.Lookup(filters, page, limit)

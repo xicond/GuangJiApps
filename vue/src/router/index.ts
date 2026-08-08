@@ -148,19 +148,25 @@ const router = createRouter({
         // Report
         {
           path: 'report/master/umat',
-          name: 'report-master',
-          component: () => import('../views/report/MasterReportList.vue'),
-          meta: { title: 'Master Report Umat' }
+          name: 'report-umat',
+          component: () => import('../views/report/UmatReportList.vue'),
+          meta: { title: 'Laporan Master Umat' }
         },
         {
           path: 'report/master/tcs',
-          name: 'report-master',
+          name: 'report-tcs',
           component: () => import('../views/report/MasterReportList.vue'),
           meta: { title: 'Report Tcs' }
         },
         {
+          path: 'report/master/umat-cheng-chien',
+          name: 'report-umat-cheng-chien',
+          component: () => import('../views/report/MasterReportList.vue'),
+          meta: { title: 'Laporan Umat Cheng Chien' }
+        },
+        {
           path: 'report/master/lagu',
-          name: 'report-master',
+          name: 'report-lagu',
           component: () => import('../views/report/MasterReportList.vue'),
           meta: { title: 'Lagu Suci' }
         },

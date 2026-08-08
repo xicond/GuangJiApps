@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strings" // WAJIB: Tambahkan import strings
+	"time"
 
 	"guangjiapps/gin/internal/api"
 	"guangjiapps/gin/internal/config"
@@ -24,6 +25,13 @@ func main() {
 	// if err := database.AutoMigrate(db); err != nil {
 	// 	log.Fatalf("database migration failed: %v", err)
 	// }
+
+	jakartaLoc, err := time.LoadLocation("Asia/Jakarta")
+	if err == nil {
+		time.Local = jakartaLoc
+	}
+
+	// Atur waktu lokal default sistem (opsional, mempengaruhi time.Now() tanpa .UTC())
 
 	authService := service.NewAuthService(cfg, db)
 	router := api.NewRouter(authService, db, cfg)

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -449,13 +448,13 @@ func (s *KelasService) Report(trxId string /* , subWhId string */, c *gin.Contex
 	bufPtr := copyBufferPool.Get().(*[]byte)
 	defer copyBufferPool.Put(bufPtr)
 
-	streamStart := time.Now()
-	nBytes, err := io.CopyBuffer(c.Writer, resp.Body, *bufPtr)
-	streamDuration := time.Since(streamStart)
-	totalDuration := time.Since(startTime)
+	// streamStart := time.Now()
+	_, err = io.CopyBuffer(c.Writer, resp.Body, *bufPtr)
+	// streamDuration := time.Since(streamStart)
+	// totalDuration := time.Since(startTime)
 
-	log.Printf("[REPORT PERF] SSRS Fetch: %v, Client Stream (%d bytes): %v, Total: %v",
-		fetchDuration, nBytes, streamDuration, totalDuration)
+	// log.Printf("[REPORT PERF] SSRS Fetch: %v, Client Stream (%d bytes): %v, Total: %v",
+	// 	fetchDuration, nBytes, streamDuration, totalDuration)
 
 	if err != nil {
 		return fmt.Errorf("gagal stream report ke client: %w", err)
@@ -536,7 +535,7 @@ func (s *KelasService) Create(payload domain.Kelas, c *gin.Context) (domain.Kela
 	userID := getUserID(c)
 	statusTrue := true
 	modActI := "I"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	payload.Status = &statusTrue
 	payload.ModAct = &modActI
@@ -636,7 +635,7 @@ func (s *KelasService) Update(id string, payload domain.Kelas, c *gin.Context) (
 
 	userID := getUserID(c)
 	modActU := "U"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	item.ModAct = &modActU
 	item.ModBy = &userID
@@ -669,7 +668,7 @@ func (s *KelasService) Delete(id string, c *gin.Context) error {
 	userID := getUserID(c)
 	statusFalse := false
 	modActD := "D"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	item.Status = &statusFalse
 	item.ModAct = &modActD

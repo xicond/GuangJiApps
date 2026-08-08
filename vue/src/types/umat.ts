@@ -95,3 +95,74 @@ export interface UmatSingleResponse {
   data: Umat
   resource: string
 }
+
+export interface UmatReportItem {
+  row_no: number
+  id: number
+  kode: string
+  tanggal_chiu_tao_int?: string
+  tanggal_chiu_tao_man?: string
+  tahun_chiu_tao_mandarin?: string
+  waktu_chiu_tao_mandarin?: string
+  nama_indonesia: string
+  nama_mandarin?: string
+  alias?: string
+  alamat?: string
+  alamat2?: string
+  uang_pahala?: number
+  usia_thn?: number
+  tanggal_lahir?: string
+  tempat_lahir?: string
+  pengajak_manual?: string
+  penanggung_manual?: string
+  tcs?: string
+  telepon?: string
+  mobile?: string
+  email?: string
+  fotang_ciu_tao_desc?: string
+  fotang_aktif_desc?: string
+  jenis_kelamin?: string
+  wilayah?: string
+  pekerjaan_desc?: string
+  pendidikan_desc?: string
+  tanggal_sd3?: string
+  tempat_sd3_desc?: string
+  tanggal_ching_khou?: string
+  keterangan?: string
+  kelas_umum_desc?: string
+  kelas_khusus_desc?: string
+  tanggal_an_cuo?: string
+  nama_cetya_rumah?: string
+  status_umat_desc?: string
+  ikrar1?: boolean
+  ikrar2?: boolean
+  ikrar3?: boolean
+  ikrar4?: boolean
+  ikrar5?: boolean
+  ikrar6?: boolean
+  total_row?: number
+}
+
+export interface UmatReportQueryParams {
+  page?: number
+  limit?: number
+  fotang_aktif?: string
+  fotang_chiutao?: string
+  nama_mandarin?: string
+  start_date?: string
+  end_date?: string
+  nama_indo?: string
+  pengajak?: string
+  alias?: string
+  usia_dari?: number | string
+  usia_sampai?: number | string
+  is_lulus_sd?: string
+  is_vege?: string
+  status_umat?: string
+}
+
+export interface UmatReportResponse {
+  data: UmatReportItem[]
+  meta: PaginatedMeta
+  resource: string
+}

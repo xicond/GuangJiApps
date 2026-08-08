@@ -842,6 +842,91 @@
       "name": "Master Data",
       "item": [
         {
+          "name": "Umat - Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/umats/report?fotang_aktif=0&fotang_chiutao=0&start_date=1970-01-01&end_date=1970-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats",
+                "report"
+              ],
+              "query": [
+                {
+                  "key": "fotang_aktif",
+                  "value": "0"
+                },
+                {
+                  "key": "fotang_chiutao",
+                  "value": "0"
+                },
+                {
+                  "key": "start_date",
+                  "value": "1970-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "1970-01-01"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Umat - Report Excel",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/umats/report/excel?fotang_aktif=0&fotang_chiutao=0&start_date=1970-01-01&end_date=1970-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats",
+                "report",
+                "excel"
+              ],
+              "query": [
+                {
+                  "key": "fotang_aktif",
+                  "value": "0"
+                },
+                {
+                  "key": "fotang_chiutao",
+                  "value": "0"
+                },
+                {
+                  "key": "start_date",
+                  "value": "1970-01-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "1970-01-01"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Umat - List",
           "request": {
             "method": "GET",
@@ -1265,7 +1350,7 @@
           }
         },
         {
-          "name": "Activities - Create",
+          "name": "Activity - Create",
           "request": {
             "method": "POST",
             "header": [
@@ -1288,19 +1373,26 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/v1/activities",
+              "raw": "{{baseUrl}}/v1/activity",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "activities"
+                "activity"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "ACT001",
+                  "description": "Kode activity (ActivityCode)"
+                }
               ]
             }
           }
         },
         {
-          "name": "Activities - Get By ID",
+          "name": "Activity - Get By ID",
           "request": {
             "method": "GET",
             "header": [
@@ -1310,27 +1402,26 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/activities/:resourceId",
+              "raw": "{{baseUrl}}/v1/activity?code=ACT001",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "activities",
-                ":resourceId"
+                "activity"
               ],
-              "variable": [
+              "query": [
                 {
-                  "key": "resourceId",
-                  "value": "12",
-                  "description": "The unique numerical ID of the record"
+                  "key": "code",
+                  "value": "ACT001",
+                  "description": "Kode activity (ActivityCode)"
                 }
               ]
             }
           }
         },
         {
-          "name": "Activities - Update",
+          "name": "Activity - Update",
           "request": {
             "method": "PATCH",
             "header": [
@@ -1353,27 +1444,26 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/v1/activities/:resourceId",
+              "raw": "{{baseUrl}}/v1/activity?code=ACT001",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "activities",
-                ":resourceId"
+                "activity"
               ],
-              "variable": [
+              "query": [
                 {
-                  "key": "resourceId",
-                  "value": "12",
-                  "description": "The unique numerical ID of the record"
+                  "key": "code",
+                  "value": "ACT001",
+                  "description": "Kode activity (ActivityCode)"
                 }
               ]
             }
           }
         },
         {
-          "name": "Activities - Delete",
+          "name": "Activity - Delete",
           "request": {
             "method": "DELETE",
             "header": [
@@ -1383,20 +1473,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/activities/:resourceId",
+              "raw": "{{baseUrl}}/v1/activity?code=ACT001",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "activities",
-                ":resourceId"
+                "activity"
               ],
-              "variable": [
+              "query": [
                 {
-                  "key": "resourceId",
-                  "value": "12",
-                  "description": "The unique numerical ID of the record"
+                  "key": "code",
+                  "value": "ACT001",
+                  "description": "Kode activity (ActivityCode)"
                 }
               ]
             }
@@ -1746,7 +1835,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/tahun-ciu-tao",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao/list",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1833,20 +1922,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "tahun-ciu-tao",
-                ":resourceId"
+                "tahun-ciu-tao"
               ],
-              "variable": [
+              "query": [
                 {
-                  "key": "resourceId",
-                  "value": "12",
-                  "description": "The unique numerical ID of the record"
+                  "key": "tahun",
+                  "value": "2576",
+                  "description": "The unique year of the record"
                 }
               ]
             }
@@ -1876,20 +1964,19 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "tahun-ciu-tao",
-                ":resourceId"
+                "tahun-ciu-tao"
               ],
-              "variable": [
+              "query": [
                 {
-                  "key": "resourceId",
-                  "value": "12",
-                  "description": "The unique numerical ID of the record"
+                  "key": "tahun",
+                  "value": "2576",
+                  "description": "The unique year of the record"
                 }
               ]
             }
@@ -1906,20 +1993,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/tahun-ciu-tao/:resourceId",
+              "raw": "{{baseUrl}}/v1/tahun-ciu-tao",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
-                "tahun-ciu-tao",
-                ":resourceId"
+                "tahun-ciu-tao"
               ],
-              "variable": [
+              "query": [
                 {
-                  "key": "resourceId",
-                  "value": "12",
-                  "description": "The unique numerical ID of the record"
+                  "key": "tahun",
+                  "value": "2576",
+                  "description": "The unique year of the record"
                 }
               ]
             }
@@ -2317,6 +2403,59 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/v1/fotang/lookup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "fotang",
+                "lookup"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Jumlah data per halaman (default: 10)"
+                },
+                {
+                  "key": "lookup_description",
+                  "value": "",
+                  "description": "Filter pencarian deskripsi (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "lookup_value",
+                  "value": "",
+                  "description": "Filter pencarian value/kode (LIKE)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Filter pencarian kata kunci multi-kolom (LIKE)",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Fotang - Lookup Sxy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/fotang/lookup-sxy",
               "host": [
                 "{{baseUrl}}"
               ],

@@ -26,8 +26,14 @@ var validate = func() *validator.Validate {
 			}
 			return d.Time
 		}
+		if dt, ok := field.Interface().(domain.DateTime); ok {
+			if dt.IsZero() {
+				return nil
+			}
+			return dt.Time
+		}
 		return nil
-	}, domain.DateOnly{})
+	}, domain.DateOnly{}, domain.DateTime{})
 	return v
 }()
 

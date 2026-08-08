@@ -6,13 +6,7 @@
         <h2 class="page-title">Master Data Activity</h2>
         <p class="page-subtitle">Kelola daftar data activity, pencarian, serta pembaruan profil</p>
       </div>
-      <el-button
-        type="primary"
-        size="large"
-        :icon="Plus"
-        class="create-btn"
-        @click="handleCreate"
-      >
+      <el-button type="primary" size="large" :icon="Plus" class="create-btn" @click="handleCreate">
         Tambah Activity Baru
       </el-button>
     </div>
@@ -20,46 +14,32 @@
     <!-- Filter Card -->
     <el-card shadow="never" class="filter-card">
       <div class="filter-header">
-        <el-icon class="filter-icon"><Search /></el-icon>
+        <el-icon class="filter-icon">
+          <Search />
+        </el-icon>
         <span class="filter-title">Filter & Pencarian Data</span>
       </div>
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
           <el-form-item label="Kode Event" :label-position="isMobile ? 'top' : 'right'">
-            <el-input
-              v-model="filters.event_code"
-              placeholder="Cari kode event..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+            <el-input v-model="filters.event_code" placeholder="Cari kode event..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
           <el-form-item label="Nama Event" :label-position="isMobile ? 'top' : 'right'">
-            <el-input
-              v-model="filters.event_name"
-              placeholder="Cari nama event..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+            <el-input v-model="filters.event_name" placeholder="Cari nama event..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
           <el-form-item label="Kategori" :label-position="isMobile ? 'top' : 'right'">
-            <LookupSelect
-              v-model="filters.event_category"
-              placeholder="Pilih Kategori Event..."
-              :fetch-api="lookupApi.getLookupKategoriEvent"
-              value-key="lookup_value"
-              label-key="lookup_description"
-              clearable
-              @change="onFilterChange"
-            />
+            <LookupSelect v-model="filters.event_category" placeholder="Pilih Kategori Event..."
+              :fetch-api="lookupApi.getLookupKategoriEvent" value-key="lookup_value" label-key="lookup_description"
+              clearable @change="onFilterChange" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -71,16 +51,10 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="dataList"
-        stripe
-        border
-        height="475"
-        style="width: 100%"
-        empty-text="Tidak ada data activity yang ditemukan"
-      >
-        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+      <el-table v-loading="loading" :data="dataList" stripe border height="475" style="width: 100%"
+        empty-text="Tidak ada data activity yang ditemukan">
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center"
+          fixed="left" />
 
         <el-table-column prop="event_code" label="Kode Event" width="130" align="center">
           <template #default="{ row }">
@@ -118,30 +92,13 @@
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                circle
-                :icon="Edit"
-                title="Edit Activity"
-                @click="handleEdit(row.event_code)"
-              />
+              <el-button type="primary" size="small" circle :icon="Edit" title="Edit Activity"
+                @click="handleEdit(row.event_code)" />
 
-              <el-popconfirm
-                title="Apakah Anda yakin ingin menghapus data ini?"
-                confirm-button-text="Ya, Hapus"
-                cancel-button-text="Batal"
-                confirm-button-type="danger"
-                @confirm="handleDelete(row.event_code)"
-              >
+              <el-popconfirm title="Apakah Anda yakin ingin menghapus data ini?" confirm-button-text="Ya, Hapus"
+                cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row.event_code)">
                 <template #reference>
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    :icon="Delete"
-                    title="Hapus Activity"
-                  />
+                  <el-button type="danger" size="small" circle :icon="Delete" title="Hapus Activity" />
                 </template>
               </el-popconfirm>
             </div>
@@ -151,66 +108,36 @@
 
       <!-- Pagination -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
     <!-- Create / Edit Dialog -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="isEditing ? `Edit Activity #${editingCode}` : 'Tambah Activity Baru'"
-      :width="isMobile ? '90%' : '560px'"
-      destroy-on-close
-      @closed="resetForm"
-    >
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="130px"
-        :label-position="isMobile ? 'top' : 'right'"
-      >
+    <el-dialog v-model="dialogVisible" :title="isEditing ? `Edit Activity #${editingCode}` : 'Tambah Activity Baru'"
+      :width="isMobile ? '90%' : '560px'" destroy-on-close @closed="resetForm">
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="130px"
+        :label-position="isMobile ? 'top' : 'right'">
         <el-form-item label="Kode Event" prop="event_code">
-          <el-input
-            v-model="formData.event_code"
-            placeholder="Masukkan kode event (misal: EV01)"
-            :disabled="isEditing"
-          />
+          <el-input v-model="formData.event_code" placeholder="Masukkan kode event (misal: EV01)"
+            :disabled="isEditing" />
         </el-form-item>
 
         <el-form-item label="Nama Event" prop="event_name">
-          <el-input
-            v-model="formData.event_name"
-            placeholder="Masukkan nama event"
-          />
+          <el-input v-model="formData.event_name" placeholder="Masukkan nama event" />
         </el-form-item>
 
         <el-form-item label="Kategori Event" prop="event_category">
-          <LookupSelect
-            v-model="formData.event_category"
-            placeholder="Pilih Kategori Event..."
-            :fetch-api="lookupApi.getLookupKategoriEvent"
-            value-key="lookup_value"
-            label-key="lookup_description"
-            clearable
-          />
+          <LookupSelect v-model="formData.event_category" placeholder="Pilih Kategori Event..."
+            :fetch-api="lookupApi.getLookupKategoriEvent" value-key="lookup_value" label-key="lookup_description"
+            clearable />
         </el-form-item>
 
         <el-form-item label="Keterangan" prop="description">
-          <el-input
-            v-model="formData.description"
-            type="textarea"
-            :rows="3"
-            placeholder="Masukkan keterangan tambahan..."
-          />
+          <el-input v-model="formData.description" type="textarea" :rows="3"
+            placeholder="Masukkan keterangan tambahan..." />
         </el-form-item>
 
         <!-- <el-form-item label="Status" prop="status">

@@ -30,7 +30,7 @@ const entities = [
       { name: 'page_url', type: 'string' }
     ],
     columns: [
-      // { prop: 'menu_id', label: 'ID', width: '80', align: 'center', sortable: true },
+      // { prop: 'menu_id', label: 'ID', width: '80', align: 'center',: true },
       { prop: 'menu_name', label: 'Nama Menu', minWidth: '180', bold: true },
       { prop: 'page_url', label: 'URL Halaman', minWidth: '200' },
       { prop: 'sequence', label: 'Urutan', width: '90', align: 'center' },
@@ -219,7 +219,7 @@ const entities = [
       { name: 'fotang', type: 'number' }
     ],
     columns: [
-      // { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
+      // { prop: 'id', label: 'ID', width: '80', align: 'center',: true },
       { prop: 'no', label: 'No', width: '120', tag: true },
       { prop: 'nama', label: 'Nama', minWidth: '180', bold: true },
       { prop: 'mandarin', label: 'Nama Mandarin', minWidth: '140' },
@@ -264,7 +264,7 @@ const entities = [
       { name: 'fotang', type: 'number' }
     ],
     columns: [
-      // { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
+      // { prop: 'id', label: 'ID', width: '80', align: 'center',: true },
       { prop: 'no', label: 'No Donatur', width: '130', tag: true },
       { prop: 'nama', label: 'Nama Donatur', minWidth: '180', bold: true },
       { prop: 'mandarin', label: 'Nama Mandarin', minWidth: '140' },
@@ -346,7 +346,7 @@ const entities = [
       { name: 'tanggal', type: 'string' }
     ],
     columns: [
-      // { prop: 'id', label: 'ID', width: '80', align: 'center', sortable: true },
+      // { prop: 'id', label: 'ID', width: '80', align: 'center',: true },
       { prop: 'no_kwitansi', label: 'No. Kwitansi', minWidth: '160', bold: true, tag: true },
       { prop: 'tanggal', label: 'Tanggal', minWidth: '140', type: 'date' },
       { prop: 'jumlah', label: 'Jumlah (Rp)', minWidth: '150', type: 'currency' },
@@ -658,7 +658,7 @@ ${tableColumnsMarkup}
           v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />

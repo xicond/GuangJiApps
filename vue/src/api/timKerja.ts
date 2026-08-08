@@ -14,12 +14,12 @@ export const timKerjaApi = {
     params: TimKerjaQueryParams = {},
     signal?: AbortSignal
   ): Promise<TimKerjaListResponse> {
-    const cleanParams: Record<string, any> = {
+    const cleanParams: Record<string, string | number> = {
       page: params.page || 1,
       limit: params.limit || 10
     }
 
-    if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
+    // if (params.lookup_id) cleanParams.lookup_id = params.lookup_id
     if (params.lookup_value) cleanParams.lookup_value = params.lookup_value
     if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
 

@@ -89,10 +89,11 @@
               <template #title>
                 <span>Master</span>
               </template>
-              
+
               <!-- Level paling bawah menggunakan el-menu-item -->
               <el-menu-item index="/report/master/umat">Umat</el-menu-item>
               <el-menu-item index="/report/master/tcs">Tcs</el-menu-item>
+              <el-menu-item index="/report/master/umat-cheng-chien">Umat Cheng Cien</el-menu-item>
               <el-menu-item index="/report/master/lagu">Lagu</el-menu-item>
             </el-sub-menu>
             <el-menu-item v-if="hasSubMenu('Report', 'SXY')" index="/report/sxy">Sxy</el-menu-item>
@@ -199,7 +200,7 @@ let lastNotificationTime = 0
 const NOTIFY_THROTTLE_MS = 5000
 
 watch(lastTestCompletedAt, () => {
-  if (speedMbps.value !== null && speedMbps.value < 0.8) {
+  if (speedMbps.value !== null && speedMbps.value < 6) {
     const now = Date.now()
     if (now - lastNotificationTime >= NOTIFY_THROTTLE_MS) {
       lastNotificationTime = now

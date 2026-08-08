@@ -1,5 +1,5 @@
 export interface TimKerja {
-  lookup_id: string
+  // lookup_id: string
   category_id?: string
   lookup_value: string
   lookup_description?: string
@@ -12,7 +12,7 @@ export interface TimKerja {
 export interface TimKerjaQueryParams {
   page?: number
   limit?: number
-  lookup_id?: string
+  // lookup_id?: string
   lookup_value?: string
   lookup_description?: string
 }

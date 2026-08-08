@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -171,7 +170,7 @@ func (s *KelasTopikService) Create(payload domain.KelasTopik, c *gin.Context) (d
 	userID := getUserID(c)
 	statusTrue := true
 	modActI := "I"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	payload.Status = &statusTrue
 	payload.ModAct = &modActI
@@ -258,7 +257,7 @@ func (s *KelasTopikService) Update(id string, payload domain.KelasTopik, c *gin.
 
 	userID := getUserID(c)
 	modActU := "U"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	item.ModAct = &modActU
 	item.ModBy = &userID
@@ -287,7 +286,7 @@ func (s *KelasTopikService) Delete(id string, c *gin.Context) error {
 	userID := getUserID(c)
 	statusFalse := false
 	modActD := "D"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	item.Status = &statusFalse
 	item.ModAct = &modActD

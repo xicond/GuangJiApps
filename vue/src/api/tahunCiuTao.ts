@@ -22,7 +22,7 @@ export const tahunCiuTaoApi = {
     if (params.tahun_mandarin) cleanParams.tahun_mandarin = params.tahun_mandarin
     if (params.description) cleanParams.description = params.description
 
-    const response = await apiClient.get<TahunCiuTaoListResponse>('/v1/tahun-ciu-tao', {
+    const response = await apiClient.get<TahunCiuTaoListResponse>('/v1/tahun-ciu-tao/list', {
       params: cleanParams,
       signal
     })
@@ -36,7 +36,7 @@ export const tahunCiuTaoApi = {
     id: string,
     signal?: AbortSignal
   ): Promise<TahunCiuTaoSingleResponse> {
-    const response = await apiClient.get<TahunCiuTaoSingleResponse>(`/v1/tahun-ciu-tao/${id}`, { signal })
+    const response = await apiClient.get<TahunCiuTaoSingleResponse>(`/v1/tahun-ciu-tao?tahun=${id}`, { signal })
     return response.data
   },
 
@@ -55,7 +55,7 @@ export const tahunCiuTaoApi = {
     id: string,
     payload: Partial<TahunCiuTao>
   ): Promise<TahunCiuTaoSingleResponse> {
-    const response = await apiClient.patch<TahunCiuTaoSingleResponse>(`/v1/tahun-ciu-tao/${id}`, payload)
+    const response = await apiClient.patch<TahunCiuTaoSingleResponse>(`/v1/tahun-ciu-tao?tahun=${id}`, payload)
     return response.data
   },
 
@@ -63,7 +63,7 @@ export const tahunCiuTaoApi = {
    * Delete a TahunCiuTao record by ID.
    */
   async deleteTahunCiuTao(id: string): Promise<{ message: string }> {
-    const response = await apiClient.delete<{ message: string }>(`/v1/tahun-ciu-tao/${id}`)
+    const response = await apiClient.delete<{ message: string }>(`/v1/tahun-ciu-tao?tahun=${id}`)
     return response.data
   }
 }

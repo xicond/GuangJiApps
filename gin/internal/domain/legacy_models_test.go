@@ -123,3 +123,44 @@ func TestGetFieldLabel(t *testing.T) {
 	}
 }
 
+func TestDateTimeJSON(t *testing.T) {
+	type Sample struct {
+		Created DateTime `json:"created"`
+	}
+
+	// Test Unmarshal ISO/RFC3339 string (e.g. 2022-10-08T09:12:39.423Z)
+	jsonStr := `{"created":"2022-10-08T09:12:39.423Z"}`
+	var s Sample
+	if err := json.Unmarshal([]byte(jsonStr), &s); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+
+	expectedYear, expectedMonth, expectedDay := 2022, 10, 8
+	expectedHour, expectedMin, expectedSec := 9, 12, 39
+	if s.Created.Year() != expectedYear || int(s.Created.Month()) != expectedMonth || s.Created.Day() != expectedDay ||
+		s.Created.Hour() != expectedHour || s.Created.Minute() != expectedMin || s.Created.Second() != expectedSec {
+		t.Errorf("Unmarshal got %v, expected 2022-10-08 09:12:39", s.Created)
+	}
+
+	// Test Marshal outputs YYYY-MM-DD HH:mm:ss format
+	b, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+	expectedJSON := `{"created":"2022-10-08 09:12:39"}`
+	if string(b) != expectedJSON {
+		t.Errorf("Marshal got %s, expected %s", string(b), expectedJSON)
+	}
+}
+
+func TestDateTimeScan(t *testing.T) {
+	var dt DateTime
+	if err := dt.Scan("2022-10-08 09:12:39"); err != nil {
+		t.Errorf("Scan string failed: %v", err)
+	}
+	if dt.Format("2006-01-02 15:04:05") != "2022-10-08 09:12:39" {
+		t.Errorf("Scan string got %s", dt.Format("2006-01-02 15:04:05"))
+	}
+}
+
+

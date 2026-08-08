@@ -34,7 +34,7 @@ export const penggalangDanaApi = {
    * Fetch single PenggalangDana details by ID.
    */
   async getPenggalangDanaById(
-    id: number,
+    id: number | string,
     signal?: AbortSignal
   ): Promise<PenggalangDanaSingleResponse> {
     const response = await apiClient.get<PenggalangDanaSingleResponse>(`/v1/penggalang-dana/${id}`, { signal })
@@ -53,7 +53,7 @@ export const penggalangDanaApi = {
    * Update an existing PenggalangDana record.
    */
   async updatePenggalangDana(
-    id: number,
+    id: number | string,
     payload: Partial<PenggalangDana>
   ): Promise<PenggalangDanaSingleResponse> {
     const response = await apiClient.patch<PenggalangDanaSingleResponse>(`/v1/penggalang-dana/${id}`, payload)
@@ -63,7 +63,7 @@ export const penggalangDanaApi = {
   /**
    * Delete a PenggalangDana record by ID.
    */
-  async deletePenggalangDana(id: number): Promise<{ message: string }> {
+  async deletePenggalangDana(id: number | string): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`/v1/penggalang-dana/${id}`)
     return response.data
   }

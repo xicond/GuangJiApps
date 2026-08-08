@@ -58,9 +58,9 @@ export interface KelasPeserta {
 export interface KelasQueryParams {
   page?: number
   limit?: number
-  lookup_id?: string
-  lookup_value?: string
-  lookup_description?: string
+  // lookup_id?: string
+  // lookup_value?: string
+  // lookup_description?: string
   kelas?: string
   start_date?: string
   end_date?: string

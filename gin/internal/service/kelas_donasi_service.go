@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -70,7 +69,7 @@ func (s *KelasDonasiService) Create(payload domain.KelasDonasi, c *gin.Context) 
 	userIDStr := strconv.Itoa(int(getUserID(c)))
 	statusTrue := true
 	modActI := "I"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	payload.Status = &statusTrue
 	payload.ModAct = &modActI
@@ -124,7 +123,7 @@ func (s *KelasDonasiService) Update(id string, payload domain.KelasDonasi, c *gi
 
 	userIDStr := strconv.Itoa(int(getUserID(c)))
 	modActU := "U"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	item.ModAct = &modActU
 	item.ModBy = &userIDStr
@@ -153,7 +152,7 @@ func (s *KelasDonasiService) Delete(id string, c *gin.Context) error {
 	userIDStr := strconv.Itoa(int(getUserID(c)))
 	statusFalse := false
 	modActD := "D"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	item.Status = &statusFalse
 	item.ModAct = &modActD

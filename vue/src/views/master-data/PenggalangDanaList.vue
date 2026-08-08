@@ -6,13 +6,7 @@
         <h2 class="page-title">Master Data Penggalang Dana</h2>
         <p class="page-subtitle">Kelola daftar data penggalang dana, pencarian, serta pembaruan profil</p>
       </div>
-      <el-button
-        type="primary"
-        size="large"
-        :icon="Plus"
-        class="create-btn"
-        @click="handleCreate"
-      >
+      <el-button type="primary" size="large" :icon="Plus" class="create-btn" @click="handleCreate">
         Tambah Penggalang Dana Baru
       </el-button>
     </div>
@@ -20,46 +14,32 @@
     <!-- Filter Card -->
     <el-card shadow="never" class="filter-card">
       <div class="filter-header">
-        <el-icon class="filter-icon"><Search /></el-icon>
+        <el-icon class="filter-icon">
+          <Search />
+        </el-icon>
         <span class="filter-title">Filter & Pencarian Data</span>
       </div>
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
           <el-form-item label="Nama Indo" :label-position="isMobile ? 'top' : 'right'">
-            <el-input
-              v-model="filters.nama"
-              placeholder="Cari nama..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+            <el-input v-model="filters.nama" placeholder="Cari nama..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
           <el-form-item label="Mandarin" :label-position="isMobile ? 'top' : 'right'">
-            <el-input
-              v-model="filters.mandarin"
-              placeholder="Cari nama mandarin..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+            <el-input v-model="filters.mandarin" placeholder="Cari nama mandarin..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
           <el-form-item label="Fotang" :label-position="isMobile ? 'top' : 'right'">
-            <LookupSelect
-              v-model="filters.fotang"
-              placeholder="Pilih fotang..."
-              :fetch-api="fotangApi.getFotangLookup"
-              value-key="lookup_id"
-              label-key="lookup_description"
-              clearable
-              @change="onFilterChange"
-            />
+            <LookupSelect v-model="filters.fotang" placeholder="Pilih fotang..."
+              :fetch-api="fotangApi.getFotangLookupSxy" value-key="lookup_value" label-key="lookup_description"
+              clearable @change="onFilterChange" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -71,16 +51,10 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="dataList"
-        stripe
-        border
-        height="475"
-        style="width: 100%"
-        empty-text="Tidak ada data penggalang dana yang ditemukan"
-      >
-        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+      <el-table v-loading="loading" :data="dataList" stripe border height="475" style="width: 100%"
+        empty-text="Tidak ada data penggalang dana yang ditemukan">
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center"
+          fixed="left" />
 
         <el-table-column prop="nama" label="Nama Indonesia" min-width="180">
           <template #default="{ row }">
@@ -106,9 +80,9 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="mobile" label="Mobile Phone" min-width="140">
+        <el-table-column prop="mobile" label="Phone" min-width="140">
           <template #default="{ row }">
-            <span>{{ row.mobile || '-' }}</span>
+            <span>{{ row.mobile !== '-' ? row.mobile : row.telepon || '-' }}</span>
           </template>
         </el-table-column>
 
@@ -136,30 +110,13 @@
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                circle
-                :icon="Edit"
-                title="Edit Penggalang Dana"
-                @click="handleEdit(row.id!)"
-              />
+              <el-button type="primary" size="small" circle :icon="Edit" title="Edit Penggalang Dana"
+                @click="handleEdit(row.id!)" />
 
-              <el-popconfirm
-                title="Apakah Anda yakin ingin menghapus data ini?"
-                confirm-button-text="Ya, Hapus"
-                cancel-button-text="Batal"
-                confirm-button-type="danger"
-                @confirm="handleDelete(row.id!)"
-              >
+              <el-popconfirm title="Apakah Anda yakin ingin menghapus data ini?" confirm-button-text="Ya, Hapus"
+                cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row.id!)">
                 <template #reference>
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    :icon="Delete"
-                    title="Hapus Penggalang Dana"
-                  />
+                  <el-button type="danger" size="small" circle :icon="Delete" title="Hapus Penggalang Dana" />
                 </template>
               </el-popconfirm>
             </div>
@@ -169,102 +126,55 @@
 
       <!-- Pagination -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
     <!-- Create / Edit Dialog -->
-    <el-dialog
-      v-model="dialogVisible"
+    <el-dialog v-model="dialogVisible"
       :title="isEditing ? `Edit Penggalang Dana #${editingId}` : 'Tambah Penggalang Dana Baru'"
-      :width="isMobile ? '90%' : '600px'"
-      destroy-on-close
-      @closed="resetForm"
-    >
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="140px"
-        :label-position="isMobile ? 'top' : 'right'"
-      >
+      :width="isMobile ? '90%' : '600px'" destroy-on-close @closed="resetForm">
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="140px"
+        :label-position="isMobile ? 'top' : 'right'">
         <el-form-item label="Nama Indonesia" prop="nama">
-          <el-input
-            v-model="formData.nama"
-            placeholder="Masukkan nama Indonesia"
-          />
+          <el-input v-model="formData.nama" placeholder="Masukkan nama Indonesia" />
         </el-form-item>
 
         <el-form-item label="Nama Mandarin" prop="mandarin">
-          <el-input
-            v-model="formData.mandarin"
-            placeholder="Masukkan nama Mandarin"
-          />
+          <el-input v-model="formData.mandarin" placeholder="Masukkan nama Mandarin" />
         </el-form-item>
 
         <el-form-item label="Fotang" prop="lookup_fothang">
-          <LookupSelect
-            v-model="formData.lookup_fothang"
-            placeholder="Pilih Fotang..."
-            :fetch-api="fotangApi.getFotangLookup"
-            value-key="lookup_id"
-            label-key="lookup_description"
-            clearable
-          />
+          <LookupSelect v-model="formData.lookup_fothang" placeholder="Pilih Fotang..."
+            :fetch-api="fotangApi.getFotangLookupSxy" value-key="lookup_value" label-key="lookup_description"
+            clearable />
         </el-form-item>
 
-        <el-form-item label="No. Penggalang" prop="no">
-          <el-input
-            v-model="formData.no"
-            placeholder="Masukkan nomor penggalang dana"
-          />
-        </el-form-item>
+        <!-- <el-form-item label="No. Penggalang" prop="no">
+          <el-input v-model="formData.no" placeholder="Masukkan nomor penggalang dana" />
+        </el-form-item> -->
 
         <el-form-item label="Alamat" prop="alamat">
-          <el-input
-            v-model="formData.alamat"
-            type="textarea"
-            :rows="2"
-            placeholder="Masukkan alamat lengkap..."
-          />
+          <el-input v-model="formData.alamat" type="textarea" :rows="2" placeholder="Masukkan alamat lengkap..." />
         </el-form-item>
 
         <el-form-item label="Telepon" prop="telepon">
-          <el-input
-            v-model="formData.telepon"
-            placeholder="Masukkan nomor telepon rumah/kantor"
-          />
+          <el-input v-model="formData.telepon" placeholder="Masukkan nomor telepon rumah/kantor" />
         </el-form-item>
 
         <el-form-item label="Mobile Phone" prop="mobile">
-          <el-input
-            v-model="formData.mobile"
-            placeholder="Masukkan nomor handphone"
-          />
+          <el-input v-model="formData.mobile" placeholder="Masukkan nomor handphone" />
         </el-form-item>
 
         <el-form-item label="Email" prop="email">
-          <el-input
-            v-model="formData.email"
-            placeholder="contoh@domain.com"
-          />
+          <el-input v-model="formData.email" placeholder="contoh@domain.com" />
         </el-form-item>
 
         <el-form-item label="Keterangan" prop="keterangan">
-          <el-input
-            v-model="formData.keterangan"
-            type="textarea"
-            :rows="3"
-            placeholder="Masukkan keterangan..."
-          />
+          <el-input v-model="formData.keterangan" type="textarea" :rows="3" placeholder="Masukkan keterangan..." />
         </el-form-item>
 
         <!-- <el-form-item label="Status" prop="status">

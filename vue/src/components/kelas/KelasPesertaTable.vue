@@ -5,40 +5,24 @@
         <template #title>
           <div class="accordion-header" @click.stop>
             <div class="header-title">
-              <el-icon class="header-icon"><UserFilled /></el-icon>
-              <span>{{isDesktop ? 'Daftar Peserta Kelas' : 'Peserta'}}</span>
+              <el-icon class="header-icon">
+                <UserFilled />
+              </el-icon>
+              <span>{{ isDesktop ? 'Daftar Peserta Kelas' : 'Peserta' }}</span>
               <el-tag size="small" type="info" class="ml-2">{{ total }} Peserta</el-tag>
             </div>
             <div class="header-actions" @click.stop>
-              <el-button
-                type="primary"
-                size="small"
-                :icon="Plus"
-                @click.stop="openAddDialog"
-              >
-                {{isMobile?'':'Tambah Peserta'}}
+              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+                {{ isMobile ? '' : 'Tambah Peserta' }}
               </el-button>
-              <el-button
-                :icon="Refresh"
-                circle
-                size="small"
-                title="Refresh Peserta"
-                @click.stop="fetchPeserta"
-              />
+              <el-button :icon="Refresh" circle size="small" title="Refresh Peserta" @click.stop="fetchPeserta" />
             </div>
           </div>
         </template>
 
         <div class="accordion-content">
-          <el-table
-            v-loading="loading"
-            :data="pesertaList"
-            stripe
-            border
-            max-height="450"
-            style="width: 100%"
-            empty-text="Belum ada peserta yang terdaftar pada kelas ini"
-          >
+          <el-table v-loading="loading" :data="pesertaList" stripe border max-height="450" style="width: 100%"
+            empty-text="Belum ada peserta yang terdaftar pada kelas ini">
             <el-table-column v-if="isDesktop" type="index" label="No." width="60" align="center" fixed="left" />
 
             <el-table-column prop="nama_indonesia" label="Nama Ciu Tao" min-width="160">
@@ -83,26 +67,17 @@
                   <el-tag v-if="row.ikrar4" size="small" type="success">I-4</el-tag>
                   <el-tag v-if="row.ikrar5" size="small" type="success">I-5</el-tag>
                   <el-tag v-if="row.ikrar6" size="small" type="success">I-6</el-tag>
-                  <span v-if="!row.ikrar1 && !row.ikrar2 && !row.ikrar3 && !row.ikrar4 && !row.ikrar5 && !row.ikrar6" class="no-ikrar">-</span>
+                  <span v-if="!row.ikrar1 && !row.ikrar2 && !row.ikrar3 && !row.ikrar4 && !row.ikrar5 && !row.ikrar6"
+                    class="no-ikrar">-</span>
                 </div>
               </template>
             </el-table-column>
 
             <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
-                <el-button
-                  type="primary"
-                  circle
-                  size="small"
-                  :icon="Edit"
-                  @click="openEditDialog(row)" />
-                <el-popconfirm
-                  title="Yakin ingin menghapus peserta ini?"
-                  confirm-button-text="Ya, Hapus"
-                  cancel-button-text="Batal"
-                  confirm-button-type="danger"
-                  @confirm="handleDelete(row)"
-                >
+                <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
+                <el-popconfirm title="Yakin ingin menghapus peserta ini?" confirm-button-text="Ya, Hapus"
+                  cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row)">
                   <template #reference>
                     <el-button type="danger" circle size="small" :icon="Delete" />
                   </template>
@@ -113,80 +88,41 @@
 
           <!-- Pagination -->
           <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
+            <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
-              :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-              :total="total"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
+              :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+              :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
           </div>
         </div>
       </el-collapse-item>
     </el-collapse>
 
     <!-- Dialog Popup Add / Edit Peserta -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogMode === 'add' ? 'Tambah Peserta' : 'Edit Peserta'"
-      width="720px"
-      destroy-on-close
-    >
-      <el-alert
-        v-if="Object.keys(dialogFieldErrors).length > 0"
-        type="error"
-        show-icon
-        title="Invalid Inputs"
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Peserta' : 'Edit Peserta'" width="720px"
+      destroy-on-close>
+      <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
-        class="mb-4"
-      />
+        class="mb-4" />
 
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="formRules"
-        label-width="140px"
-        size="default"
-        v-loading="submitting"
-      >
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="140px" size="default" v-loading="submitting">
         <el-form-item label="Peserta (Umat)" prop="id_peserta" :error="hasFieldError('id_peserta') ? ' ' : undefined">
-          <el-select
-            v-model="form.id_peserta"
-            filterable
-            remote
-            reserve-keyword
-            placeholder="Ketik nama untuk mencari Umat..."
-            :remote-method="searchUmat"
-            :loading="loadingUmat"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="item in umatOptions"
-              :key="item.id"
-              :label="getUmatOptionLabel(item)"
-              :value="item.id"
-            />
+          <el-select v-model="form.id_peserta" filterable remote reserve-keyword
+            placeholder="Ketik nama untuk mencari Umat..." :remote-method="searchUmat" :loading="loadingUmat"
+            style="width: 100%">
+            <el-option v-for="item in umatOptions" :key="item.id" :label="getUmatOptionLabel(item)" :value="item.id" />
           </el-select>
           <FieldErrors :errors="getFieldErrors('id_peserta')" />
         </el-form-item>
 
-        <el-form-item v-if="dialogMode !== 'add'" label="Status Lulus" :error="hasFieldError('lulus') ? ' ' : undefined">
-          <el-switch
-            v-model="form.lulus"
-            active-text="Lulus"
-            inactive-text="Belum Lulus"
-          />
+        <el-form-item v-if="dialogMode !== 'add'" label="Status Lulus"
+          :error="hasFieldError('lulus') ? ' ' : undefined">
+          <el-switch v-model="form.lulus" active-text="Lulus" inactive-text="Belum Lulus" />
           <FieldErrors :errors="getFieldErrors('lulus')" />
         </el-form-item>
 
-        <el-form-item v-if="dialogMode !== 'add'" label="Keterangan Lulus" :error="hasFieldError('keterangan_lulus') ? ' ' : undefined">
-          <el-input
-            v-model="form.keterangan_lulus"
-            placeholder="Catatan / keterangan kelulusan"
-            maxlength="200"
-          />
+        <el-form-item v-if="dialogMode !== 'add'" label="Keterangan Lulus"
+          :error="hasFieldError('keterangan_lulus') ? ' ' : undefined">
+          <el-input v-model="form.keterangan_lulus" placeholder="Catatan / keterangan kelulusan" maxlength="200" />
           <FieldErrors :errors="getFieldErrors('keterangan_lulus')" />
         </el-form-item>
 
@@ -208,51 +144,39 @@
                 <span class="font-semibold">{{ row.label }}</span>
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Anak" width="100" align="center">
               <template #default="{ $index }">
-                <el-input-number
-                  v-model="anakDays[$index]"
-                  :min="0"
-                  :max="99"
-                  controls-position="right"
-                  size="small"
-                  style="width: 100%"
-                />
+                <el-input-number v-model="anakDays[$index]" :min="0" :max="99" controls-position="right" size="small"
+                  style="width: 100%" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Suster" width="100" align="center">
               <template #default="{ $index }">
-                <el-input-number
-                  v-model="susterDays[$index]"
-                  :min="0"
-                  :max="99"
-                  controls-position="right"
-                  size="small"
-                  style="width: 100%"
-                />
+                <el-input-number v-model="susterDays[$index]" :min="0" :max="99" controls-position="right" size="small"
+                  style="width: 100%" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Menginap" align="center">
               <template #default="{ $index }">
                 <el-checkbox v-model="menginapDays[$index]" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Makan Pagi" align="center">
               <template #default="{ $index }">
                 <el-checkbox v-model="makananPagiDays[$index]" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Makan Siang" align="center">
               <template #default="{ $index }">
                 <el-checkbox v-model="makananSiangDays[$index]" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Makan Malam" align="center">
               <template #default="{ $index }">
                 <el-checkbox v-model="makananMalamDays[$index]" />

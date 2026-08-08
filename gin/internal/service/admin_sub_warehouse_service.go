@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -127,7 +126,7 @@ func (s *AdminSubWarehouseService) Create(payload domain.AdminSubWarehouse, c *g
 
 	payload.CruId = userID
 	payload.UpdateUId = userID
-	payload.LstUpdate = time.Now()
+	payload.LstUpdate = domain.NowDateTime()
 
 	if err := s.db.Create(&payload).Error; err != nil {
 		return domain.AdminSubWarehouse{}, fmt.Errorf("failed to create record: %w", err)
@@ -178,7 +177,7 @@ func (s *AdminSubWarehouseService) Update(id string, payload domain.AdminSubWare
 	item.Pic = payload.Pic
 	item.DocCode = payload.DocCode
 	item.UpdateUId = userID
-	item.LstUpdate = time.Now()
+	item.LstUpdate = domain.NowDateTime()
 	item.FlagProductions = payload.FlagProductions
 	item.SubWhType = payload.SubWhType
 

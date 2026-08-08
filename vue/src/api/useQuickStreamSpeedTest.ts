@@ -64,6 +64,8 @@ export function useQuickStreamSpeedTest() {
                 const totalBits = receivedBytes * 8
                 const mbps = totalBits / durationSeconds / 1000000
                 speedMbps.value = parseFloat(mbps.toFixed(2))
+                console.warn(`[Network Monitor] Speed test ${speedMbps.value}`)
+
             } else {
                 speedMbps.value = 0
             }

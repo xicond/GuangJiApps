@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -70,7 +69,7 @@ func (s *KelasAbsensiService) Create(payload domain.KelasAbsensi, c *gin.Context
 	userID := getUserID(c)
 	statusTrue := true
 	modActI := "I"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	payload.Status = &statusTrue
 	payload.ModAct = &modActI
@@ -127,7 +126,7 @@ func (s *KelasAbsensiService) Update(id string, payload domain.KelasAbsensi, c *
 
 	userID := getUserID(c)
 	modActU := "U"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	item.ModAct = &modActU
 	item.ModBy = &userID
@@ -156,7 +155,7 @@ func (s *KelasAbsensiService) Delete(id string, c *gin.Context) error {
 	userID := getUserID(c)
 	statusFalse := false
 	modActD := "D"
-	now := time.Now()
+	now := domain.NowDateTime()
 
 	item.Status = &statusFalse
 	item.ModAct = &modActD

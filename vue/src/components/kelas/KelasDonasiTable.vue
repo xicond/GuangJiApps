@@ -5,40 +5,24 @@
         <template #title>
           <div class="accordion-header" @click.stop>
             <div class="header-title">
-              <el-icon class="header-icon"><Money /></el-icon>
+              <el-icon class="header-icon">
+                <Money />
+              </el-icon>
               <span>{{ isDesktop ? 'Daftar Donasi Uang Kelas' : 'Donasi' }}</span>
               <el-tag size="small" type="info" class="ml-2">{{ total }} Donasi</el-tag>
             </div>
             <div class="header-actions" @click.stop>
-              <el-button
-                type="primary"
-                size="small"
-                :icon="Plus"
-                @click.stop="openAddDialog"
-              >
-                {{isMobile?'':'Tambah Donasi'}}
+              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+                {{ isMobile ? '' : 'Tambah Donasi' }}
               </el-button>
-              <el-button
-                :icon="Refresh"
-                circle
-                size="small"
-                title="Refresh Donasi"
-                @click.stop="fetchDonasi"
-              />
+              <el-button :icon="Refresh" circle size="small" title="Refresh Donasi" @click.stop="fetchDonasi" />
             </div>
           </div>
         </template>
 
         <div class="accordion-content">
-          <el-table
-            v-loading="loading"
-            :data="donasiList"
-            stripe
-            border
-            max-height="450"
-            style="width: 100%"
-            empty-text="Belum ada donasi uang yang terdaftar pada kelas ini"
-          >
+          <el-table v-loading="loading" :data="donasiList" stripe border max-height="450" style="width: 100%"
+            empty-text="Belum ada donasi uang yang terdaftar pada kelas ini">
             <el-table-column v-if="isDesktop" type="index" label="No." width="60" align="center" fixed="left" />
 
             <el-table-column prop="donatur" label="Nama Donatur" min-width="200">
@@ -55,20 +39,9 @@
 
             <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
-                <el-button
-                  type="primary"
-                  circle
-                  size="small"
-                  :icon="Edit"
-                  @click="openEditDialog(row)"
-                />
-                <el-popconfirm
-                  title="Yakin ingin menghapus donasi ini?"
-                  confirm-button-text="Ya, Hapus"
-                  cancel-button-text="Batal"
-                  confirm-button-type="danger"
-                  @confirm="handleDelete(row)"
-                >
+                <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
+                <el-popconfirm title="Yakin ingin menghapus donasi ini?" confirm-button-text="Ya, Hapus"
+                  cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row)">
                   <template #reference>
                     <el-button type="danger" circle size="small" :icon="Delete" />
                   </template>
@@ -79,58 +52,31 @@
 
           <!-- Pagination -->
           <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
+            <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
-              :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-              :total="total"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
+              :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+              :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
           </div>
         </div>
       </el-collapse-item>
     </el-collapse>
 
     <!-- Dialog Popup Add / Edit Donasi -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogMode === 'add' ? 'Tambah Donasi Uang' : 'Edit Donasi Uang'"
-      width="520px"
-      destroy-on-close
-    >
-      <el-alert
-        v-if="Object.keys(dialogFieldErrors).length > 0"
-        type="error"
-        show-icon
-        title="Invalid Inputs"
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Donasi Uang' : 'Edit Donasi Uang'"
+      width="520px" destroy-on-close>
+      <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
-        class="mb-4"
-      />
+        class="mb-4" />
 
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="formRules"
-        label-width="130px"
-        size="default"
-        v-loading="submitting"
-      >
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="130px" size="default" v-loading="submitting">
         <el-form-item label="Nama Donatur" prop="donatur" :error="hasFieldError('donatur') ? ' ' : undefined">
           <el-input v-model="form.donatur" placeholder="Nama donatur" maxlength="100" />
           <FieldErrors :errors="getFieldErrors('donatur')" />
         </el-form-item>
 
         <el-form-item label="Jumlah Donasi" prop="donasi" :error="hasFieldError('donasi') ? ' ' : undefined">
-          <el-input-number
-            v-model="form.donasi"
-            :min="0"
-            :precision="2"
-            :step="50000"
-            controls-position="right"
-            style="width: 100%"
-          />
+          <el-input-number v-model="form.donasi" :min="0" :precision="2" :step="50000" controls-position="right"
+            style="width: 100%" />
           <FieldErrors :errors="getFieldErrors('donasi')" />
         </el-form-item>
       </el-form>

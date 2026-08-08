@@ -1,41 +1,19 @@
 <template>
-  <el-select
-    :model-value="modelValue"
-    :placeholder="placeholder"
-    filterable
-    remote
-    :remote-method="handleRemoteSearch"
-    :loading="loading"
-    :clearable="props.clearable"
-    class="w-full"
-    @update:model-value="onValueChange"
-    @clear="onClear"
-    @visible-change="onVisibleChange"
-  >
-    <el-option
-      v-for="item in options"
-      :key="getOptionValue(item)"
-      :label="getOptionLabel(item)"
-      :value="getOptionValue(item)"
-    />
+  <el-select :model-value="modelValue" :placeholder="placeholder" filterable remote :remote-method="handleRemoteSearch"
+    :loading="loading" :clearable="props.clearable" class="w-full" @update:model-value="onValueChange" @clear="onClear"
+    @visible-change="onVisibleChange">
+    <el-option v-for="item in options" :key="getOptionValue(item)" :label="getOptionLabel(item)"
+      :value="getOptionValue(item)" />
 
-    <template v-if="maxPage>1" #footer>
+    <template v-if="maxPage > 1" #footer>
       <div v-if="total > 0" class="lookup-pagination-footer">
-        <el-button
-          size="small"
-          :disabled="page <= 1 || loading"
-          @click.stop="prevPage"
-        >
+        <el-button size="small" :disabled="page <= 1 || loading" @click.stop="prevPage">
           &laquo; Prev
         </el-button>
         <span class="page-info">
           Halaman {{ page }} dari {{ maxPage }} (Total {{ total }})
         </span>
-        <el-button
-          size="small"
-          :disabled="page >= maxPage || loading"
-          @click.stop="nextPage"
-        >
+        <el-button size="small" :disabled="page >= maxPage || loading" @click.stop="nextPage">
           Next &raquo;
         </el-button>
       </div>
@@ -45,22 +23,22 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import type { AppLookup, LookupQueryParams } from '../../types/lookup'
 import { cachedFetchLookup } from '../../utils/lookupCache'
 
-type LookupOptionItem = Record<string, any>
+export type LookupOptionItem = Record<string, any>
 
 const props = withDefaults(
   defineProps<{
     modelValue?: string | number
     placeholder?: string
     fetchApi: (params: any, signal?: AbortSignal) => Promise<{ data?: any[]; meta?: any }>
+    getItemApi?: (id: string | number, signal?: AbortSignal) => Promise<{ data?: any }>
     valueKey?: string
     labelKey?: string
-    labelFormatter?: (item: LookupOptionItem) => string
+    labelFormatter?: (item: any) => string
     clearable?: boolean
     pageSize?: number
-    initialOption?: LookupOptionItem
+    initialOption?: any
   }>(),
   {
     modelValue: '',
@@ -77,11 +55,12 @@ const emit = defineEmits<{
   (e: 'change', value: string | number | undefined): void
 }>()
 
-const options = ref<LookupOptionItem[]>([])
+const options = ref<any[]>([])
 const loading = ref(false)
 const page = ref(1)
 const total = ref(0)
 const searchQuery = ref('')
+const selectKey = ref(0)
 
 const maxPage = computed(() => {
   if (total.value <= 0) return 1
@@ -91,35 +70,53 @@ const maxPage = computed(() => {
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 let currentAbortController: AbortController | null = null
 
-function getOptionValue(item?: LookupOptionItem): string | number {
+function getOptionValue(item?: any): string | number {
   if (!item) return ''
-  const val = item[props.valueKey]
-  return val !== undefined && val !== null ? (val as string | number) : (item.lookup_value as string | number) || (item.id as string | number) || ''
+  let val = item[props.valueKey]
+  if (val === undefined || val === null || val === '') {
+    val = item.lookup_value ?? ''
+  }
+  if (props.modelValue !== undefined && props.modelValue !== null && props.modelValue !== '') {
+    if (String(val) === String(props.modelValue)) {
+      return props.modelValue
+    }
+  }
+  return val as string | number
 }
 
-function getOptionLabel(item?: LookupOptionItem): string {
+function getOptionLabel(item?: any): string {
   if (!item) return ''
   if (props.labelFormatter) {
     return props.labelFormatter(item)
   }
-  const label = item[props.labelKey]
-  if (label !== undefined && label !== null && label !== '') return String(label)
-  return String(item.lookup_description || item.lookup_value || item.lookup_id || item.nama_indonesia || '')
+  const label = item[props.labelKey] ?? item.lookup_description ?? ''
+  return String(label)
 }
 
-function ensureInitialOption(opt?: AppLookup | LookupOptionItem) {
+function ensureInitialOption(opt?: any) {
   if (!opt) return
-  const val = getOptionValue(opt)
+  let itemToUse = { [props.valueKey]: opt[props.valueKey], [props.labelKey]: opt[props.labelKey] }
+  /* if (props.transformInitialOption) {
+    try {
+      itemToUse = props.transformInitialOption(opt) || opt
+    } catch (e) {
+      console.error('Error transforming initial option:', e)
+    }
+  } */
+
+  const val = getOptionValue(itemToUse)
   if (val === undefined || val === null || val === '') return
-  const exists = options.value.some((item) => getOptionValue(item) === val)
+  const exists = options.value.some((item) => String(getOptionValue(item)) === String(val))
+  // console.log('in', options.value, itemToUse, val, exists)
   if (!exists) {
-    options.value = [opt, ...options.value]
+    options.value = [itemToUse, ...options.value]
+    selectKey.value++
   }
 }
 
 watch(
   () => props.initialOption,
-  (newOpt) => {
+  (newOpt?: any) => {
     if (newOpt) {
       ensureInitialOption(newOpt)
     }
@@ -150,7 +147,11 @@ async function loadData(targetPage = 1, query = '', forceRefresh = false) {
       forceRefresh
     )
 
+    const currentSelectedOpt = options.value.find((item) => String(getOptionValue(item)) === String(props.modelValue))
     options.value = res.data || []
+    if (currentSelectedOpt) {
+      ensureInitialOption(currentSelectedOpt)
+    }
     if (props.initialOption) {
       ensureInitialOption(props.initialOption)
     }
@@ -168,18 +169,23 @@ async function checkAndFetchMissingSelectedValue() {
   const currentVal = props.modelValue
   if (currentVal === undefined || currentVal === null || currentVal === '') return
   const exists = options.value.some((item) => String(getOptionValue(item)) === String(currentVal))
-  if (!exists && props.fetchApi) {
+  if (!exists) {
     try {
       const resVal = await props.fetchApi({ lookup_value: String(currentVal), limit: 1 })
       if (resVal?.data && resVal.data.length > 0) {
         ensureInitialOption(resVal.data[0])
         return
       }
-      const resId = await props.fetchApi({ lookup_id: String(currentVal), limit: 1 })
+      /* const resId = await props.fetchApi({ lookup_id: String(currentVal), limit: 1 })
       if (resId?.data && resId.data.length > 0) {
         ensureInitialOption(resId.data[0])
         return
-      }
+      } */
+      /* const resDirectId = await props.fetchApi({ id: currentVal, limit: 1 })
+      if (resDirectId?.data && resDirectId.data.length > 0) {
+        ensureInitialOption(resDirectId.data[0])
+        return
+      } */
     } catch (e) {
       // Ignore lookup error for missing selected item
     }

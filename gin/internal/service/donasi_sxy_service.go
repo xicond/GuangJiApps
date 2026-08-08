@@ -176,7 +176,7 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 
 			switch cleanCol {
 			case "totalrow", "total_row", "totalcount", "total_count", "rowcount":
-				valuePtrs[i] = &totalRowScan
+				valuePtrs[i] = &nullFieldScanner{target: &totalRowScan}
 			default:
 				matched := false
 				for j := 0; j < t.NumField(); j++ {
@@ -186,11 +186,7 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
 						strings.ToLower(field.Name) == cleanCol {
 						fieldVal := v.Field(j)
-						if fieldVal.Kind() == reflect.String {
-							valuePtrs[i] = &nullStringScanner{target: fieldVal.Addr().Interface().(*string)}
-						} else {
-							valuePtrs[i] = fieldVal.Addr().Interface()
-						}
+						valuePtrs[i] = &nullFieldScanner{target: fieldVal.Addr().Interface()}
 						matched = true
 						break
 					}
@@ -242,9 +238,9 @@ func (s *DonasiSxyService) Create(payload domain.DonasiSxy, c *gin.Context) (dom
 
 	payload.Status = true
 	payload.CreatedBy = userID
-	payload.CreatedDate = time.Now()
+	payload.CreatedDate = domain.NowDateTime()
 	payload.UpdatedBy = userID
-	payload.UpdatedDate = time.Now()
+	payload.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Create(&payload).Error; err != nil {
 		return domain.DonasiSxy{}, fmt.Errorf("failed to create record: %w", err)
@@ -302,7 +298,7 @@ func (s *DonasiSxyService) Update(id string, payload domain.DonasiSxy, c *gin.Co
 	item.AtasNama = payload.AtasNama
 	item.TtkSent = payload.TtkSent
 	item.UpdatedBy = userID
-	item.UpdatedDate = time.Now()
+	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
 		return domain.DonasiSxy{}, fmt.Errorf("failed to update record: %w", err)
@@ -335,7 +331,7 @@ func (s *DonasiSxyService) Delete(id string, c *gin.Context) error {
 
 	item.Status = false
 	item.UpdatedBy = userID
-	item.UpdatedDate = time.Now()
+	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
 		return fmt.Errorf("failed to delete record: %w", err)
@@ -405,18 +401,18 @@ func (s *DonasiSxyService) Report(page int, filters map[string]string, limit int
 	).Rows()
 
 	// Log query and values
-	timestamp := time.Now().Format("2006-01-02 15:04:05")
-	log.Printf("[SQL] %s | Query:\n%s\n", timestamp, s.db.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Raw("EXEC SP_SXY_RPT_TRANSAKSI ?, ?, ?, ?, ?, ?, ?",
-			donatur,
-			penggalang,
-			startDate,
-			endDate,
-			fotang,
-			limit, // @PageSize
-			page,  // @CurrentPage
-		)
-	}))
+	// timestamp := time.Now().Format("2006-01-02 15:04:05")
+	// log.Printf("[SQL] %s | Query:\n%s\n", timestamp, s.db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+	// 	return tx.Raw("EXEC SP_SXY_RPT_TRANSAKSI ?, ?, ?, ?, ?, ?, ?",
+	// 		donatur,
+	// 		penggalang,
+	// 		startDate,
+	// 		endDate,
+	// 		fotang,
+	// 		limit, // @PageSize
+	// 		page,  // @CurrentPage
+	// 	)
+	// }))
 
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("database query error: %w", err)
@@ -539,11 +535,23 @@ func (s *DonasiSxyService) ReportExcel(filters map[string]string, c *gin.Context
 		endDate = filters["endDate"]
 	}
 	penggalang := filters["penggalang"]
+	_, err := strconv.ParseUint(penggalang, 10, 64)
+	if err != nil {
+		penggalang = "0"
+	}
 	donatur := filters["donatur"]
+	_, err = strconv.ParseUint(donatur, 10, 64)
+	if err != nil {
+		donatur = "0"
+	}
 	fotang := filters["fotang"]
+	_, err = strconv.ParseUint(fotang, 10, 64)
+	if err != nil {
+		fotang = "0"
+	}
 
 	// &SubWhId=%s
-	reportURL := fmt.Sprintf("%s/ReportServer?%%2fGuangJiReport%%2frpt_sxy_transaksi&startDate=%s&endDate=%s&penggalang=%s&donatur=%s&fotang=%s&rs:Command=Render&rs:Format=EXCELOPENXML",
+	reportURL := fmt.Sprintf("%s/ReportServer?%%2fGuangJiReport%%2frpt_sxy_transaksi&StartDate=%s&EndDate=%s&Penggalang=%s&Donatur=%s&Fotang=%s&rs:Command=Render&rs:Format=EXCELOPENXML",
 		baseURL,
 		url.QueryEscape(startDate),
 		url.QueryEscape(endDate),
@@ -622,13 +630,13 @@ func (s *DonasiSxyService) ReportExcel(filters map[string]string, c *gin.Context
 	bufPtr := copyBufferPool.Get().(*[]byte)
 	defer copyBufferPool.Put(bufPtr)
 
-	streamStart := time.Now()
-	nBytes, err := io.CopyBuffer(c.Writer, resp.Body, *bufPtr)
-	streamDuration := time.Since(streamStart)
-	totalDuration := time.Since(startTime)
+	// streamStart := time.Now()
+	_, err = io.CopyBuffer(c.Writer, resp.Body, *bufPtr)
+	// streamDuration := time.Since(streamStart)
+	// totalDuration := time.Since(startTime)
 
-	log.Printf("[REPORT PERF] SSRS Fetch: %v, Client Stream (%d bytes): %v, Total: %v",
-		fetchDuration, nBytes, streamDuration, totalDuration)
+	// log.Printf("[REPORT PERF] SSRS Fetch: %v, Client Stream (%d bytes): %v, Total: %v",
+	// 	fetchDuration, nBytes, streamDuration, totalDuration)
 
 	if err != nil {
 		return fmt.Errorf("gagal stream report ke client: %w", err)

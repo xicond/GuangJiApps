@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -246,9 +245,9 @@ func (s *SxyDonaturService) Create(payload domain.SxyDonatur, c *gin.Context) (d
 
 	payload.Status = true
 	payload.CreatedBy = userID
-	payload.CreatedDate = time.Now()
+	payload.CreatedDate = domain.NowDateTime()
 	payload.UpdatedBy = userID
-	payload.UpdatedDate = time.Now()
+	payload.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Create(&payload).Error; err != nil {
 		return domain.SxyDonatur{}, fmt.Errorf("failed to create record: %w", err)
@@ -304,7 +303,7 @@ func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur, c *gin.
 	item.Mobile = payload.Mobile
 	item.Email = payload.Email
 	item.UpdatedBy = userID
-	item.UpdatedDate = time.Now()
+	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
 		return domain.SxyDonatur{}, fmt.Errorf("failed to update record: %w", err)
@@ -337,7 +336,7 @@ func (s *SxyDonaturService) Delete(id string, c *gin.Context) error {
 
 	item.Status = false
 	item.UpdatedBy = userID
-	item.UpdatedDate = time.Now()
+	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
 		return fmt.Errorf("failed to delete record: %w", err)

@@ -1,5 +1,47 @@
 # Documentation - Completed Tasks
 
+## [Completed] HTTPS Scheme Detection & Port 443 Logging (`gin/internal/api/router.go`)
+
+### Summary & Changes Made:
+- **`ForwardedHeaderMiddleware`**: Implemented `ForwardedHeaderMiddleware` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go) to inspect `X-Forwarded-Proto`, `X-Forwarded-Scheme`, `X-Forwarded-Ssl`, and `Front-End-Https` headers sent by reverse proxies (such as IIS HttpPlatformHandler).
+- **HTTPS & Port 443 Forced Logging**: Updated `FilterSuccessLogMiddleware` to detect if `Request.URL.Scheme` or `X-Forwarded-Proto` is `"https"` (or `X-Forwarded-Port` is `"443"`), forcing `c.Request.URL.Scheme = "https"` and tagging log lines with `[HTTPS:443]` (or `[HTTPS:443-PANIC]`).
+- **Verification**: Built and verified Go binary via `docker compose run --rm gin-build`, passing with exit code 0.
+
+---
+
+## [Completed] HTTP Referer Logging in `FilterSuccessLogMiddleware` (`gin/internal/api/router.go`)
+
+### Summary & Changes Made:
+- **HTTP Referer Logging**: Updated `FilterSuccessLogMiddleware` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go) to capture `c.Request.Referer()`. When the `Referer` header is present, it is automatically appended to `log.Printf` output (`| Ref: <referer_url>`) for both `[HTTP]` status >= 400 and `[PANIC]` log events.
+- **Verification**: Compiled and verified Go server binary via `docker compose run --rm gin-build`, passing cleanly with exit code 0.
+
+---
+
+## [Completed] IIS HttpPlatformHandler & Client IP Extraction (`gin/dist/web.config`, `gin/internal/api/middleware/ratelimit.go`, `gin/internal/api/router.go`)
+
+### Summary & Changes Made:
+- **`middleware.GetClientIP(c)` Helper**: Created a robust `GetClientIP` function in [ratelimit.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/middleware/ratelimit.go) that checks incoming proxy headers (`X-Forwarded-For`, `X-Real-IP`, `X-ARR-ClientIP`, `X-Original-For`) to resolve the client's actual remote IP, filtering out loopback addresses (`127.0.0.1`, `::1`) and stripping ports via `net.SplitHostPort`.
+- **Rate Limiter & Middleware Integration**: Updated `LoginRateLimiter.GetKey` and `FilterSuccessLogMiddleware` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go) to use `middleware.GetClientIP(c)`.
+- **Gin Proxy Trust Configuration**: Configured `r.ForwardedByClientIP = true` and `r.SetTrustedProxies(nil)` in `NewRouter` to trust proxy headers from upstream reverse proxies without fallback loopback locking.
+- **Verification**: Built and verified Go binary via `docker compose run --rm gin-build`, passing with exit code 0.
+
+---
+
+## [Completed] UmatReportList UI Fixes & Clean Pagination Layout (`vue/src/views/report/UmatReportList.vue`)
+
+### Summary & Changes Made:
+- **Card Border & Filter Layout Fix**:
+  - Removed redundant `border: 1px solid #e4e7ed` overrides on `.filter-card` and `.table-card` which were creating double/bolder borders on top of Element Plus default card styling. Updated styles to use Element Plus CSS variables (`var(--el-border-color-lighter)`, `var(--el-text-color-primary)`).
+  - Grouped `Usia Dari` and `Usia Sampai` into a unified **Rentang Usia (Tahun)** control range container (`Dari` [input] `s/d` [input] `Sampai`).
+  - Added dynamic validation rules (`:max="filters.usia_sampai"` for Dari and `:min="filters.usia_dari"` for Sampai) plus `onUsiaDariChange` / `onUsiaSampaiChange` handlers guaranteeing `usia_sampai >= usia_dari`.
+  - Rebalanced Row 3 grid column spans (`Rentang Usia`, `Lulus SD3`, `Vege / Qing Kou`) to `:md="8"` (33.3% width each), filling the row cleanly.
+  - Wrapped filter form in `<el-form label-position="top">` to ensure labels sit cleanly above inputs without squeezing controls horizontally.
+- **Usia Filter Initialization & Execution Fix**: Changed `usia_dari` and `usia_sampai` defaults in `filters` reactive state from `0` to `null as number | null` (and added `placeholder="Dari"` / `placeholder="Sampai"`). Updated `fetchData()` and `handleDownloadExcel()` to pass `filters.usia_dari ?? undefined` and `filters.usia_sampai ?? undefined`. This prevents the age filter from automatically triggering for age 0 on initial page load or after clicking Reset Filter.
+- **Pagination Layout String Cleanup**: Fixed redundant pagination layout expression string in [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue), [SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue), and [DonasiSxyList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/transaction/DonasiSxyList.vue) to cleanly evaluate `isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'`.
+- **Verification**: Verified via `npm run type-check` (`vue-tsc --noEmit`) and production build (`npm run build`), passing with 0 errors.
+
+---
+
 ## [Completed] Login Rate Limiter with Redis & Standard Headers (`gin/internal/api/router.go` & `vue/src/views/Login.vue`)
 
 ### Summary & Changes Made:
@@ -24,15 +66,14 @@
 
 ---
 
-## [Completed] Fixed Dev Service Worker TypeScript Import Transpilation (`vue/vite.config.ts`)
+## [Completed] Fixed Dev Service Worker ES Module Import Syntax Error (`vue/vite.config.ts`)
 
 ### Problem & Root Cause:
-When using `VitePWA` with `devOptions.type = 'module'` and `strategies: 'injectManifest'`, Vite served `sw.ts` as an ES Module in dev mode. When `sw.ts` imported local `.ts` strategy files (`import { DynamicNetworkCacheStrategy } from './strategies/dynamicnetworkcache'`), Vite rewrote the import path to `/src/strategies/dynamicnetworkcache.ts`.
-Browsers cannot execute uncompiled TypeScript (`.ts`) ES module imports directly inside Service Workers, causing the browser Service Worker initialization to fail with a syntax/mime-type error, preventing all `registerRoute` definitions from executing.
+When using `VitePWA` with `devOptions.type = 'classic'` and `strategies: 'injectManifest'`, the browser registers the development service worker as a classic script (`type: 'classic'`). However, `dev-sw.js` generated by Vite contains top-level ES `import` statements (e.g. `import { precacheAndRoute ... } from 'workbox-precaching'`), causing the browser to throw `Uncaught SyntaxError: Cannot use import statement outside a module (at dev-sw.js?dev-sw:1:1)`.
 
 ### Solution:
-Updated `devOptions.type` from `'module'` to `'classic'` in [vite.config.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/vite.config.ts).
-This causes Vite and `esbuild` to bundle `sw.ts` and all imported local TypeScript modules into a single standalone JavaScript file (`dev-sw.js`), resolving all import paths into plain JavaScript and allowing `registerRoute` and `DynamicNetworkCacheStrategy` to execute cleanly in browser Service Workers.
+Updated `devOptions.type` from `'classic'` to `'module'` in [vite.config.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/vite.config.ts).
+This tells `vite-plugin-pwa` to register the service worker as an ES module (`{ type: 'module' }`), allowing ES module `import` statements in `dev-sw.js` during development while building cleanly into bundled `sw.js` for production.
 
 ---
 

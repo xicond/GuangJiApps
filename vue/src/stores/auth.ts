@@ -19,7 +19,7 @@ export interface User {
   username?: string
   name?: string
   role?: string
-  [key: string]: unknown
+  [key: string]: string|number|boolean|undefined
 }
 
 export interface LoginErrorResult extends Error {

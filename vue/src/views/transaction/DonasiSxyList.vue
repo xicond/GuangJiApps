@@ -128,7 +128,7 @@
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')" @size-change="handleSizeChange"
+          :layout="isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'" @size-change="handleSizeChange"
           @current-change="handlePageChange" />
       </div>
     </el-card>
@@ -148,13 +148,14 @@
         </el-form-item>
 
         <el-form-item label="Donatur" prop="donatur_id">
-          <LookupSelect v-model="formData.donatur_id" placeholder="Pilih Umat/Donatur..." :fetch-api="umatApi.getUmats"
-            value-key="id" label-key="nama_indonesia" clearable />
+          <LookupSelect v-model="formData.donatur_id" placeholder="Pilih Donatur..." :fetch-api="sxyDonaturApi.getSxyDonaturs"
+            :get-item-api="sxyDonaturApi.getSxyDonaturById" value-key="id" label-key="nama" clearable />
         </el-form-item>
 
         <el-form-item label="Penggalang Dana" prop="penggalang_id">
           <LookupSelect v-model="formData.penggalang_id" placeholder="Pilih Penggalang Dana..."
-            :fetch-api="penggalangDanaApi.getPenggalangDanas" value-key="id" label-key="nama" clearable />
+            :fetch-api="penggalangDanaApi.getPenggalangDanas" :get-item-api="penggalangDanaApi.getPenggalangDanaById"
+            value-key="id" label-key="nama" clearable />
         </el-form-item>
 
         <el-form-item label="Tipe Sumbangan" prop="tipe_sumbangan">
@@ -220,7 +221,7 @@ import {
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { donasiSxyApi } from '../../api/donasiSxy'
-import { umatApi } from '../../api/umat'
+import { sxyDonaturApi } from '../../api/sxyDonatur'
 import { penggalangDanaApi } from '../../api/penggalangDana'
 import { lookupApi } from '../../api/lookup'
 import LookupSelect from '../../components/common/LookupSelect.vue'

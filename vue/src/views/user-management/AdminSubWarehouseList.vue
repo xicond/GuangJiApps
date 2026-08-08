@@ -20,32 +20,24 @@
     <!-- Filter Card -->
     <el-card shadow="never" class="filter-card">
       <div class="filter-header">
-        <el-icon class="filter-icon"><Search /></el-icon>
+        <el-icon class="filter-icon">
+          <Search />
+        </el-icon>
         <span class="filter-title">Filter & Pencarian Data</span>
       </div>
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Warehouse" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.full_name"
-              placeholder="Cari nama sub wh..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Nama Warehouse" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.full_name" placeholder="Cari nama sub wh..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="PIC" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.pic"
-              placeholder="Cari PIC..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+          <el-form-item label="PIC" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.pic" placeholder="Cari PIC..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
@@ -65,21 +57,15 @@
         </el-col>
       </el-row>
 
-      
+
     </el-card>
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="dataList"
-        stripe
-        border
-        height="475"
-        style="width: 100%"
-        empty-text="Tidak ada data admin sub warehouse yang ditemukan"
-      >
-        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+      <el-table v-loading="loading" :data="dataList" stripe border height="475" style="width: 100%"
+        empty-text="Tidak ada data admin sub warehouse yang ditemukan">
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center"
+          fixed="left" />
 
         <el-table-column prop="full_name" label="Nama Sub Warehouse" min-width="200">
           <template #default="{ row }">
@@ -87,7 +73,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="pic" label="PIC"  min-width="150"  >
+        <el-table-column prop="pic" label="PIC" min-width="150">
           <template #default="{ row }">
             <span>{{ row.pic || '-' }}</span>
           </template>
@@ -150,15 +136,10 @@
 
       <!-- Pagination -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
   </div>

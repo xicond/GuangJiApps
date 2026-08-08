@@ -22,3 +22,7 @@ func NewFotangService(db *gorm.DB) *FotangService {
 func (s *FotangService) Lookup(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_FOTHANG", page, limit, filters)
 }
+
+func (s *FotangService) LookupSxy(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
+	return Lookup(s.db, "SXY_FOTHANG", page, limit, filters)
+}

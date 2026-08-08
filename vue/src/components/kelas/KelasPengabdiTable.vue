@@ -5,40 +5,24 @@
         <template #title>
           <div class="accordion-header" @click.stop>
             <div class="header-title">
-              <el-icon class="header-icon"><Avatar /></el-icon>
+              <el-icon class="header-icon">
+                <Avatar />
+              </el-icon>
               <span>{{ isDesktop ? 'Daftar Pengabdi' : 'Pengabdi' }}</span>
               <el-tag size="small" type="info" class="ml-2">{{ total }} Pengabdi</el-tag>
             </div>
             <div class="header-actions" @click.stop>
-              <el-button
-                type="primary"
-                size="small"
-                :icon="Plus"
-                @click.stop="openAddDialog"
-              >
-                {{isMobile?'':'Tambah Pengabdi'}}
+              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+                {{ isMobile ? '' : 'Tambah Pengabdi' }}
               </el-button>
-              <el-button
-                :icon="Refresh"
-                circle
-                size="small"
-                title="Refresh Pengabdi"
-                @click.stop="fetchPengabdi"
-              />
+              <el-button :icon="Refresh" circle size="small" title="Refresh Pengabdi" @click.stop="fetchPengabdi" />
             </div>
           </div>
         </template>
 
         <div class="accordion-content">
-          <el-table
-            v-loading="loading"
-            :data="pengabdiList"
-            stripe
-            border
-            max-height="450"
-            style="width: 100%"
-            empty-text="Belum ada pengabdi yang terdaftar pada kelas ini"
-          >
+          <el-table v-loading="loading" :data="pengabdiList" stripe border max-height="450" style="width: 100%"
+            empty-text="Belum ada pengabdi yang terdaftar pada kelas ini">
             <el-table-column v-if="isDesktop" type="index" label="No." width="60" align="center" fixed="left" />
 
             <el-table-column prop="nama_indonesia" label="Nama Ciu Tao" min-width="160">
@@ -57,14 +41,16 @@
 
             <el-table-column prop="tim_kerja" label="Tim Kerja" min-width="130" align="center">
               <template #default="{ row }">
-                <el-tag v-if="row.tim_kerja_desc || row.tim_kerja" size="small" type="primary">{{ row.tim_kerja_desc || row.tim_kerja }}</el-tag>
+                <el-tag v-if="row.tim_kerja_desc || row.tim_kerja" size="small" type="primary">{{ row.tim_kerja_desc ||
+                  row.tim_kerja }}</el-tag>
                 <span v-else>-</span>
               </template>
             </el-table-column>
 
             <el-table-column prop="sub_kerja" label="Sub Kerja" min-width="130" align="center">
               <template #default="{ row }">
-                <el-tag v-if="row.sub_kerja_desc || row.sub_kerja" size="small" type="info">{{ row.sub_kerja_desc || row.sub_kerja }}</el-tag>
+                <el-tag v-if="row.sub_kerja_desc || row.sub_kerja" size="small" type="info">{{ row.sub_kerja_desc ||
+                  row.sub_kerja }}</el-tag>
                 <span v-else>-</span>
               </template>
             </el-table-column>
@@ -75,19 +61,9 @@
 
             <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
-                <el-button
-                  type="primary"
-                  circle
-                  size="small"
-                  :icon="Edit"
-                  @click="openEditDialog(row)" />
-                <el-popconfirm
-                  title="Yakin ingin menghapus pengabdi ini?"
-                  confirm-button-text="Ya, Hapus"
-                  cancel-button-text="Batal"
-                  confirm-button-type="danger"
-                  @confirm="handleDelete(row)"
-                >
+                <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
+                <el-popconfirm title="Yakin ingin menghapus pengabdi ini?" confirm-button-text="Ya, Hapus"
+                  cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row)">
                   <template #reference>
                     <el-button type="danger" circle size="small" :icon="Delete" />
                   </template>
@@ -98,61 +74,29 @@
 
           <!-- Pagination -->
           <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
+            <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
-              :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-              :total="total"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
+              :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+              :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
           </div>
         </div>
       </el-collapse-item>
     </el-collapse>
 
     <!-- Dialog Popup Add / Edit Pengabdi -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogMode === 'add' ? 'Tambah Pengabdi' : 'Edit Pengabdi'"
-      width="720px"
-      destroy-on-close
-    >
-      <el-alert
-        v-if="Object.keys(dialogFieldErrors).length > 0"
-        type="error"
-        show-icon
-        title="Invalid Inputs"
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Pengabdi' : 'Edit Pengabdi'" width="720px"
+      destroy-on-close>
+      <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
-        class="mb-4"
-      />
+        class="mb-4" />
 
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="formRules"
-        label-width="140px"
-        size="default"
-        v-loading="submitting"
-      >
-        <el-form-item label="Pengabdi (Umat)" prop="id_pengabdi" :error="hasFieldError('id_pengabdi') ? ' ' : undefined">
-          <el-select
-            v-model="form.id_pengabdi"
-            filterable
-            remote
-            reserve-keyword
-            placeholder="Ketik nama untuk mencari Umat..."
-            :remote-method="searchUmat"
-            :loading="loadingUmat"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="item in umatOptions"
-              :key="item.id"
-              :label="getUmatOptionLabel(item)"
-              :value="item.id"
-            />
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="140px" size="default" v-loading="submitting">
+        <el-form-item label="Pengabdi (Umat)" prop="id_pengabdi"
+          :error="hasFieldError('id_pengabdi') ? ' ' : undefined">
+          <el-select v-model="form.id_pengabdi" filterable remote reserve-keyword
+            placeholder="Ketik nama untuk mencari Umat..." :remote-method="searchUmat" :loading="loadingUmat"
+            style="width: 100%">
+            <el-option v-for="item in umatOptions" :key="item.id" :label="getUmatOptionLabel(item)" :value="item.id" />
           </el-select>
           <FieldErrors :errors="getFieldErrors('id_pengabdi')" />
         </el-form-item>
@@ -160,30 +104,17 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Tim Kerja" :error="hasFieldError('tim_kerja') ? ' ' : undefined">
-              <LookupSelect
-                v-model="form.tim_kerja"
-                :fetch-api="lookupApi.getLookupTimKerja"
-                value-key="lookup_value"
-                :initial-option="initialTimKerjaOption"
-                placeholder="Pilih Tim Kerja..."
-                :clearable="false"
-                @change="onTimKerjaChange"
-              />
+              <LookupSelect v-model="form.tim_kerja" :fetch-api="lookupApi.getLookupTimKerja" value-key="lookup_value"
+                :initial-option="initialTimKerjaOption" placeholder="Pilih Tim Kerja..." :clearable="false"
+                @change="onTimKerjaChange" />
               <FieldErrors :errors="getFieldErrors('tim_kerja')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="Sub Kerja" :error="hasFieldError('sub_kerja') ? ' ' : undefined">
-              <LookupSelect
-                ref="subKerjaSelectRef"
-                :key="String(form.tim_kerja)"
-                v-model="form.sub_kerja"
-                :fetch-api="fetchSubKerjaApi"
-                :disabled="!form.tim_kerja"
-                value-key="lookup_value"
-                :initial-option="initialSubKerjaOption"
-                placeholder="Pilih Sub Kerja..."
-              />
+              <LookupSelect ref="subKerjaSelectRef" :key="String(form.tim_kerja)" v-model="form.sub_kerja"
+                :fetch-api="fetchSubKerjaApi" :disabled="!form.tim_kerja" value-key="lookup_value"
+                :initial-option="initialSubKerjaOption" placeholder="Pilih Sub Kerja..." />
               <FieldErrors :errors="getFieldErrors('sub_kerja')" />
             </el-form-item>
           </el-col>
@@ -197,14 +128,8 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Sumbangan" :error="hasFieldError('sumbangan') ? ' ' : undefined">
-              <el-input-number
-                v-model="form.sumbangan"
-                :min="0"
-                :precision="2"
-                :step="10000"
-                controls-position="right"
-                style="width: 100%"
-              />
+              <el-input-number v-model="form.sumbangan" :min="0" :precision="2" :step="10000" controls-position="right"
+                style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('sumbangan')" />
             </el-form-item>
           </el-col>
@@ -231,51 +156,39 @@
                 <el-checkbox v-model="hariDays[$index]" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Anak" width="90" align="center">
               <template #default="{ $index }">
-                <el-input-number
-                  v-model="anakDays[$index]"
-                  :min="0"
-                  :max="99"
-                  controls-position="right"
-                  size="small"
-                  style="width: 100%"
-                />
+                <el-input-number v-model="anakDays[$index]" :min="0" :max="99" controls-position="right" size="small"
+                  style="width: 100%" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Suster" width="90" align="center">
               <template #default="{ $index }">
-                <el-input-number
-                  v-model="susterDays[$index]"
-                  :min="0"
-                  :max="99"
-                  controls-position="right"
-                  size="small"
-                  style="width: 100%"
-                />
+                <el-input-number v-model="susterDays[$index]" :min="0" :max="99" controls-position="right" size="small"
+                  style="width: 100%" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Menginap" align="center">
               <template #default="{ $index }">
                 <el-checkbox v-model="menginapDays[$index]" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Makan Pagi" align="center">
               <template #default="{ $index }">
                 <el-checkbox v-model="makananPagiDays[$index]" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Makan Siang" align="center">
               <template #default="{ $index }">
                 <el-checkbox v-model="makananSiangDays[$index]" />
               </template>
             </el-table-column>
-            
+
             <el-table-column label="Makan Malam" align="center">
               <template #default="{ $index }">
                 <el-checkbox v-model="makananMalamDays[$index]" />
@@ -516,9 +429,9 @@ const initialTimKerjaOption = computed(() => {
 const initialSubKerjaOption = computed(() => {
   if (!form.value.sub_kerja) return undefined
   return {
-    lookup_id: Number(form.value.sub_kerja),
+    // lookup_id: Number(form.value.sub_kerja),
     lookup_value: String(form.value.sub_kerja),
-    lookup_description: String(form.value.sub_kerja)
+    // lookup_description: String(form.value.sub_kerja)
   }
 })
 

@@ -6,13 +6,7 @@
         <h2 class="page-title">Master Data Tim Kerja</h2>
         <p class="page-subtitle">Kelola daftar data tim kerja, pencarian, serta pembaruan profil</p>
       </div>
-      <el-button
-        type="primary"
-        size="large"
-        :icon="Plus"
-        class="create-btn"
-        @click="handleCreate"
-      >
+      <el-button type="primary" size="large" :icon="Plus" class="create-btn" @click="handleCreate">
         Tambah Tim Kerja Baru
       </el-button>
     </div>
@@ -20,44 +14,31 @@
     <!-- Filter Card -->
     <el-card shadow="never" class="filter-card">
       <div class="filter-header">
-        <el-icon class="filter-icon"><Search /></el-icon>
+        <el-icon class="filter-icon">
+          <Search />
+        </el-icon>
         <span class="filter-title">Filter & Pencarian Data</span>
       </div>
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Lookup ID" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.lookup_id"
-              placeholder="Cari lookup id..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Lookup ID" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.lookup_value" placeholder="Cari lookup id..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Posisi / Tim" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.lookup_value"
-              placeholder="Cari posisi/tim..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+        <!-- <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Posisi / Tim" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.lookup_value" placeholder="Cari posisi/tim..." clearable :prefix-icon="Search"
+              @input="onFilterChange" />
           </el-form-item>
-        </el-col>
+        </el-col> -->
 
         <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Keterangan" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.lookup_description"
-              placeholder="Cari deskripsi..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Posisi / Tim" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.lookup_description" placeholder="Cari deskripsi..." clearable
+              :prefix-icon="Search" @input="onFilterChange" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -69,22 +50,16 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="dataList"
-        stripe
-        border
-        height="475"
-        style="width: 100%"
-        empty-text="Tidak ada data tim kerja yang ditemukan"
-      >
-        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center" fixed="left" />
+      <el-table v-loading="loading" :data="dataList" stripe border height="475" style="width: 100%"
+        empty-text="Tidak ada data tim kerja yang ditemukan">
+        <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center"
+          fixed="left" />
 
-        <el-table-column prop="lookup_id" label="Lookup ID" width="130" align="center">
+        <!-- <el-table-column prop="lookup_id" label="Lookup ID" width="130" align="center">
           <template #default="{ row }">
             <el-tag size="small" type="info" class="font-mono">{{ row.lookup_id }}</el-tag>
           </template>
-        </el-table-column>
+</el-table-column> -->
 
         <el-table-column prop="lookup_value" label="Posisi / Tim Kerja" min-width="200">
           <template #default="{ row }">
@@ -92,7 +67,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="lookup_description" label="Keterangan"  min-width="220"  >
+        <el-table-column prop="lookup_description" label="Keterangan" min-width="220">
           <template #default="{ row }">
             <span>{{ row.lookup_description || '-' }}</span>
           </template>
@@ -110,30 +85,13 @@
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                circle
-                :icon="Edit"
-                title="Edit Tim Kerja"
-                @click="handleEdit(row.lookup_id)"
-              />
+              <el-button type="primary" size="small" circle :icon="Edit" title="Edit Tim Kerja"
+                @click="handleEdit(row.lookup_value)" />
 
-              <el-popconfirm
-                title="Apakah Anda yakin ingin menghapus data ini?"
-                confirm-button-text="Ya, Hapus"
-                cancel-button-text="Batal"
-                confirm-button-type="danger"
-                @confirm="handleDelete(row.lookup_id)"
-              >
+              <el-popconfirm title="Apakah Anda yakin ingin menghapus data ini?" confirm-button-text="Ya, Hapus"
+                cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row.lookup_value)">
                 <template #reference>
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    :icon="Delete"
-                    title="Hapus Tim Kerja"
-                  />
+                  <el-button type="danger" size="small" circle :icon="Delete" title="Hapus Tim Kerja" />
                 </template>
               </el-popconfirm>
             </div>
@@ -143,15 +101,10 @@
 
       <!-- Pagination -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
   </div>
@@ -198,7 +151,7 @@ const getRowIndex = (index: number) => {
 
 // Search Filter state
 const filters = reactive<TimKerjaQueryParams>({
-  lookup_id: '',
+  // lookup_id: '',
   lookup_value: '',
   lookup_description: ''
 })
@@ -218,7 +171,7 @@ async function fetchData() {
       {
         page: pagination.page,
         limit: pagination.limit,
-        lookup_id: filters.lookup_id?.trim(),
+        // lookup_id: filters.lookup_id?.trim(),
         lookup_value: filters.lookup_value?.trim(),
         lookup_description: filters.lookup_description?.trim()
       },
@@ -245,7 +198,7 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  filters.lookup_id = ''
+  // filters.lookup_id = ''
   filters.lookup_value = ''
   filters.lookup_description = ''
   pagination.page = 1

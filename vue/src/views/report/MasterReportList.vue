@@ -6,13 +6,7 @@
         <h2 class="page-title">Laporan Master Data</h2>
         <p class="page-subtitle">Kelola daftar data master report, pencarian, serta manajemen data</p>
       </div>
-      <el-button
-        type="primary"
-        size="large"
-        :icon="Plus"
-        class="create-btn"
-        @click="handleCreate"
-      >
+      <el-button type="primary" size="large" :icon="Plus" class="create-btn" @click="handleCreate">
         Tambah Master Report Baru
       </el-button>
     </div>
@@ -20,20 +14,17 @@
     <!-- Filter Card -->
     <el-card shadow="never" class="filter-card">
       <div class="filter-header">
-        <el-icon class="filter-icon"><Search /></el-icon>
+        <el-icon class="filter-icon">
+          <Search />
+        </el-icon>
         <span class="filter-title">Filter & Pencarian Data</span>
       </div>
 
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Kata Kunci">
-            <el-input
-              v-model="filters.keyword"
-              placeholder="Cari berdasarkan nama atau kata kunci..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+            <el-input v-model="filters.keyword" placeholder="Cari berdasarkan nama atau kata kunci..." clearable
+              :prefix-icon="Search" @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
@@ -59,16 +50,9 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="dataList"
-        stripe
-        border
-        height="475"
-        style="width: 100%"
-        empty-text="Tidak ada data master report yang ditemukan"
-      >
-        <el-table-column v-if="isDesktop" prop="id" label="ID" width="80" align="center" sortable />
+      <el-table v-loading="loading" :data="dataList" stripe border height="475" style="width: 100%"
+        empty-text="Tidak ada data master report yang ditemukan">
+        <el-table-column v-if="isDesktop" prop="id" label="ID" width="80" align="center" />
 
         <el-table-column prop="nama" label="Nama Master Report" min-width="180">
           <template #default="{ row }">
@@ -94,30 +78,13 @@
         <el-table-column label="Aksi" width="150" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                circle
-                :icon="Edit"
-                title="Edit Master Report"
-                @click="handleEdit(row.id)"
-              />
+              <el-button type="primary" size="small" circle :icon="Edit" title="Edit Master Report"
+                @click="handleEdit(row.id)" />
 
-              <el-popconfirm
-                title="Apakah Anda yakin ingin menghapus data ini?"
-                confirm-button-text="Ya, Hapus"
-                cancel-button-text="Batal"
-                confirm-button-type="danger"
-                @confirm="handleDelete(row.id)"
-              >
+              <el-popconfirm title="Apakah Anda yakin ingin menghapus data ini?" confirm-button-text="Ya, Hapus"
+                cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row.id)">
                 <template #reference>
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    :icon="Delete"
-                    title="Hapus Master Report"
-                  />
+                  <el-button type="danger" size="small" circle :icon="Delete" title="Hapus Master Report" />
                 </template>
               </el-popconfirm>
             </div>
@@ -127,15 +94,10 @@
 
       <!-- Pagination -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
   </div>

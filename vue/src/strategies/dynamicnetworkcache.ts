@@ -18,7 +18,7 @@ export class DynamicNetworkCacheStrategy extends Strategy {
     }
 
     protected async _handle(request: Request, handler: StrategyHandler): Promise<Response> {
-        console.log('[SW DynamicNetworkCacheStrategy] Intercepting:', request.method, request.url);
+        // console.log('[SW DynamicNetworkCacheStrategy] Intercepting:', request.method, request.url);
         // 1. Check cache and fetch network asynchronously in parallel without initial await
         const cachePromise: Promise<Response | undefined> = handler.cacheMatch(request).catch(() => undefined);
         const networkPromise: Promise<Response> = handler.fetch(request);
@@ -116,7 +116,7 @@ export class DynamicNetworkCacheStrategy extends Strategy {
             } catch (err) {
                 console.warn('Background update failed for:', url, err);
             }
-        }, this.debounceMs) as unknown as number;
+        }, this.debounceMs) as number;
 
         this.debounceMap.set(url, timerId);
     }

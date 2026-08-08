@@ -8,13 +8,7 @@
           Kelola daftar akun administrator, hak akses group, status penggunaan, serta manajemen pengguna
         </p>
       </div>
-      <el-button
-        type="primary"
-        size="large"
-        :icon="Plus"
-        class="create-btn"
-        @click="openCreateDialog"
-      >
+      <el-button type="primary" size="large" :icon="Plus" class="create-btn" @click="openCreateDialog">
         Tambah Admin Baru
       </el-button>
     </div>
@@ -22,34 +16,26 @@
     <!-- Filter Card -->
     <el-card shadow="never" class="filter-card">
       <div class="filter-header">
-        <el-icon class="filter-icon"><Search /></el-icon>
+        <el-icon class="filter-icon">
+          <Search />
+        </el-icon>
         <span class="filter-title">Filter & Pencarian Data</span>
       </div>
 
       <el-row :gutter="16" class="filter-row">
         <!-- Filter Username -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Username" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.username"
-              placeholder="Cari berdasarkan username..."
-              clearable
-              :prefix-icon="Search"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Username" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.username" placeholder="Cari berdasarkan username..." clearable
+              :prefix-icon="Search" @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <!-- Filter Group Name -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Nama Group" :label-position="isMobile? 'top' : 'right'">
-            <el-input
-              v-model="filters.group_name"
-              placeholder="Cari berdasarkan nama group..."
-              clearable
-              :prefix-icon="UserFilled"
-              @input="onFilterChange"
-            />
+          <el-form-item label="Nama Group" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.group_name" placeholder="Cari berdasarkan nama group..." clearable
+              :prefix-icon="UserFilled" @input="onFilterChange" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -61,19 +47,13 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="adminList"
-        stripe
-        border
-        height="475"
-        style="width: 100%"
-        empty-text="Tidak ada data admin yang ditemukan"
-      >
+      <el-table v-loading="loading" :data="adminList" stripe border height="475" style="width: 100%"
+        empty-text="Tidak ada data admin yang ditemukan">
         <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="80" fixed="left" />
-        <!-- <el-table-column prop="id" label="ID" width="80" align="center" sortable fixed="left" /> -->
+        <!-- <el-table-column prop="id" label="ID" width="80" align="center" fixed="left" /> -->
 
-        <el-table-column prop="username" label="User Name" min-width="135" :fixed="isMobile ? false : 'left'" align="left">
+        <el-table-column prop="username" label="User Name" min-width="135" :fixed="isMobile ? false : 'left'"
+          align="left">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.username }}</span>
           </template>
@@ -146,30 +126,13 @@
         <el-table-column label="Aksi" width="130" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button
-                type="primary"
-                size="small"
-                circle
-                :icon="Edit"
-                title="Edit Admin"
-                @click="openEditDialog(row)"
-              />
+              <el-button type="primary" size="small" circle :icon="Edit" title="Edit Admin"
+                @click="openEditDialog(row)" />
 
-              <el-popconfirm
-                title="Apakah Anda yakin ingin menghapus admin ini?"
-                confirm-button-text="Ya, Hapus"
-                cancel-button-text="Batal"
-                confirm-button-type="danger"
-                @confirm="handleDelete(row.id)"
-              >
+              <el-popconfirm title="Apakah Anda yakin ingin menghapus admin ini?" confirm-button-text="Ya, Hapus"
+                cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row.id)">
                 <template #reference>
-                  <el-button
-                    type="danger"
-                    size="small"
-                    circle
-                    :icon="Delete"
-                    title="Hapus Admin"
-                  />
+                  <el-button type="danger" size="small" circle :icon="Delete" title="Hapus Admin" />
                 </template>
               </el-popconfirm>
             </div>
@@ -179,85 +142,45 @@
 
       <!-- Pagination -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
+          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
     <!-- Create / Edit Dialog -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="isEditing ? `Edit Admin #${editingId}` : 'Tambah Admin Baru'"
-      :width="isMobile? '88%' : '560px'"
-      destroy-on-close
-      @closed="resetForm"
-    >
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="130px"
-        :label-position="isMobile? 'top' : 'right'"
-      >
+    <el-dialog v-model="dialogVisible" :title="isEditing ? `Edit Admin #${editingId}` : 'Tambah Admin Baru'"
+      :width="isMobile ? '88%' : '560px'" destroy-on-close @closed="resetForm">
+      <el-form ref="formRef" :model="formData" :rules="formRules" label-width="130px"
+        :label-position="isMobile ? 'top' : 'right'">
         <el-form-item label="Username" prop="username">
           <el-input v-model="formData.username" placeholder="Masukkan username" />
         </el-form-item>
 
-        <el-form-item
-          label="Password"
-          prop="password"
-          :rules="isEditing ? [] : [{ required: true, message: 'Password wajib diisi', trigger: 'blur' }]"
-        >
-          <el-input
-            v-model="formData.password"
-            type="password"
-            show-password
-            :placeholder="isEditing ? 'Kosongkan jika tidak ingin mengubah password' : 'Masukkan password'"
-          />
+        <el-form-item label="Password" prop="password"
+          :rules="isEditing ? [] : [{ required: true, message: 'Password wajib diisi', trigger: 'blur' }]">
+          <el-input v-model="formData.password" type="password" show-password
+            :placeholder="isEditing ? 'Kosongkan jika tidak ingin mengubah password' : 'Masukkan password'" />
         </el-form-item>
 
         <el-form-item label="Group Admin" prop="group_id">
-          <el-select
-            v-model="formData.group_id"
-            placeholder="Pilih Group Admin"
-            style="width: 100%"
-            filterable
-          >
-            <el-option
-              v-for="group in groupOptions"
-              :key="group.group_id"
-              :label="group.group_name"
-              :value="group.group_id"
-            />
+          <el-select v-model="formData.group_id" placeholder="Pilih Group Admin" style="width: 100%" filterable>
+            <el-option v-for="group in groupOptions" :key="group.group_id" :label="group.group_name"
+              :value="group.group_id" />
           </el-select>
         </el-form-item>
 
         <el-form-item label="Department" prop="department_id">
-          <el-select
-            v-model="formData.department_id"
-            placeholder="Pilih Department"
-            style="width: 100%"
-            filterable
-            clearable
-          >
-            <el-option
-              v-for="department in departmentOptions"
-              :key="department.department_id"
-              :label="department.department_name"
-              :value="department.department_id"
-            />
+          <el-select v-model="formData.department_id" placeholder="Pilih Department" style="width: 100%" filterable
+            clearable>
+            <el-option v-for="department in departmentOptions" :key="department.department_id"
+              :label="department.department_name" :value="department.department_id" />
           </el-select>
         </el-form-item>
 
         <el-form-item label="Email" prop="email">
-          <el-input v-model="formData.email" placeholder="contoh@domain.com" />
+          <el-input v-model="formData.email" placeholder="contoh@domain.com" type="email" />
         </el-form-item>
 
         <el-form-item label="Telepon" prop="phone_number">
@@ -265,12 +188,8 @@
         </el-form-item>
 
         <el-form-item label="Keterangan" prop="login_desc">
-          <el-input
-            v-model="formData.login_desc"
-            type="textarea"
-            :rows="2"
-            placeholder="Keterangan atau deskripsi admin"
-          />
+          <el-input v-model="formData.login_desc" type="textarea" :rows="2"
+            placeholder="Keterangan atau deskripsi admin" />
         </el-form-item>
 
         <el-row :gutter="16">
@@ -285,11 +204,7 @@
           </el-col> -->
           <el-col :span="12">
             <el-form-item label="Is Warehouse" prop="is_warehouse">
-              <el-switch
-                v-model="formData.is_warehouse"
-                active-text="Ya"
-                inactive-text="Tidak"
-              />
+              <el-switch v-model="formData.is_warehouse" active-text="Ya" inactive-text="Tidak" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -333,7 +248,7 @@ const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 // Data state
 const adminList = shallowRef<Admin[]>([])
-const groupOptions = ref<AdminGroup[]>([])  
+const groupOptions = ref<AdminGroup[]>([])
 const departmentOptions = ref<AdminDepartment[]>([])
 const loading = ref(false)
 const submitting = ref(false)

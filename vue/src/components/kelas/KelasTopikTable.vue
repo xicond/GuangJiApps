@@ -5,40 +5,24 @@
         <template #title>
           <div class="accordion-header" @click.stop>
             <div class="header-title">
-              <el-icon class="header-icon"><Document /></el-icon>
-              <span>{{isDesktop ? 'Daftar Topik / Materi Kelas' : 'Topik'}}</span>
+              <el-icon class="header-icon">
+                <Document />
+              </el-icon>
+              <span>{{ isDesktop ? 'Daftar Topik / Materi Kelas' : 'Topik' }}</span>
               <el-tag size="small" type="info" class="ml-2">{{ total }} Topik</el-tag>
             </div>
             <div class="header-actions" @click.stop>
-              <el-button
-                type="primary"
-                size="small"
-                :icon="Plus"
-                @click.stop="openAddDialog"
-              >
-                {{isMobile?'':'Tambah Topik'}}
+              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+                {{ isMobile ? '' : 'Tambah Topik' }}
               </el-button>
-              <el-button
-                :icon="Refresh"
-                circle
-                size="small"
-                title="Refresh Topik"
-                @click.stop="fetchTopik"
-              />
+              <el-button :icon="Refresh" circle size="small" title="Refresh Topik" @click.stop="fetchTopik" />
             </div>
           </div>
         </template>
 
         <div class="accordion-content">
-          <el-table
-            v-loading="loading"
-            :data="topikList"
-            stripe
-            border
-            max-height="450"
-            style="width: 100%"
-            empty-text="Belum ada topik yang terdaftar pada kelas ini"
-          >
+          <el-table v-loading="loading" :data="topikList" stripe border max-height="450" style="width: 100%"
+            empty-text="Belum ada topik yang terdaftar pada kelas ini">
             <el-table-column v-if="isDesktop" prop="urutan" label="Urutan" width="80" align="center" fixed="left" />
 
             <el-table-column prop="kode_topik" label="Kode Topik" min-width="160">
@@ -61,7 +45,8 @@
 
             <el-table-column label="Penceramah" min-width="160">
               <template #default="{ row }">
-                <span v-if="row.penceramah_ext">{{ row.penceramah_ext }} <el-tag size="small" type="warning">Ext</el-tag></span>
+                <span v-if="row.penceramah_ext">{{ row.penceramah_ext }} <el-tag size="small"
+                    type="warning">Ext</el-tag></span>
                 <span v-else-if="row.penceramah">Umat #{{ row.penceramah }}</span>
                 <span v-else>-</span>
               </template>
@@ -84,19 +69,9 @@
 
             <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
-                <el-button
-                  type="primary"
-                  circle
-                  size="small"
-                  :icon="Edit"
-                  @click="openEditDialog(row)" />
-                <el-popconfirm
-                  title="Yakin ingin menghapus topik ini?"
-                  confirm-button-text="Ya, Hapus"
-                  cancel-button-text="Batal"
-                  confirm-button-type="danger"
-                  @confirm="handleDelete(row)"
-                >
+                <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
+                <el-popconfirm title="Yakin ingin menghapus topik ini?" confirm-button-text="Ya, Hapus"
+                  cancel-button-text="Batal" confirm-button-type="danger" @confirm="handleDelete(row)">
                   <template #reference>
                     <el-button type="danger" circle size="small" :icon="Delete" />
                   </template>
@@ -107,55 +82,28 @@
 
           <!-- Pagination -->
           <div class="pagination-container">
-            <el-pagination
-              v-model:current-page="currentPage"
-              v-model:page-size="pageSize"
+            <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
-              :layout="'total, sizes, prev, pager, next' + (isDesktop ? ', jumper' : '')"
-              :total="total"
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-            />
+              :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
+              :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
           </div>
         </div>
       </el-collapse-item>
     </el-collapse>
 
     <!-- Dialog Popup Add / Edit Topik -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogMode === 'add' ? 'Tambah Topik' : 'Edit Topik'"
-      width="640px"
-      destroy-on-close
-    >
-      <el-alert
-        v-if="Object.keys(dialogFieldErrors).length > 0"
-        type="error"
-        show-icon
-        title="Invalid Inputs"
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Topik' : 'Edit Topik'" width="640px"
+      destroy-on-close>
+      <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
-        class="mb-4"
-      />
+        class="mb-4" />
 
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="formRules"
-        label-width="140px"
-        size="default"
-        v-loading="submitting"
-      >
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="140px" size="default" v-loading="submitting">
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Nama Topik" prop="kode_topik" :error="hasFieldError('kode_topik') ? ' ' : undefined">
-              <LookupSelect
-                v-model="form.kode_topik"
-                placeholder="Pilih Nama Topik..."
-                :fetch-api="fetchTopicLookup"
-                value-key="topic_code"
-                label-key="topic_name"
-                :initial-option="initialTopicOption"
-              />
+              <LookupSelect v-model="form.kode_topik" placeholder="Pilih Nama Topik..." :fetch-api="fetchTopicLookup"
+                value-key="topic_code" label-key="topic_name" :initial-option="initialTopicOption" />
               <FieldErrors :errors="getFieldErrors('kode_topik')" />
             </el-form-item>
           </el-col>
@@ -174,7 +122,8 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="Durasi (Menit)" :error="hasFieldError('durasi') ? ' ' : undefined">
-              <el-input-number v-model="form.durasi" :min="0" :step="15" controls-position="right" style="width: 100%" />
+              <el-input-number v-model="form.durasi" :min="0" :step="15" controls-position="right"
+                style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('durasi')" />
             </el-form-item>
           </el-col>
@@ -189,37 +138,18 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="Tanggal Topik" :error="hasFieldError('topik_date') ? ' ' : undefined">
-              <el-date-picker
-                v-model="form.topik_date"
-                type="date"
-                placeholder="Pilih tanggal"
-                format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD"
-                style="width: 100%"
-              />
+              <el-date-picker v-model="form.topik_date" type="date" placeholder="Pilih tanggal" format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD" style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('topik_date')" />
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-form-item label="Penceramah Internal" :error="hasFieldError('penceramah') ? ' ' : undefined">
-          <el-select
-            v-model="form.penceramah"
-            filterable
-            remote
-            clearable
-            reserve-keyword
-            placeholder="Cari penceramah (Umat)..."
-            :remote-method="searchUmat"
-            :loading="loadingUmat"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="item in umatOptions"
-              :key="item.id"
-              :label="getUmatOptionLabel(item)"
-              :value="item.id"
-            />
+          <el-select v-model="form.penceramah" filterable remote clearable reserve-keyword
+            placeholder="Cari penceramah (Umat)..." :remote-method="searchUmat" :loading="loadingUmat"
+            style="width: 100%">
+            <el-option v-for="item in umatOptions" :key="item.id" :label="getUmatOptionLabel(item)" :value="item.id" />
           </el-select>
           <FieldErrors :errors="getFieldErrors('penceramah')" />
         </el-form-item>

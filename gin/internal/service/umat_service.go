@@ -399,41 +399,80 @@ func (s *nullFieldScanner) Scan(value interface{}) error {
 		return nil
 	}
 
-	if scanner, ok := s.target.(sql.Scanner); ok {
-		return scanner.Scan(value)
-	}
-
 	targetVal := reflect.ValueOf(s.target)
 	if targetVal.Kind() != reflect.Ptr || targetVal.IsNil() {
 		return fmt.Errorf("target must be a non-nil pointer")
 	}
+
 	elem := targetVal.Elem()
+
+	for elem.Kind() == reflect.Ptr {
+		if elem.IsNil() {
+			if !elem.CanSet() {
+				return nil
+			}
+			elem.Set(reflect.New(elem.Type().Elem()))
+		}
+		elem = elem.Elem()
+	}
+
+	if elem.CanAddr() {
+		if scanner, ok := elem.Addr().Interface().(sql.Scanner); ok {
+			return scanner.Scan(value)
+		}
+	}
+	if scanner, ok := elem.Interface().(sql.Scanner); ok {
+		return scanner.Scan(value)
+	}
 
 	switch v := value.(type) {
 	case string:
+		vTrim := strings.TrimSpace(v)
 		if elem.Kind() == reflect.String {
 			elem.SetString(v)
 			return nil
 		}
 		if elem.Kind() == reflect.Bool {
-			vLower := strings.ToLower(strings.TrimSpace(v))
+			vLower := strings.ToLower(vTrim)
 			elem.SetBool(vLower == "1" || vLower == "true" || vLower == "y" || vLower == "ya")
 			return nil
 		}
 		if elem.Kind() == reflect.Int || elem.Kind() == reflect.Int32 || elem.Kind() == reflect.Int64 {
-			if parsed, err := strconv.ParseInt(v, 10, 64); err == nil {
+			if parsed, err := strconv.ParseInt(vTrim, 10, 64); err == nil {
 				elem.SetInt(parsed)
 			}
 			return nil
 		}
 		if elem.Kind() == reflect.Float32 || elem.Kind() == reflect.Float64 {
-			if parsed, err := strconv.ParseFloat(v, 64); err == nil {
+			if parsed, err := strconv.ParseFloat(vTrim, 64); err == nil {
 				elem.SetFloat(parsed)
 			}
 			return nil
 		}
 	case []byte:
-		return s.Scan(string(v))
+		vStr := string(v)
+		vTrim := strings.TrimSpace(vStr)
+		if elem.Kind() == reflect.String {
+			elem.SetString(vStr)
+			return nil
+		}
+		if elem.Kind() == reflect.Bool {
+			vLower := strings.ToLower(vTrim)
+			elem.SetBool(vLower == "1" || vLower == "true" || vLower == "y" || vLower == "ya")
+			return nil
+		}
+		if elem.Kind() == reflect.Int || elem.Kind() == reflect.Int32 || elem.Kind() == reflect.Int64 {
+			if parsed, err := strconv.ParseInt(vTrim, 10, 64); err == nil {
+				elem.SetInt(parsed)
+			}
+			return nil
+		}
+		if elem.Kind() == reflect.Float32 || elem.Kind() == reflect.Float64 {
+			if parsed, err := strconv.ParseFloat(vTrim, 64); err == nil {
+				elem.SetFloat(parsed)
+			}
+			return nil
+		}
 	case int64:
 		if elem.Kind() == reflect.Int || elem.Kind() == reflect.Int32 || elem.Kind() == reflect.Int64 {
 			elem.SetInt(v)

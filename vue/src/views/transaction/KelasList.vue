@@ -35,12 +35,14 @@
           </el-form-item>
         </el-col>
 
-        <el-form-item label="Periode" :label-position="isMobile ? 'top' : 'right'">
-          <el-date-picker v-model="filters.date_range" type="daterange" range-separator="s/d"
-            start-placeholder="Start Date" end-placeholder="End Date" value-format="YYYY-MM-DD"
-            :disabled-date="disabledDate" @change="fetchData" :clearable="false" style="width: 100%"
-            :single-panel="isMobile" />
-        </el-form-item>
+        <el-col :xs="24" :sm="12" :md="6">
+          <el-form-item label="Periode" :label-position="isMobile ? 'top' : 'right'">
+            <el-date-picker v-model="filters.date_range" type="daterange" range-separator="s/d"
+              start-placeholder="Start Date" end-placeholder="End Date" value-format="YYYY-MM-DD"
+              :disabled-date="disabledDate" @change="fetchData" :clearable="false" style="width: 100%"
+              :single-panel="isMobile" />
+          </el-form-item>
+        </el-col>
       </el-row>
 
       <div class="filter-actions">

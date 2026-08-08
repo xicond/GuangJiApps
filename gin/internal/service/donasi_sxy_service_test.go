@@ -1,7 +1,9 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -70,3 +72,73 @@ func TestDonasiSxyService(t *testing.T) {
 		t.Fatalf("Delete failed: %v", err)
 	}
 }
+
+func TestNullFieldScannerPointerFields(t *testing.T) {
+	var resp domain.DonasiSxyResponse
+
+	// Test scanning string into *string field (e.g. NamaDonatur)
+	scanner := &nullFieldScanner{target: &resp.NamaDonatur}
+	if err := scanner.Scan("Budi"); err != nil {
+		t.Fatalf("Scan into *string failed: %v", err)
+	}
+	if resp.NamaDonatur == nil || *resp.NamaDonatur != "Budi" {
+		t.Errorf("expected 'Budi', got %v", resp.NamaDonatur)
+	}
+
+	// Test scanning []byte into *string field (e.g. NamaPenggalang)
+	scanner2 := &nullFieldScanner{target: &resp.NamaPenggalang}
+	if err := scanner2.Scan([]byte("Siti")); err != nil {
+		t.Fatalf("Scan []byte into *string failed: %v", err)
+	}
+	if resp.NamaPenggalang == nil || *resp.NamaPenggalang != "Siti" {
+		t.Errorf("expected 'Siti', got %v", resp.NamaPenggalang)
+	}
+
+	// Test scanning string date into *DateOnly field (e.g. TanggalTransfer)
+	scanner3 := &nullFieldScanner{target: &resp.TanggalTransfer}
+	if err := scanner3.Scan("2026-08-01"); err != nil {
+		t.Fatalf("Scan into *DateOnly failed: %v", err)
+	}
+	if resp.TanggalTransfer == nil || resp.TanggalTransfer.Format("2006-01-02") != "2026-08-01" {
+		t.Errorf("expected '2026-08-01', got %v", resp.TanggalTransfer)
+	}
+}
+
+func TestDonasiSxyResponseJSON(t *testing.T) {
+	var resp domain.DonasiSxyResponse
+	resp.ID = 1
+	resp.NoKwitansi = "KW001"
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		t.Fatalf("json.Marshal failed: %v", err)
+	}
+
+	jsonStr := string(data)
+	t.Logf("JSON output: %s", jsonStr)
+
+	expectedKeys := []string{
+		`"id"`,
+		`"no_kwitansi"`,
+		`"no_kupon"`,
+		`"tanggal"`,
+		`"keterangan"`,
+		`"penggalang_id"`,
+		`"tipe_sumbangan"`,
+		`"jumlah"`,
+		`"tipe_sumbangan_desc"`,
+		`"nama_penggalang"`,
+		`"donatur_id"`,
+		`"nama_donatur"`,
+		`"tanggal_transfer"`,
+		`"atas_nama"`,
+		`"email_penggalang"`,
+	}
+
+	for _, key := range expectedKeys {
+		if !strings.Contains(jsonStr, key) {
+			t.Errorf("expected JSON output to contain key %s, got: %s", key, jsonStr)
+		}
+	}
+}
+

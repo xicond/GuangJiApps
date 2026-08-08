@@ -73,11 +73,11 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="nama_penggalang" label="Penggalang" min-width="140">
+        <!-- <el-table-column prop="nama_penggalang" label="Penggalang" min-width="140">
           <template #default="{ row }">
             <span>{{ row.nama_penggalang || '-' }}</span>
           </template>
-        </el-table-column>
+        </el-table-column> -->
 
         <el-table-column prop="atas_nama" label="Atas Nama" min-width="140">
           <template #default="{ row }">
@@ -94,7 +94,7 @@
         <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150" align="right">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-'
-              }}</span>
+            }}</span>
           </template>
         </el-table-column>
 
@@ -128,8 +128,8 @@
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'" @size-change="handleSizeChange"
-          @current-change="handlePageChange" />
+          :layout="isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'"
+          @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
@@ -148,8 +148,9 @@
         </el-form-item>
 
         <el-form-item label="Donatur" prop="donatur_id">
-          <LookupSelect v-model="formData.donatur_id" placeholder="Pilih Donatur..." :fetch-api="sxyDonaturApi.getSxyDonaturs"
-            :get-item-api="sxyDonaturApi.getSxyDonaturById" value-key="id" label-key="nama" clearable />
+          <LookupSelect v-model="formData.donatur_id" placeholder="Pilih Donatur..."
+            :fetch-api="sxyDonaturApi.getSxyDonaturs" :get-item-api="sxyDonaturApi.getSxyDonaturById" value-key="id"
+            label-key="nama" clearable />
         </el-form-item>
 
         <el-form-item label="Penggalang Dana" prop="penggalang_id">

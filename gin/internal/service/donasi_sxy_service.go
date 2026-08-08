@@ -89,15 +89,9 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 
 	allowedFilters := map[string]bool{
 		"no_kwitansi": true,
-		"nokwitansi":  true,
-		// "kwitansi":     true,
-		"start_date": true,
-		// "startdate":    true,
-		"end_date": true,
-		// "enddate":      true,
-		// "tanggal":      true,
-		// "date":         true,
-		"donatur": true,
+		"start_date":  true,
+		"end_date":    true,
+		"donatur":     true,
 		// "nama":         true,
 		// "donatur_nama": true,
 	}
@@ -114,21 +108,21 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 		if allowedFilters[field] {
 			val := value
 			switch field {
-			case "no_kwitansi", "nokwitansi", "kwitansi":
+			case "no_kwitansi":
 				no_kwitansi = val
-			case "start_date", "startdate":
+			case "start_date":
 				if isValidDate(val) {
 					start_date = &val
 				} else if donatur == "" {
 					donatur = val
 				}
-			case "end_date", "enddate", "date", "tanggal":
+			case "end_date":
 				if isValidDate(val) {
 					end_date = &val
 				} else if donatur == "" {
 					donatur = val
 				}
-			case "donatur", "nama", "donatur_nama":
+			case "donatur":
 				donatur = val
 			}
 		}
@@ -173,18 +167,21 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 
 		for i, colName := range cols {
 			cleanCol := strings.ToLower(strings.TrimSpace(colName))
+			cleanColNoUnderscore := strings.ReplaceAll(cleanCol, "_", "")
 
-			switch cleanCol {
-			case "totalrow", "total_row", "totalcount", "total_count", "rowcount":
+			switch cleanColNoUnderscore {
+			case "totalrow", "totalcount", "rowcount":
 				valuePtrs[i] = &nullFieldScanner{target: &totalRowScan}
 			default:
 				matched := false
 				for j := 0; j < t.NumField(); j++ {
 					field := t.Field(j)
-					gormTag := field.Tag.Get("gorm")
+					gormTag := strings.ToLower(field.Tag.Get("gorm"))
+					gormTagNoUnderscore := strings.ReplaceAll(gormTag, "_", "")
+					fieldNameNoUnderscore := strings.ReplaceAll(strings.ToLower(field.Name), "_", "")
 
-					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
-						strings.ToLower(field.Name) == cleanCol {
+					if strings.Contains(gormTagNoUnderscore, "column:"+cleanColNoUnderscore) ||
+						fieldNameNoUnderscore == cleanColNoUnderscore {
 						fieldVal := v.Field(j)
 						valuePtrs[i] = &nullFieldScanner{target: fieldVal.Addr().Interface()}
 						matched = true

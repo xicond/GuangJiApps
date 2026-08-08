@@ -9,7 +9,8 @@
       </div>
 
       <el-scrollbar class="menu-scrollbar">
-        <el-menu :default-active="activeMenu" :collapse="isCollapsed || isMobile" :router="true"
+        <el-menu ref="menuRef" :default-active="activeMenu" :unique-opened="true" :collapse="isCollapsed || isMobile"
+          :menu-trigger="isCollapsed || isMobile || isTablet ? 'click' : 'hover'" :router="true"
           class="el-menu-vertical">
           <!-- Dashboard -->
           <el-menu-item index="/dashboard">
@@ -85,7 +86,8 @@
               </el-icon>
               <span>Report</span>
             </template>
-            <el-sub-menu v-if="hasSubMenu('Report', 'Master')" index="report-master">
+            <el-sub-menu v-if="hasSubMenu('Report', 'Master')" index="report-master" ref="reportMasterRef"
+              @click.stop="toggleReportMaster">
               <template #title>
                 <span>Master</span>
               </template>
@@ -219,6 +221,23 @@ const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMobile = breakpoints.smaller('md')   // True if width < 768px
 // const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 const isTablet = breakpoints.between('md', 'lg')
+
+const menuRef = ref()
+const reportMasterRef = ref()
+
+const toggleReportMaster = (e?: Event) => {
+  if (isCollapsed.value || isMobile.value || isTablet.value) {
+    if (e) {
+      e.stopPropagation()
+    }
+    const isOpen = !!reportMasterRef.value?.opened
+    if (isOpen) {
+      menuRef.value?.close('report-master')
+    } else {
+      menuRef.value?.open('report-master')
+    }
+  }
+}
 
 const isCollapsed = ref(isTablet.value)
 const activeMenu = computed(() => {

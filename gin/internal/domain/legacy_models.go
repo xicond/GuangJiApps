@@ -1031,25 +1031,25 @@ type DonasiSxy struct {
 	TtkSent         bool     `gorm:"column:ttksent" json:"ttk_sent"`
 }
 
-type DonasiSxyResponse struct {
-	ID                 int32     `gorm:"primaryKey;column:id" json:"id"`
-	NoKwitansi         string    `gorm:"column:nokwitansi" json:"no_kwitansi"`
-	NoKupon            *string   `gorm:"column:nokupon" json:"no_kupon,omitempty"`
-	Tanggal            DateOnly  `gorm:"column:tanggal" json:"tanggal"`
-	Keterangan         *string   `gorm:"column:keterangan" json:"keterangan,omitempty"`
-	Penggalang         int32     `gorm:"column:penggalang" json:"penggalang_id"`
-	TipeSumbangan      int32     `gorm:"column:tipesumbangan" json:"tipe_sumbangan"`
-	Jumlah             float64   `gorm:"column:jumlah" json:"jumlah"` // Maps NUMERIC(18,0) cleanly
-	TipeSummbanganDesc *string   `gorm:"column:tipesumbangandesc" json:"tipe_sumbangan_desc,omitempty"`
-	NamaPenggalang     *string   `gorm:"column:namapenggalang" json:"nama_penggalang,omitempty"`
-	Donatur            int32     `gorm:"column:donatur" json:"donatur_id"`
-	NamaDonatur        *string   `gorm:"column:namadonatur" json:"nama_donatur,omitempty"`
-	TanggalTransfer    *DateOnly `gorm:"column:tanggaltransfer" json:"tanggal_transfer,omitempty"`
-	AtasNama           *string   `gorm:"column:atasnama" json:"atas_nama,omitempty"`
-	EmailPenggalang    *string   `gorm:"column:emailpenggalang" json:"email_penggalang,omitempty"`
-}
-
 func (DonasiSxy) TableName() string { return "T_SXY_TRANSAKSI" }
+
+type DonasiSxyResponse struct {
+	ID                int32     `gorm:"primaryKey;column:id" json:"id"`
+	NoKwitansi        string    `gorm:"column:nokwitansi" json:"no_kwitansi"`
+	NoKupon           *string   `gorm:"column:nokupon" json:"no_kupon"`
+	Tanggal           DateOnly  `gorm:"column:tanggal" json:"tanggal"`
+	Keterangan        *string   `gorm:"column:keterangan" json:"keterangan"`
+	Penggalang        int32     `gorm:"column:penggalang" json:"penggalang_id"`
+	TipeSumbangan     int32     `gorm:"column:tipesumbangan" json:"tipe_sumbangan"`
+	Jumlah            float64   `gorm:"column:jumlah" json:"jumlah"` // Maps NUMERIC(18,0) cleanly
+	TipeSumbanganDesc *string   `gorm:"column:tipesumbangandesc" json:"tipe_sumbangan_desc"`
+	NamaPenggalang    *string   `gorm:"column:namapenggalang" json:"nama_penggalang"`
+	Donatur           int32     `gorm:"column:donatur" json:"donatur_id"`
+	NamaDonatur       *string   `gorm:"column:namadonatur" json:"nama_donatur"`
+	TanggalTransfer   *DateOnly `gorm:"column:tanggaltransfer" json:"tanggal_transfer"`
+	AtasNama          *string   `gorm:"column:atasnama" json:"atas_nama"`
+	EmailPenggalang   *string   `gorm:"column:emailpenggalang" json:"email_penggalang"`
+}
 
 type WorkMapping struct {
 	ID        int64  `gorm:"primaryKey;column:Id;autoIncrement" json:"id"`

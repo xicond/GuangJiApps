@@ -21,14 +21,14 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="10">
           <el-form-item label="Tahun Mandarin" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.tahun_mandarin" placeholder="Cari tahun (e.g. 2024)..." clearable
               :prefix-icon="Search" @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="10">
           <el-form-item label="Keterangan" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.description" placeholder="Cari deskripsi..." clearable :prefix-icon="Search"
               @input="onFilterChange" />

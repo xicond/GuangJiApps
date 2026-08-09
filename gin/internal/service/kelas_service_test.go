@@ -223,9 +223,9 @@ func TestKelasServiceReport(t *testing.T) {
 		if r.URL.Query().Get("TrxId") != "26040001" {
 			t.Errorf("expected TrxId=26040001, got %s", r.URL.Query().Get("TrxId"))
 		}
-		if subWh := r.URL.Query().Get("SubWhId"); subWh != "" && subWh != "160" {
-			t.Errorf("expected SubWhId=160, got %s", subWh)
-		}
+		// if subWh := r.URL.Query().Get("SubWhId"); subWh != "" && subWh != "160" {
+		// 	t.Errorf("expected SubWhId=160, got %s", subWh)
+		// }
 
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 		w.WriteHeader(http.StatusOK)

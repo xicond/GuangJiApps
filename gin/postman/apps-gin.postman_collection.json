@@ -3347,22 +3347,21 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/v1/kelas/26040001/report",
+              "raw": "{{baseUrl}}/v1/kelas/:id/report",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "v1",
                 "kelas",
-                "26040001",
+                ":id",
                 "report"
               ],
-              "query": [
+              "variable": [
                 {
-                  "key": "sub_wh_id",
-                  "value": "160",
-                  "description": "Optional SubWhId override (defaults to user matrix SubWhId)",
-                  "disabled": true
+                  "key": "id",
+                  "value": "1",
+                  "description": "The unique numerical ID of Kelas"
                 }
               ]
             }

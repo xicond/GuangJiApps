@@ -1,7 +1,45 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
+import fs from 'node:fs'
+import path from 'node:path'
+import zlib from 'node:zlib'
+
+function compressInPlacePlugin(): Plugin {
+  return {
+    name: 'vite-plugin-compress-in-place',
+    enforce: 'post',
+    apply: 'build',
+    closeBundle() {
+      const distDir = path.resolve(process.cwd(), 'dist')
+      if (!fs.existsSync(distDir)) return
+
+      const targetExts = ['.js', '.mjs', '.css', '.html', '.svg', '.png', '.jpg', '.jpeg', '.webp', '.ico', '.json', '.webmanifest']
+
+      const compressRecursive = (dir: string) => {
+        const entries = fs.readdirSync(dir, { withFileTypes: true })
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name)
+          if (entry.isDirectory()) {
+            compressRecursive(fullPath)
+          } else if (entry.isFile()) {
+            const ext = path.extname(entry.name).toLowerCase()
+            if (targetExts.includes(ext)) {
+              const content = fs.readFileSync(fullPath)
+              if (content.length > 0) {
+                const compressed = zlib.gzipSync(content, { level: 9 })
+                fs.writeFileSync(fullPath, compressed)
+              }
+            }
+          }
+        }
+      }
+
+      compressRecursive(distDir)
+    }
+  }
+}
 
 export default defineConfig(({ mode }) => {
   // Muat file .env berdasarkan mode aktif
@@ -11,6 +49,7 @@ export default defineConfig(({ mode }) => {
     base: env.VITE_BASE_URL || '/',
     plugins: [
       vue(),
+      compressInPlacePlugin(),
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',

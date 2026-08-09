@@ -25,7 +25,8 @@ func TestKelasPengabdiService(t *testing.T) {
 	db.Exec("DELETE FROM T_TRX_KELAS WHERE trxid = ?", 26160003)
 	db.Exec("DELETE FROM T_BUS_UMAT WHERE id = ?", 201)
 	db.Create(&domain.Kelas{TrxId: 26160003, KodeKelas: &kodeK})
-	db.Create(&domain.Umat{ID: 201, Kode: "UM201", NamaIndonesia: "Pengabdi Test", JenisKelamin: "001"})
+	kode201 := "UM201"
+	db.Create(&domain.Umat{ID: 201, Kode: &kode201, NamaIndonesia: "Pengabdi Test", JenisKelamin: "001"})
 	defer func() {
 		db.Exec("DELETE FROM T_TRX_KELAS WHERE trxid = ?", 26160003)
 		db.Exec("DELETE FROM T_BUS_UMAT WHERE id = ?", 201)

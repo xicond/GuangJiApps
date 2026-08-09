@@ -21,25 +21,25 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Kode Event" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.event_code" placeholder="Cari kode event..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Nama Event" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.event_name" placeholder="Cari nama event..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Kategori" :label-position="isMobile ? 'top' : 'right'">
             <LookupSelect v-model="filters.event_category" placeholder="Pilih Kategori Event..."
               :fetch-api="lookupApi.getLookupKategoriEvent" value-key="lookup_value" label-key="lookup_description"
-              clearable @change="onFilterChange" />
+              clearable @change="onFilterChange" auto-populate />
           </el-form-item>
         </el-col>
       </el-row>
@@ -132,7 +132,7 @@
         <el-form-item label="Kategori Event" prop="event_category">
           <LookupSelect v-model="formData.event_category" placeholder="Pilih Kategori Event..."
             :fetch-api="lookupApi.getLookupKategoriEvent" value-key="lookup_value" label-key="lookup_description"
-            clearable />
+            clearable auto-populate />
         </el-form-item>
 
         <el-form-item label="Keterangan" prop="description">

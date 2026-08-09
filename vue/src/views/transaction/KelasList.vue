@@ -21,21 +21,21 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="7">
           <el-form-item label="Kelas" :label-position="isMobile ? 'top' : 'right'">
             <LookupSelect v-model="filters.kelas" placeholder="Pilih kelas..." :fetch-api="kelasApi.getKelasLookup"
               @change="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="7">
           <el-form-item label="Fotang" :label-position="isMobile ? 'top' : 'right'">
             <LookupSelect v-model="filters.fotang" placeholder="Pilih fotang..." :fetch-api="fotangApi.getFotangLookup"
               @change="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="10">
           <el-form-item label="Periode" :label-position="isMobile ? 'top' : 'right'">
             <el-date-picker v-model="filters.date_range" type="daterange" range-separator="s/d"
               start-placeholder="Start Date" end-placeholder="End Date" value-format="YYYY-MM-DD"

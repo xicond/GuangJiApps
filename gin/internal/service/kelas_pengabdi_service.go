@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -140,7 +141,7 @@ func validatePengabdiLookups(db *gorm.DB, payload *domain.KelasPengabdi) error {
 	return nil
 }
 
-func (s *KelasPengabdiService) List(trxID string, page int, limit int) ([]domain.KelasPengabdi, int64, error) {
+func (s *KelasPengabdiService) List(c *gin.Context, trxID string, page int, limit int) ([]domain.KelasPengabdi, int64, error) {
 	var items []domain.KelasPengabdi
 	var total int64
 
@@ -149,6 +150,16 @@ func (s *KelasPengabdiService) List(trxID string, page int, limit int) ([]domain
 	}
 	if page <= 0 {
 		page = 1
+	}
+
+	var subWhVal string
+	userID := getUserID(c)
+	row := s.db.Model(&domain.AdminMatrix{}).
+		Where("LOGINID = ?", userID).
+		Select("SUBWHID").
+		Row()
+	if row != nil {
+		_ = row.Scan(&subWhVal)
 	}
 
 	query := s.db.Table("T_TRX_KELAS_PENGABDI").
@@ -162,6 +173,7 @@ func (s *KelasPengabdiService) List(trxID string, page int, limit int) ([]domain
 		Joins("LEFT JOIN T_APP_LOOKUP lf ON (u.fotangaktif = lf.LookupValue OR u.fotangaktif = lf.LookupId) AND lf.CategoryId = 'B_FOTHANG'").
 		Joins("LEFT JOIN T_APP_LOOKUP lt ON (T_TRX_KELAS_PENGABDI.timkerja = lt.LookupValue OR T_TRX_KELAS_PENGABDI.timkerja = lt.LookupId) AND lt.CategoryId = 'B_TIMKERJA'").
 		Joins("LEFT JOIN T_APP_LOOKUP ls ON (T_TRX_KELAS_PENGABDI.SubKerja = ls.LookupValue OR T_TRX_KELAS_PENGABDI.SubKerja = ls.LookupId) AND ls.CategoryId = 'B_SUBKERJA'").
+		Where("u.fotangaktif = ?", subWhVal).
 		Where("T_TRX_KELAS_PENGABDI.status = ?", true)
 
 	if trxID != "" {
@@ -191,11 +203,16 @@ func (s *KelasPengabdiService) Create(payload domain.KelasPengabdi, c *gin.Conte
 		return domain.KelasPengabdi{}, err
 	}
 
-	if payload.DetailId == 0 {
-		var maxID int32
-		s.db.Table("T_TRX_KELAS_PENGABDI").Select("ISNULL(MAX(detailid), 0)").Row().Scan(&maxID)
-		payload.DetailId = maxID + 1
+	var genResult struct {
+		GeneratedId int32
 	}
+	nowStr := time.Now().Format("2006-01-02 15:04:05")
+	errId := s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "KELASPENGABDIID", nowStr, 1).Scan(&genResult).Error
+	if errId != nil {
+		return domain.KelasPengabdi{}, fmt.Errorf("failed to generate ID: %w", errId)
+	}
+
+	payload.DetailId = genResult.GeneratedId
 
 	userID := getUserID(c)
 	statusTrue := true

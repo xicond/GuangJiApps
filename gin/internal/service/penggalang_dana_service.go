@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -157,18 +158,19 @@ func (s *PenggalangDanaService) Create(payload domain.PenggalangDana, c *gin.Con
 		return domain.PenggalangDana{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	var maxID int32
-	s.db.Table("T_SXY_MST_PENGGALANG").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
-	payload.ID = maxID + 1
-
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
+	var genResult struct {
+		GeneratedId int32
 	}
+	nowStr := time.Now().Format("2006-01-02 15:04:05")
+	errId := s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "SXYPENGGALANGID", nowStr, 1).Scan(&genResult).Error
+	if errId != nil {
+		return domain.PenggalangDana{}, fmt.Errorf("failed to generate ID: %w", errId)
+	}
+
+	payload.ID = genResult.GeneratedId
+	payload.No = strconv.Itoa(int(genResult.GeneratedId))
+
+	userID := getUserID(c)
 
 	payload.Status = true
 	payload.CreatedBy = userID

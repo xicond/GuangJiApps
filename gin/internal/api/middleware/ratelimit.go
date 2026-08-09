@@ -4,7 +4,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -53,29 +52,6 @@ func NewLoginRateLimiter(cfg config.Config) *LoginRateLimiter {
 		store:    store,
 		rate:     rate,
 	}
-}
-
-func GetClientIP(c *gin.Context) string {
-	if c == nil || c.Request == nil {
-		return ""
-	}
-	if xff := c.GetHeader("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		ip := strings.TrimSpace(parts[0])
-		if ip != "" && ip != "127.0.0.1" && ip != "::1" && ip != "localhost" {
-			return sanitizeIP(ip)
-		}
-	}
-	if realIP := c.GetHeader("X-Real-IP"); realIP != "" && realIP != "127.0.0.1" && realIP != "::1" {
-		return sanitizeIP(realIP)
-	}
-	if arrIP := c.GetHeader("X-ARR-ClientIP"); arrIP != "" && arrIP != "127.0.0.1" && arrIP != "::1" {
-		return sanitizeIP(arrIP)
-	}
-	if origIP := c.GetHeader("X-Original-For"); origIP != "" && origIP != "127.0.0.1" && origIP != "::1" {
-		return sanitizeIP(origIP)
-	}
-	return c.ClientIP()
 }
 
 func sanitizeIP(ip string) string {

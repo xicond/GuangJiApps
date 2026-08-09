@@ -21,7 +21,7 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Lookup ID" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.lookup_value" placeholder="Cari lookup id..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
@@ -35,7 +35,7 @@
           </el-form-item>
         </el-col> -->
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Posisi / Tim" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.lookup_description" placeholder="Cari deskripsi..." clearable
               :prefix-icon="Search" @input="onFilterChange" />

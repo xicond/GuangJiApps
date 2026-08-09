@@ -21,21 +21,21 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Nama Indo" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.nama" placeholder="Cari nama..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Mandarin" :label-position="isMobile ? 'top' : 'right'">
-            <el-input v-model="filters.mandarin" placeholder="Cari nama mandarin..." clearable :prefix-icon="Search"
+            <el-input v-model="filters.mandarin" placeholder="Cari Nama Lain..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Fotang" :label-position="isMobile ? 'top' : 'right'">
             <LookupSelect v-model="filters.fotang" placeholder="Pilih fotang..."
               :fetch-api="fotangApi.getFotangLookupSxy" value-key="lookup_value" label-key="lookup_description"
@@ -56,13 +56,13 @@
         <el-table-column v-if="isDesktop" :index="getRowIndex" type="index" label="No." width="70" align="center"
           fixed="left" />
 
-        <el-table-column prop="nama" label="Nama Indonesia" min-width="180">
+        <el-table-column prop="nama" label="Nama Ciu Tao" min-width="180">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.nama || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="mandarin" label="Nama Mandarin" min-width="140">
+        <el-table-column prop="mandarin" label="Nama Lain" min-width="140">
           <template #default="{ row }">
             <span>{{ row.mandarin || '-' }}</span>
           </template>
@@ -139,12 +139,12 @@
       :width="isMobile ? '90%' : '600px'" destroy-on-close @closed="resetForm">
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="140px"
         :label-position="isMobile ? 'top' : 'right'">
-        <el-form-item label="Nama Indonesia" prop="nama">
-          <el-input v-model="formData.nama" placeholder="Masukkan nama Indonesia" />
+        <el-form-item label="Nama Ciu Tao" prop="nama">
+          <el-input v-model="formData.nama" placeholder="Masukkan Nama Ciu Tao" />
         </el-form-item>
 
-        <el-form-item label="Nama Mandarin" prop="mandarin">
-          <el-input v-model="formData.mandarin" placeholder="Masukkan nama Mandarin" />
+        <el-form-item label="Nama Lain" prop="mandarin">
+          <el-input v-model="formData.mandarin" placeholder="Masukkan Nama Lain" />
         </el-form-item>
 
         <el-form-item label="Fotang" prop="lookup_fothang">
@@ -263,11 +263,11 @@ const formData = reactive<Partial<PenggalangDana>>({
 
 const formRules: FormRules = {
   nama: [
-    { required: true, message: 'Nama Indonesia wajib diisi', trigger: 'blur' },
-    { max: 50, message: 'Nama Indonesia maksimal 50 karakter', trigger: 'blur' }
+    { required: true, message: 'Nama Ciu Tao wajib diisi', trigger: 'blur' },
+    { max: 50, message: 'Nama Ciu Tao maksimal 50 karakter', trigger: 'blur' }
   ],
   mandarin: [
-    { max: 50, message: 'Nama Mandarin maksimal 50 karakter', trigger: 'blur' }
+    { max: 50, message: 'Nama Lain maksimal 50 karakter', trigger: 'blur' }
   ],
   email: [
     { type: 'email', message: 'Format email tidak valid', trigger: ['blur', 'change'] },

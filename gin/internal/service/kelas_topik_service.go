@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -161,11 +162,16 @@ func (s *KelasTopikService) Create(payload domain.KelasTopik, c *gin.Context) (d
 		return domain.KelasTopik{}, err
 	}
 
-	if payload.DetailId == 0 {
-		var maxID int32
-		s.db.Table("T_TRX_KELAS_TOPIK").Select("ISNULL(MAX(detailid), 0)").Row().Scan(&maxID)
-		payload.DetailId = maxID + 1
+	var genResult struct {
+		GeneratedId int32
 	}
+	nowStr := time.Now().Format("2006-01-02 15:04:05")
+	errId := s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "KELASTOPIKID", nowStr, 1).Scan(&genResult).Error
+	if errId != nil {
+		return domain.KelasTopik{}, fmt.Errorf("failed to generate ID: %w", errId)
+	}
+
+	payload.DetailId = genResult.GeneratedId
 
 	userID := getUserID(c)
 	statusTrue := true

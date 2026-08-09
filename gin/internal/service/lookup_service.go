@@ -124,7 +124,8 @@ func Lookup(db *gorm.DB, categoryID string, page int, limit int, opts ...interfa
 	query := db.Model(&domain.AppLookup{}).
 		Where("T_APP_LOOKUP.CategoryId = ?", categoryID).
 		Where("EXISTS (?)", subQuery).
-		Where("T_APP_LOOKUP.Status = ?", true)
+		Where("T_APP_LOOKUP.Status = ?", true).
+		Order("LookupId")
 
 	if filters != nil {
 		/* var searchVal string

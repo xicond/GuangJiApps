@@ -21,19 +21,19 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="7">
           <el-form-item label="No. Kwitansi" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.no_kwitansi" placeholder="Cari no kwitansi..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="7">
           <el-form-item label="Donatur" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.donatur" placeholder="Cari donatur..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
-        <el-col :xs="24" :sm="12" :md="12">
+        <el-col :xs="24" :sm="12" :md="10">
           <el-form-item label="Periode" :label-position="isMobile ? 'top' : 'right'">
             <el-date-picker v-model="filters.date_range" type="daterange" range-separator="s/d"
               start-placeholder="Start Date" end-placeholder="End Date" value-format="YYYY-MM-DD"
@@ -94,7 +94,7 @@
         <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150" align="right">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-'
-            }}</span>
+              }}</span>
           </template>
         </el-table-column>
 

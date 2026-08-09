@@ -322,27 +322,22 @@ func (s *KelasService) Report(trxId string /* , subWhId string */, c *gin.Contex
 		}
 	}
 
-	/* if subWhId == "" && c != nil {
-		subWhId = c.Query("sub_wh_id")
-		if subWhId == "" {
-			subWhId = c.Query("SubWhId")
-		}
-	}
+	/*
 
-	if subWhId == "" && c != nil {
-		var subWhVal int64
-		userID := getUserID(c)
-		row := s.db.Model(&domain.AdminMatrix{}).
-			Where("LOGINID = ?", userID).
-			Select("SUBWHID").
-			Row()
-		if row != nil {
-			_ = row.Scan(&subWhVal)
-		}
-		if subWhVal > 0 {
-			subWhId = strconv.FormatInt(subWhVal, 10)
-		}
-	} */
+		if subWhId == "" && c != nil {
+			var subWhVal int64
+			userID := getUserID(c)
+			row := s.db.Model(&domain.AdminMatrix{}).
+				Where("LOGINID = ?", userID).
+				Select("SUBWHID").
+				Row()
+			if row != nil {
+				_ = row.Scan(&subWhVal)
+			}
+			if subWhVal > 0 {
+				subWhId = strconv.FormatInt(subWhVal, 10)
+			}
+		} */
 
 	baseURL := s.reportServerURL
 	if baseURL == "" {
@@ -526,16 +521,21 @@ func (s *KelasService) Create(payload domain.Kelas, c *gin.Context) (domain.Kela
 		return domain.Kelas{}, err
 	}
 
-	if payload.TrxId == 0 {
-		var maxID int32
-		s.db.Table("T_TRX_KELAS").Select("ISNULL(MAX(trxid), 0)").Row().Scan(&maxID)
-		payload.TrxId = maxID + 1
+	var genResult struct {
+		GeneratedId int32
+	}
+	nowStr := time.Now().Format("2006-01-02 15:04:05")
+	errId := s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "KELASHEADERID", nowStr, 1).Scan(&genResult).Error
+	if errId != nil {
+		return domain.Kelas{}, fmt.Errorf("failed to generate ID: %w", errId)
 	}
 
 	userID := getUserID(c)
 	statusTrue := true
 	modActI := "I"
 	now := domain.NowDateTime()
+
+	payload.TrxId = genResult.GeneratedId
 
 	payload.Status = &statusTrue
 	payload.ModAct = &modActI

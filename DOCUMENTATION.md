@@ -301,3 +301,17 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
    - Replaced unsafe `int32(c.MustGet("userID").(int))` type assertions on lines 226, 328, and 358 with `getUserID(c)`.
    - `c.Set("userID", claims["sub"])` in `AuthMiddleware` stores `userID` from JWT claims as a `float64` (Standard JSON unmarshaling type in `golang-jwt`), causing `.(int)` to panic with `interface conversion: interface {} is float64, not int`.
    - Using `getUserID(c)` safely handles `float64`, `int`, `int32`, `string` or fallback `1` without panicking.
+
+---
+
+## [Completed] Seamless In-Place Gzip Compression & IIS `web.config` Setup
+
+### Changes Made:
+1. **In-Place Gzip Compression Plugin** (`vue/vite.config.ts`):
+   - Created `compressInPlacePlugin` in `vite.config.ts` that compresses built static assets (`.js`, `.css`, images, `.svg`, `.html`, `.json`) in-place during `closeBundle()`.
+   - All files retain their original filenames and extensions (no `.gz` postfix anywhere on disk or in URLs).
+   - Confirmed `npm run build:client` reduces main JS bundle from 1.26MB to 398KB and CSS bundle from 363KB to 48KB directly on disk.
+
+2. **IIS Seamless Header Configuration** (`vue/public/web.config`):
+   - Configured an outbound rewrite rule (`Set Content-Encoding gzip for static assets`) in `web.config` to attach `Content-Encoding: gzip` HTTP response header for static files (`.js`, `.css`, images, `.svg`, `.html`, `.json`, etc.).
+

@@ -24,7 +24,7 @@
 
       <el-row :gutter="16" class="filter-row">
         <!-- Filter Username -->
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col :xs="24" :sm="12" :md="10">
           <el-form-item label="Username" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.username" placeholder="Cari berdasarkan username..." clearable
               :prefix-icon="Search" @input="onFilterChange" />
@@ -32,7 +32,7 @@
         </el-col>
 
         <!-- Filter Group Name -->
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col :xs="24" :sm="12" :md="10">
           <el-form-item label="Nama Group" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.group_name" placeholder="Cari berdasarkan nama group..." clearable
               :prefix-icon="UserFilled" @input="onFilterChange" />

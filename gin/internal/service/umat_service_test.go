@@ -41,26 +41,32 @@ func TestUmatService(t *testing.T) {
 	lookupItem := domain.AppLookup{LookupId: "L001", CategoryId: &catStatus.CategoryId, LookupValue: &valStatus, Status: &statusTrue}
 	db.FirstOrCreate(&lookupItem, domain.AppLookup{LookupId: "L001"})
 
+	invalidStatus := "INVALID_STATUS"
 	// Test Invalid Lookup Rejection
 	invalidUmat := domain.Umat{
 		NamaIndonesia: "Test Invalid",
 		JenisKelamin:  "L",
-		StatusUmat:    "INVALID_STATUS",
+		StatusUmat:    &invalidStatus,
 	}
 	_, err = svc.Create(invalidUmat, c)
 	if err == nil {
 		t.Fatalf("expected error when creating umat with invalid StatusUmat, got nil")
 	}
 
+	kode := "UM001"
+	mandarin := "武帝"
+	alias := "Budi"
+	statusUmat := "001"
+
 	// 1. Create with Valid Lookup
 	umat := domain.Umat{
-		Kode:                 "UM001",
+		Kode:                 &kode,
 		NamaIndonesia:        "Budi Santoso",
-		NamaMandarin:         "武帝",
-		Alias:                "Budi",
+		NamaMandarin:         &mandarin,
+		Alias:                &alias,
 		TahunChiutaoMandarin: "2024",
 		JenisKelamin:         "L",
-		StatusUmat:           "001",
+		StatusUmat:           &statusUmat,
 	}
 
 	created, err := svc.Create(umat, c)
@@ -85,7 +91,7 @@ func TestUmatService(t *testing.T) {
 
 	// 3. List & Filter
 	filters := map[string]string{"namaindonesia": "Budi", "tahunchiutaomandarin": "2024"}
-	items, total, err := svc.List(1, filters, 10)
+	items, total, err := svc.List(c, 1, filters, 10)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -110,7 +116,7 @@ func TestUmatService(t *testing.T) {
 	}
 
 	// Verify soft delete filter
-	itemsAfterDelete, totalAfter, _ := svc.List(1, nil, 10)
+	itemsAfterDelete, totalAfter, _ := svc.List(c, 1, nil, 10)
 	if totalAfter != 0 || len(itemsAfterDelete) != 0 {
 		t.Errorf("expected 0 active items after delete, got total %d", totalAfter)
 	}

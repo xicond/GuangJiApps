@@ -2,7 +2,9 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"strconv"
@@ -106,6 +108,21 @@ func ForwardedHeaderMiddleware() gin.HandlerFunc {
 		} else if strings.EqualFold(c.GetHeader("X-Forwarded-Ssl"), "on") || strings.EqualFold(c.GetHeader("Front-End-Https"), "on") {
 			c.Request.URL.Scheme = "https"
 		} */
+		if xff := c.GetHeader("X-Forwarded-For"); xff != "" {
+			// Ambil IP pertama sebelum koma
+			parts := strings.Split(xff, ",")
+			firstIP := strings.TrimSpace(parts[0])
+
+			// Hapus port jika ikut terbawa (contoh: 118.136.171.50:53303)
+			if strings.Contains(firstIP, ":") {
+				if host, _, err := net.SplitHostPort(firstIP); err == nil {
+					firstIP = host
+				}
+			}
+
+			// Timpa header dengan format IP murni yang valid
+			c.Request.Header.Set("X-Forwarded-For", firstIP)
+		}
 		c.Next()
 	}
 }
@@ -145,6 +162,8 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	r := gin.New()
 	r.ForwardedByClientIP = true
 	r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
+	// r.SetTrustedProxies([]string{"0.0.0.0/0"})
+	// r.SetTrustedProxies(nil)
 	r.Use(gin.Recovery())
 	r.Use(ForwardedHeaderMiddleware())
 	if cfg.GinMode != "release" {
@@ -164,13 +183,24 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "pong", "baseUrl": cfg.BaseURL})
 	})
 
-	r.NoRoute(func(c *gin.Context) {
-		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusNotFound, gin.H{
-			"error":                "Rute tidak cocok di Gin",
-			"url_yang_diterima_go": c.Request.URL.Path,
+	if cfg.GinMode == "debug" {
+		r.GET(cfg.BaseURL+"/debug-headers", func(c *gin.Context) {
+			// Print semua header yang diterima
+			for name, headers := range c.Request.Header {
+				for _, h := range headers {
+					fmt.Printf("%v: %v\n", name, h)
+				}
+			}
+			c.JSON(200, c.Request.Header)
 		})
-	})
+		r.NoRoute(func(c *gin.Context) {
+			c.Header("Content-Type", "application/json")
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":                "Rute tidak cocok di Gin",
+				"url_yang_diterima_go": c.Request.URL.Path,
+			})
+		})
+	}
 
 	rdb := database.GetRedisClient(cfg)
 
@@ -556,7 +586,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/umats", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_UMAT", UpdatedColumn: "moddate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := umatService.List(page, filters, limit)
+		items, total, err := umatService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -1302,10 +1332,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		if trxId == "" {
 			trxId = c.Query("TrxId")
 		}
-		/* subWhId := c.Query("sub_wh_id")
-		if subWhId == "" {
-			subWhId = c.Query("SubWhId")
-		} *-/
 		if err := kelasService.Report(trxId /* subWhId,  *-/, c); err != nil {
 			respondError(c, err)
 			return
@@ -1318,10 +1344,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		trxId := c.Param("id")
-		/* subWhId := c.Query("sub_wh_id")
-		if subWhId == "" {
-			subWhId = c.Query("SubWhId")
-		} */
 		if err := kelasService.Report(trxId /* subWhId,  */, c); err != nil {
 			respondError(c, err)
 			return
@@ -1493,7 +1515,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasPengabdiService.List(c.Param("id"), page, limit)
+		items, total, err := kelasPengabdiService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return

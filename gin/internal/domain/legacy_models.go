@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -117,7 +118,7 @@ func FormatFieldName(s string) string {
 
 // Admin represents table [dbo].[T_Login_Mst]
 type Admin struct {
-	ID           int32    `gorm:"primaryKey;column:LoginId" json:"id"`
+	ID           int32    `gorm:"primaryKey;autoIncrement:false;column:LoginId" json:"id"`
 	Username     string   `gorm:"column:Username" json:"username" validate:"required,max=50"`
 	Password     string   `gorm:"column:Password" json:"-" validate:"omitempty,max=50"`
 	GroupId      int32    `gorm:"column:GroupId" json:"group_id,omitempty"`
@@ -139,7 +140,7 @@ type Admin struct {
 func (Admin) TableName() string { return "T_Login_Mst" }
 
 type AdminMatrix struct {
-	CruID       int64  `gorm:"primaryKey;column:CRUID;type:bigint;not null" json:"cru_id"`
+	CruID       int64  `gorm:"primaryKey;autoIncrement:false;column:CRUID;type:bigint;not null" json:"cru_id"`
 	LoginId     *int64 `gorm:"column:LOGINID;type:bigint" json:"login_id,omitempty"`
 	WarehouseId *int64 `gorm:"column:WAREHOUSEID;type:bigint" json:"warehouse_id,omitempty"`
 	SubWhId     *int64 `gorm:"column:SUBWHID;type:bigint" json:"sub_wh_id,omitempty"`
@@ -170,7 +171,7 @@ type MainMenuItem struct {
 
 // AdminGroup represents table [dbo].[T_Login_Group]
 type AdminGroup struct {
-	GroupId     int32  `gorm:"primaryKey;column:GroupId" json:"group_id"`
+	GroupId     int32  `gorm:"primaryKey;autoIncrement:false;column:GroupId" json:"group_id"`
 	GroupName   string `gorm:"column:GroupName" json:"group_name" validate:"required,max=50"`
 	RInsert     bool   `gorm:"column:RInsert" json:"-"`
 	REdit       bool   `gorm:"column:REdit" json:"-"`
@@ -183,7 +184,7 @@ type AdminGroup struct {
 func (AdminGroup) TableName() string { return "T_Login_Group" }
 
 type DepartmentMst struct {
-	DepartmentId   int16     `gorm:"primaryKey;column:DepartmentId;type:smallint;not null" json:"department_id"`
+	DepartmentId   int16     `gorm:"primaryKey;autoIncrement:false;column:DepartmentId;type:smallint;not null" json:"department_id"`
 	DepartmentCode *string   `gorm:"column:DepartmentCode;type:varchar(25)" json:"department_code" validate:"omitempty,max=25"`
 	Departmentname *string   `gorm:"column:Departmentname;type:varchar(100)" json:"department_name" validate:"omitempty,max=100"`
 	Status         bool      `gorm:"column:Status;type:bit;not null" json:"status"`
@@ -198,7 +199,7 @@ func (DepartmentMst) TableName() string {
 
 // GroupMenuMapping represents table [dbo].[T_Login_Menu]
 type GroupMenuMapping struct {
-	MenuId       int32  `gorm:"primaryKey;column:MenuId" json:"menu_id"`
+	MenuId       int32  `gorm:"primaryKey;autoIncrement:false;column:MenuId" json:"menu_id"`
 	ParentId     int32  `gorm:"column:ParentId" json:"parent_id"`
 	MenuName     string `gorm:"column:MenuName" json:"menu_name" validate:"required,max=50"`
 	PageUrl      string `gorm:"column:PageUrl" json:"page_url" validate:"omitempty,max=250"`
@@ -212,7 +213,7 @@ func (GroupMenuMapping) TableName() string { return "T_Login_Menu" }
 
 // AdminSubWarehouse represents table [dbo].[T_WH_SUBWH_MST]
 type AdminSubWarehouse struct {
-	SubWhId         int32    `gorm:"primaryKey;column:SUBWHID" json:"sub_wh_id"`
+	SubWhId         int32    `gorm:"primaryKey;autoIncrement:false;column:SUBWHID" json:"sub_wh_id"`
 	WhId            int64    `gorm:"column:WHID" json:"wh_id"`
 	FullName        string   `gorm:"column:FULL_NAME" json:"full_name" validate:"required,max=100"`
 	Pic             string   `gorm:"column:PIC" json:"pic" validate:"omitempty,max=75"`
@@ -232,84 +233,84 @@ func (AdminSubWarehouse) TableName() string { return "T_WH_SUBWH_MST" }
 
 // Umat represents table [dbo].[T_BUS_UMAT]
 type Umat struct {
-	ID                   int32      `gorm:"primaryKey;column:id" json:"id"`
-	Kode                 string     `gorm:"column:kode" json:"kode" validate:"omitempty,max=50"`
-	Alias                string     `gorm:"column:alias" json:"alias" validate:"omitempty,max=50"`
-	NamaIndonesia        string     `gorm:"column:namaindonesia" json:"nama_indonesia" validate:"required,max=50"`
-	Marga                string     `gorm:"column:marga" json:"marga" validate:"omitempty,max=10"`
-	NamaMandarin         string     `gorm:"column:namamandarin" json:"nama_mandarin" validate:"omitempty,max=50"`
-	Alamat               string     `gorm:"column:alamat" json:"alamat" validate:"omitempty,max=200"`
-	Alamat2              string     `gorm:"column:alamat2" json:"alamat2" validate:"omitempty,max=100"`
-	Telepon              string     `gorm:"column:telepon" json:"telepon" validate:"omitempty,max=50"`
-	Mobile               string     `gorm:"column:mobile" json:"mobile" validate:"omitempty,max=50"`
-	TempatLahir          string     `gorm:"column:tempatlahir" json:"tempat_lahir" validate:"omitempty,max=50"`
-	TanggalLahir         DateOnly   `gorm:"column:tanggallahir" json:"tanggal_lahir"`
-	Usia                 int32      `gorm:"column:usia" json:"usia" validate:"omitempty,gte=0,lte=150"`
-	Wilayah              string     `gorm:"column:wilayah" json:"wilayah" validate:"omitempty,max=100"`
-	JenisKelamin         string     `gorm:"column:jeniskelamin" json:"jenis_kelamin" validate:"required,omitempty,max=3"`
-	JenisKelaminInfo     *AppLookup `gorm:"foreignKey:JenisKelamin;references:LookupValue;constraint:false" json:"jenis_kelamin_info,omitempty" validate:"-"`
-	Pekerjaan            string     `gorm:"column:pekerjaan" json:"pekerjaan" validate:"omitempty,max=3"`
-	Pendidikan           string     `gorm:"column:pendidikan" json:"pendidikan" validate:"omitempty,max=3"`
-	TanggalChiutaoInt    DateOnly   `gorm:"column:tanggalchiutaoint" json:"tanggal_chiutao_int"`
-	TanggalChiutaoMan    string     `gorm:"column:tanggalchiutaoman" json:"tanggal_chiutao_man" validate:"omitempty,max=6"`
-	TahunChiutaoMandarin string     `gorm:"column:tahunchiutaomandarin" json:"tahun_chiutao_mandarin" validate:"omitempty,max=20"`
-	WaktuChiutaoMandarin string     `gorm:"column:waktuchiutaomandarin" json:"waktu_chiutao_mandarin" validate:"omitempty,max=3"`
-	Pengajak             string     `gorm:"column:pengajak" json:"pengajak" validate:"omitempty,max=20"`
+	ID                   int32       `gorm:"primaryKey;autoIncrement:false;column:id;autoIncrement:false" json:"id"`
+	Kode                 *string     `gorm:"column:kode" json:"kode" validate:"omitempty,max=50"`
+	Alias                *string     `gorm:"column:alias" json:"alias" validate:"omitempty,max=50"`
+	NamaIndonesia        string      `gorm:"column:namaindonesia" json:"nama_indonesia" validate:"required,max=50"`
+	Marga                *string     `gorm:"column:marga" json:"marga" validate:"omitempty,max=10"`
+	NamaMandarin         *string     `gorm:"column:namamandarin" json:"nama_mandarin" validate:"omitempty,max=50"`
+	Alamat               string      `gorm:"column:alamat" json:"alamat" validate:"omitempty,max=200"`
+	Alamat2              *string     `gorm:"column:alamat2" json:"alamat2" validate:"omitempty,max=100"`
+	Telepon              *string     `gorm:"column:telepon" json:"telepon" validate:"omitempty,max=50"`
+	Mobile               *string     `gorm:"column:mobile" json:"mobile" validate:"omitempty,max=50"`
+	TempatLahir          string      `gorm:"column:tempatlahir" json:"tempat_lahir" validate:"omitempty,max=50"`
+	TanggalLahir         DateOnly    `gorm:"column:tanggallahir" json:"tanggal_lahir"`
+	Usia                 *int32      `gorm:"column:usia" json:"usia" validate:"omitempty,gte=0,lte=150"`
+	Wilayah              *string     `gorm:"column:wilayah" json:"wilayah" validate:"omitempty,max=100"`
+	JenisKelamin         string      `gorm:"column:jeniskelamin" json:"jenis_kelamin" validate:"required,omitempty,max=3"`
+	JenisKelaminInfo     *AppLookup  `gorm:"foreignKey:JenisKelamin;references:LookupValue;constraint:false" json:"jenis_kelamin_info,omitempty" validate:"-"`
+	Pekerjaan            *string     `gorm:"column:pekerjaan" json:"pekerjaan" validate:"omitempty,max=3"`
+	Pendidikan           *string     `gorm:"column:pendidikan" json:"pendidikan" validate:"omitempty,max=3"`
+	TanggalChiutaoInt    DateOnly    `gorm:"column:tanggalchiutaoint" json:"tanggal_chiutao_int"`
+	TanggalChiutaoMan    *string     `gorm:"column:tanggalchiutaoman" json:"tanggal_chiutao_man" validate:"omitempty,max=6"`
+	TahunChiutaoMandarin string      `gorm:"column:tahunchiutaomandarin" json:"tahun_chiutao_mandarin" validate:"omitempty,max=20"`
+	WaktuChiutaoMandarin string      `gorm:"column:waktuchiutaomandarin" json:"waktu_chiutao_mandarin" validate:"omitempty,max=3"`
+	Pengajak             *FlexString `gorm:"column:pengajak" json:"pengajak" validate:"omitempty,max=20"`
 	// PengajakUmat         *Umat      `gorm:"foreignKey:Pengajak;references:Kode" json:"pengajak_umat,omitempty"`
-	PengajakManual string `gorm:"column:pengajakmanual" json:"pengajak_manual" validate:"omitempty,max=50"`
-	Penanggung     string `gorm:"column:penanggung" json:"penanggung" validate:"omitempty,max=20"`
+	PengajakManual *string     `gorm:"column:pengajakmanual" json:"pengajak_manual" validate:"omitempty,max=50"`
+	Penanggung     *FlexString `gorm:"column:penanggung" json:"penanggung" validate:"omitempty,max=20"`
 	// PenanggungUmat       *Umat      `gorm:"foreignKey:Penanggung;references:Kode" json:"penanggung_umat,omitempty"`
-	PenanggungManual    string   `gorm:"column:penanggungmanual" json:"penanggung_manual" validate:"omitempty,max=50"`
-	Tcs                 string   `gorm:"column:tcs" json:"tcs" validate:"omitempty,max=3"`
-	UangPahala          float64  `gorm:"column:uangpahala" json:"uang_pahala" validate:"omitempty,gte=0"`
-	FotangChiutao       string   `gorm:"column:fotangciutao" json:"fotang_chiutao" validate:"omitempty,max=3"`
-	FotangAktif         string   `gorm:"column:fotangaktif" json:"fotang_aktif" validate:"omitempty,max=3"`
-	Sd2                 bool     `gorm:"column:sd2" json:"sd2"`
-	TempatSd2           string   `gorm:"column:tempatsd2" json:"tempat_sd2" validate:"omitempty,max=3"`
-	TanggalSd2          DateOnly `gorm:"column:tanggalsd2" json:"tanggal_sd2"`
-	Sd3                 bool     `gorm:"column:sd3" json:"sd3"`
-	TempatSd3           string   `gorm:"column:tempatsd3" json:"tempat_sd3" validate:"omitempty,max=3"`
-	TanggalSd3          DateOnly `gorm:"column:tanggalsd3" json:"tanggal_sd3"`
-	KelasUmum           string   `gorm:"column:kelasumum" json:"kelas_umum" validate:"omitempty,max=3"`
-	KelasKhusus         string   `gorm:"column:kelaskhusus" json:"kelas_khusus" validate:"omitempty,max=3"`
-	ChingKhou           bool     `gorm:"column:chingkhou" json:"ching_khou"`
-	TanggalChingKhou    DateOnly `gorm:"column:tanggalchingkhou" json:"tanggal_ching_khou"`
-	TanggalAncuo        DateOnly `gorm:"column:tanggalancuo" json:"tanggal_ancuo"`
-	NamaCetyaRumah      string   `gorm:"column:namacetyarumah" json:"nama_cetya_rumah" validate:"omitempty,max=50"`
-	Meninggal           bool     `gorm:"column:meninggal" json:"meninggal"`
-	TanggalMeninggal    DateOnly `gorm:"column:tanggalmeninggal" json:"tanggal_meninggal"`
-	TimKerja            string   `gorm:"column:timkerja" json:"tim_kerja" validate:"omitempty,max=3"`
-	Posisi              string   `gorm:"column:posisi" json:"posisi" validate:"omitempty,max=3"`
-	StatusUmat          string   `gorm:"column:statusumat" json:"status_umat" validate:"omitempty,max=3"`
-	Keterangan          string   `gorm:"column:keterangan" json:"keterangan" validate:"omitempty,max=200"`
-	Email               string   `gorm:"column:email" json:"email" validate:"omitempty,max=50,email"`
-	ImagePath           string   `gorm:"column:imagepath" json:"image_path" validate:"omitempty,max=50"`
-	Status              bool     `gorm:"column:status" json:"status"`
-	ModAct              string   `gorm:"column:modact" json:"mod_act" validate:"omitempty,max=1"`
-	ModBy               int32    `gorm:"column:modby" json:"mod_by"`
-	ModDate             DateTime `gorm:"column:moddate" json:"mod_date"`
-	Ikrar1              bool     `gorm:"column:ikrar1" json:"ikrar_1"`
-	Ikrar2              bool     `gorm:"column:ikrar2" json:"ikrar_2"`
-	Ikrar3              bool     `gorm:"column:ikrar3" json:"ikrar_3"`
-	Ikrar4              bool     `gorm:"column:ikrar4" json:"ikrar_4"`
-	Ikrar5              bool     `gorm:"column:ikrar5" json:"ikrar_5"`
-	Ikrar6              bool     `gorm:"column:ikrar6" json:"ikrar_6"`
-	RenChaiPan          bool     `gorm:"column:RenChaiPan" json:"ren_chai_pan"`
-	TanggalRenChaiPan   DateOnly `gorm:"column:TanggalRenChaiPan" json:"tanggal_ren_chai_pan"`
-	LienCiangPan        bool     `gorm:"column:LienCiangPan" json:"lien_ciang_pan"`
-	TanggalLienCiangPan DateOnly `gorm:"column:TanggalLienCiangPan" json:"tanggal_lien_ciang_pan"`
-	CiangYenPan         bool     `gorm:"column:CiangYenPan" json:"ciang_yen_pan"`
-	TanggalCiangYenPan  DateOnly `gorm:"column:TanggalCiangYenPan" json:"tanggal_ciang_yen_pan"`
-	ActiveStatus        bool     `gorm:"column:ActiveStatus" json:"active_status"`
-	NamaFotangLain      string   `gorm:"column:NamaFotangLain" json:"nama_fotang_lain" validate:"omitempty,max=50"`
-	NamaTcsLain         string   `gorm:"column:NamaTcsLain" json:"nama_tcs_lain" validate:"omitempty,max=50"`
-	KodeBuku            string   `gorm:"column:KodeBuku" json:"kode_buku" validate:"omitempty,max=50"`
+	PenanggungManual    *string   `gorm:"column:penanggungmanual" json:"penanggung_manual" validate:"omitempty,max=50"`
+	Tcs                 string    `gorm:"column:tcs" json:"tcs" validate:"omitempty,max=3"`
+	UangPahala          float64   `gorm:"column:uangpahala" json:"uang_pahala" validate:"omitempty,gte=0"`
+	FotangChiutao       string    `gorm:"column:fotangciutao" json:"fotang_chiutao" validate:"omitempty,max=3"`
+	FotangAktif         string    `gorm:"column:fotangaktif" json:"fotang_aktif" validate:"omitempty,max=3"`
+	Sd2                 bool      `gorm:"column:sd2" json:"sd2"`
+	TempatSd2           *string   `gorm:"column:tempatsd2" json:"tempat_sd2" validate:"omitempty,max=3"`
+	TanggalSd2          *DateOnly `gorm:"column:tanggalsd2" json:"tanggal_sd2"`
+	Sd3                 bool      `gorm:"column:sd3" json:"sd3"`
+	TempatSd3           *string   `gorm:"column:tempatsd3" json:"tempat_sd3" validate:"omitempty,max=3"`
+	TanggalSd3          *DateOnly `gorm:"column:tanggalsd3" json:"tanggal_sd3"`
+	KelasUmum           *string   `gorm:"column:kelasumum" json:"kelas_umum" validate:"omitempty,max=3"`
+	KelasKhusus         *string   `gorm:"column:kelaskhusus" json:"kelas_khusus" validate:"omitempty,max=3"`
+	ChingKhou           bool      `gorm:"column:chingkhou" json:"ching_khou"`
+	TanggalChingKhou    *DateOnly `gorm:"column:tanggalchingkhou" json:"tanggal_ching_khou"`
+	TanggalAncuo        *DateOnly `gorm:"column:tanggalancuo" json:"tanggal_ancuo"`
+	NamaCetyaRumah      *string   `gorm:"column:namacetyarumah" json:"nama_cetya_rumah" validate:"omitempty,max=50"`
+	Meninggal           bool      `gorm:"column:meninggal" json:"meninggal"`
+	TanggalMeninggal    *DateOnly `gorm:"column:tanggalmeninggal" json:"tanggal_meninggal"`
+	TimKerja            *string   `gorm:"column:timkerja" json:"tim_kerja" validate:"omitempty,max=3"`
+	Posisi              *string   `gorm:"column:posisi" json:"posisi" validate:"omitempty,max=3"`
+	StatusUmat          *string   `gorm:"column:statusumat" json:"status_umat" validate:"omitempty,max=3"`
+	Keterangan          *string   `gorm:"column:keterangan" json:"keterangan" validate:"omitempty,max=200"`
+	Email               *string   `gorm:"column:email" json:"email" validate:"omitempty,max=50,email"`
+	ImagePath           *string   `gorm:"column:imagepath" json:"image_path" validate:"omitempty,max=50"`
+	Status              bool      `gorm:"column:status" json:"status"`
+	ModAct              string    `gorm:"column:modact" json:"mod_act" validate:"omitempty,max=1"`
+	ModBy               int32     `gorm:"column:modby" json:"mod_by"`
+	ModDate             DateTime  `gorm:"column:moddate" json:"mod_date"`
+	Ikrar1              bool      `gorm:"column:ikrar1" json:"ikrar_1"`
+	Ikrar2              bool      `gorm:"column:ikrar2" json:"ikrar_2"`
+	Ikrar3              bool      `gorm:"column:ikrar3" json:"ikrar_3"`
+	Ikrar4              bool      `gorm:"column:ikrar4" json:"ikrar_4"`
+	Ikrar5              bool      `gorm:"column:ikrar5" json:"ikrar_5"`
+	Ikrar6              bool      `gorm:"column:ikrar6" json:"ikrar_6"`
+	RenChaiPan          bool      `gorm:"column:RenChaiPan" json:"ren_chai_pan"`
+	TanggalRenChaiPan   *DateOnly `gorm:"column:TanggalRenChaiPan" json:"tanggal_ren_chai_pan"`
+	LienCiangPan        bool      `gorm:"column:LienCiangPan" json:"lien_ciang_pan"`
+	TanggalLienCiangPan *DateOnly `gorm:"column:TanggalLienCiangPan" json:"tanggal_lien_ciang_pan"`
+	CiangYenPan         bool      `gorm:"column:CiangYenPan" json:"ciang_yen_pan"`
+	TanggalCiangYenPan  *DateOnly `gorm:"column:TanggalCiangYenPan" json:"tanggal_ciang_yen_pan"`
+	ActiveStatus        *bool     `gorm:"column:ActiveStatus" json:"active_status"`
+	NamaFotangLain      *string   `gorm:"column:NamaFotangLain" json:"nama_fotang_lain" validate:"omitempty,max=50"`
+	NamaTcsLain         *string   `gorm:"column:NamaTcsLain" json:"nama_tcs_lain" validate:"omitempty,max=50"`
+	KodeBuku            *string   `gorm:"column:KodeBuku" json:"kode_buku" validate:"omitempty,max=50"`
 }
 
 func (Umat) TableName() string { return "T_BUS_UMAT" }
 
 type AppLookup struct {
-	LookupId          string    `gorm:"primaryKey;column:LookupId;type:varchar(25);not null" json:"lookup_id" validate:"omitempty,max=25"`
+	LookupId          string    `gorm:"primaryKey;autoIncrement:false;column:LookupId;type:varchar(25);not null" json:"lookup_id" validate:"omitempty,max=25"`
 	CategoryId        *string   `gorm:"column:CategoryId;type:varchar(25)" json:"category_id,omitempty" validate:"omitempty,max=25"`
 	LookupValue       *string   `gorm:"column:LookupValue;type:varchar(50)" json:"lookup_value,omitempty" validate:"omitempty,max=50"`
 	LookupDescription *string   `gorm:"column:LookupDescription;type:nvarchar(150)" json:"lookup_description,omitempty" validate:"omitempty,max=150"`
@@ -327,7 +328,7 @@ func (AppLookup) TableName() string {
 }
 
 type AppLookupCategory struct {
-	CategoryId          string    `gorm:"primaryKey;column:CategoryId;type:varchar(25);not null" json:"category_id" validate:"omitempty,max=25"`
+	CategoryId          string    `gorm:"primaryKey;autoIncrement:false;column:CategoryId;type:varchar(25);not null" json:"category_id" validate:"omitempty,max=25"`
 	CategoryType        string    `gorm:"column:CategoryType;type:char(1);not null" json:"category_type" validate:"omitempty,max=1"`
 	CategoryDescription string    `gorm:"column:CategoryDescription;type:varchar(150);not null" json:"category_description" validate:"omitempty,max=150"`
 	Status              bool      `gorm:"column:Status;type:bit;not null" json:"status"`
@@ -343,7 +344,7 @@ func (AppLookupCategory) TableName() string {
 
 // Topic represents table [dbo].[T_BUS_TOPIC]
 type Topic struct {
-	TopicCode     string   `gorm:"primaryKey;column:TopicCode" json:"topic_code" validate:"required,max=20"`
+	TopicCode     string   `gorm:"primaryKey;autoIncrement:false;column:TopicCode" json:"topic_code" validate:"required,max=20"`
 	TopicName     string   `gorm:"column:TopicName" json:"topic_name" validate:"required,max=300"`
 	TopicCategory string   `gorm:"column:TopicCategory" json:"topic_category" validate:"omitempty,max=3"`
 	Description   string   `gorm:"column:Description" json:"description" validate:"omitempty,max=200"`
@@ -359,7 +360,7 @@ func (Topic) TableName() string { return "T_BUS_TOPIC" }
 
 // Activity represents table [dbo].[T_BUS_EVENT]
 type Activity struct {
-	EventCode     string   `gorm:"primaryKey;column:EventCode" json:"event_code" validate:"required,max=10"`
+	EventCode     string   `gorm:"primaryKey;autoIncrement:false;column:EventCode" json:"event_code" validate:"required,max=10"`
 	EventName     string   `gorm:"column:EventName" json:"event_name" validate:"required,max=100"`
 	EventCategory string   `gorm:"column:EventCategory" json:"event_category" validate:"omitempty,max=3"`
 	Description   string   `gorm:"column:Description" json:"description" validate:"omitempty,max=200"`
@@ -374,7 +375,7 @@ type Activity struct {
 func (Activity) TableName() string { return "T_BUS_EVENT" } // TimKerja represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_POSISI'
 
 type TimKerja struct {
-	LookupId          string   `gorm:"primaryKey;column:LookupId" json:"lookup_id" validate:"omitempty,max=25"`
+	LookupId          string   `gorm:"primaryKey;autoIncrement:false;column:LookupId" json:"lookup_id" validate:"omitempty,max=25"`
 	CategoryId        string   `gorm:"column:CategoryId;default:B_POSISI" json:"category_id" validate:"omitempty,max=25"`
 	LookupValue       string   `gorm:"column:LookupValue" json:"lookup_value" validate:"required,max=50"`
 	LookupDescription string   `gorm:"column:LookupDescription" json:"lookup_description" validate:"required,max=150"`
@@ -448,6 +449,37 @@ func (d DateOnly) MarshalJSON() ([]byte, error) {
 		return json.Marshal(nil)
 	}
 	return json.Marshal(d.Format("2006-01-02"))
+}
+
+// Buat custom type untuk string fleksibel
+type FlexString string
+
+// UnmarshalJSON menangani konversi otomatis dari int/float/string ke FlexString
+func (fs *FlexString) UnmarshalJSON(data []byte) error {
+	// 1. Coba unmarshal sebagai string biasa
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*fs = FlexString(s)
+		return nil
+	}
+
+	// 2. Jika gagal, coba unmarshal sebagai integer (int64)
+	var i int64
+	if err := json.Unmarshal(data, &i); err == nil {
+		*fs = FlexString(strconv.FormatInt(i, 10))
+		return nil
+	}
+
+	// 3. Jika gagal, coba unmarshal sebagai float
+	var f float64
+	if err := json.Unmarshal(data, &f); err == nil {
+		*fs = FlexString(strconv.FormatFloat(f, 'f', -1, 64))
+		return nil
+	}
+
+	// Jika bernilai null atau tipe data lain yang tidak dikenali
+	*fs = ""
+	return nil
 }
 
 // DateTime adalah tipe kustom untuk menangani serialisasi/deserialisasi waktu dengan format "YYYY-MM-DD HH:mm:ss"
@@ -626,7 +658,7 @@ func (ib IntBool) MarshalJSON() ([]byte, error) {
 }
 
 type TahunCiuTao struct {
-	TahunMandarin string   `gorm:"primaryKey;column:TahunMandarin" json:"tahun_mandarin" validate:"required,max=20"`
+	TahunMandarin string   `gorm:"primaryKey;autoIncrement:false;column:TahunMandarin" json:"tahun_mandarin" validate:"required,max=20"`
 	StartDate     DateOnly `gorm:"column:StartDate" json:"start_date"`
 	EndDate       DateOnly `gorm:"column:EndDate" json:"end_date"`
 	ModAct        string   `gorm:"column:ModAct" json:"mod_act" validate:"omitempty,max=1"`
@@ -639,7 +671,7 @@ type TahunCiuTao struct {
 func (TahunCiuTao) TableName() string { return "T_BUS_TAHUN_CIUTAO" } // PenggalangDana represents table [dbo].[T_SXY_MST_PENGGALANG]
 
 type PenggalangDana struct {
-	ID            int32    `gorm:"primaryKey;column:id" json:"id"`
+	ID            int32    `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	No            string   `gorm:"column:no" json:"no" validate:"required,max=50"`
 	Nama          string   `gorm:"column:nama" json:"nama" validate:"required,max=50"`
 	Mandarin      string   `gorm:"column:mandarin" json:"mandarin" validate:"omitempty,max=50"`
@@ -656,7 +688,7 @@ type PenggalangDana struct {
 	UpdatedDate   DateTime `gorm:"column:updateddate" json:"updated_date"`
 }
 type PenggalangDanaResponse struct {
-	ID            int32  `gorm:"primaryKey;column:id" json:"id"`
+	ID            int32  `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	No            string `gorm:"column:no" json:"no"`
 	Nama          string `gorm:"column:nama" json:"nama"`
 	Mandarin      string `gorm:"column:mandarin" json:"mandarin"`
@@ -672,7 +704,7 @@ type PenggalangDanaResponse struct {
 func (PenggalangDana) TableName() string { return "T_SXY_MST_PENGGALANG" } // SxyDonatur represents table [dbo].[T_SXY_MST_DONATUR]
 
 type SxyDonatur struct {
-	ID            int32    `gorm:"primaryKey;column:id" json:"id"`
+	ID            int32    `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	No            string   `gorm:"column:no" json:"no" validate:"required,max=10"`
 	Nama          string   `gorm:"column:nama" json:"nama" validate:"required,max=50"`
 	Mandarin      string   `gorm:"column:mandarin" json:"mandarin" validate:"omitempty,max=50"`
@@ -690,7 +722,7 @@ type SxyDonatur struct {
 }
 
 type SxyDonaturResponse struct {
-	ID            int32    `gorm:"primaryKey;column:id" json:"id"`
+	ID            int32    `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	No            string   `gorm:"column:no" json:"no"`
 	Nama          string   `gorm:"column:nama" json:"nama"`
 	Mandarin      string   `gorm:"column:mandarin" json:"mandarin"`
@@ -728,7 +760,7 @@ func (SxyDonatur) TableName() string { return "T_SXY_MST_DONATUR" }
 // ==========================================// 3. SPECIAL CUSTOM TYPE & DONATION MODELS// ==========================================// Kelas represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_KELASKHUSUS'
 
 type Kelas struct {
-	TrxId      int32     `gorm:"primaryKey;column:trxid;type:int;not null" json:"trx_id,omitempty"`
+	TrxId      int32     `gorm:"primaryKey;autoIncrement:false;column:trxid;type:int;not null" json:"trx_id,omitempty"`
 	KodeKelas  *string   `gorm:"column:kodekelas;type:varchar(3)" json:"kode_kelas,omitempty" validate:"required,max=3"`
 	StartDate  *DateOnly `gorm:"column:startdate;type:date" json:"start_date,omitempty" validate:"omitempty"`
 	EndDate    *DateOnly `gorm:"column:enddate;type:date" json:"end_date,omitempty" validate:"omitempty,gtefield=StartDate"`
@@ -768,7 +800,7 @@ type KelasResponse struct {
 }
 
 type KelasPeserta struct {
-	DetailId        int32     `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	DetailId        int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId           int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
 	IdPeserta       *int32    `gorm:"column:idpeserta;type:int" json:"id_peserta" validate:"required"`
 	Sumbangan       *float64  `gorm:"column:sumbangan;type:decimal(13,2)" json:"sumbangan" validate:"omitempty"`
@@ -840,7 +872,7 @@ type KelasPesertaResponse struct {
 }
 
 type KelasPengabdi struct {
-	DetailId       int32     `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	DetailId       int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId          int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
 	IdPengabdi     *int32    `gorm:"column:idpengabdi;type:int" json:"id_pengabdi" validate:"required"`
 	Sumbangan      *float64  `gorm:"column:sumbangan;type:decimal(13,2)" json:"sumbangan" validate:"omitempty"`
@@ -876,7 +908,7 @@ func (KelasPengabdi) TableName() string {
 }
 
 type KelasTopik struct {
-	DetailId      int32     `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	DetailId      int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId         int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
 	KodeTopik     *string   `gorm:"column:kodetopik;type:varchar(20)" json:"kode_topik" validate:"omitempty,max=20"`
 	Urutan        *int32    `gorm:"column:urutan;type:int" json:"urutan" validate:"omitempty"`
@@ -903,7 +935,7 @@ func (KelasTopik) TableName() string {
 }
 
 type KelasKendaraan struct {
-	DetailId      int32     `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	DetailId      int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId         int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
 	NoPolisi      *string   `gorm:"column:nopolisi;type:varchar(15)" json:"no_polisi" validate:"omitempty,max=15"`
 	Pengendara    *string   `gorm:"column:pengendara;type:nvarchar(100)" json:"pengendara" validate:"omitempty,max=100"`
@@ -924,7 +956,7 @@ func (KelasKendaraan) TableName() string {
 }
 
 type KelasDonasi struct {
-	DetailId int32     `gorm:"primaryKey;column:DetailId;type:int;not null" json:"detail_id"`
+	DetailId int32     `gorm:"primaryKey;autoIncrement:false;column:DetailId;type:int;not null" json:"detail_id"`
 	TrxId    int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
 	Donatur  string    `gorm:"column:Donatur;type:nvarchar(100);not null" json:"donatur" validate:"required,max=100"`
 	Donasi   float64   `gorm:"column:Donasi;type:decimal(15,2);not null" json:"donasi" validate:"required"`
@@ -941,7 +973,7 @@ func (KelasDonasi) TableName() string {
 }
 
 type KelasDonasiBarang struct {
-	DetailId int32     `gorm:"primaryKey;column:DetailId;type:int;not null" json:"detail_id"`
+	DetailId int32     `gorm:"primaryKey;autoIncrement:false;column:DetailId;type:int;not null" json:"detail_id"`
 	TrxId    int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
 	Donatur  string    `gorm:"column:Donatur;type:nvarchar(100);not null" json:"donatur" validate:"required,max=100"`
 	Barang   string    `gorm:"column:Barang;type:varchar(100);not null" json:"barang" validate:"required,max=100"`
@@ -958,7 +990,7 @@ func (KelasDonasiBarang) TableName() string {
 }
 
 type KelasPengeluaran struct {
-	DetailId   int32     `gorm:"primaryKey;column:detailid;type:int;not null" json:"detail_id"`
+	DetailId   int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId      int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
 	TimKerja   *string   `gorm:"column:timkerja;type:varchar(3)" json:"tim_kerja" validate:"omitempty,max=3"`
 	Keterangan *string   `gorm:"column:keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=200"`
@@ -976,7 +1008,7 @@ func (KelasPengeluaran) TableName() string {
 }
 
 type KelasMusik struct {
-	DetailId   int32     `gorm:"primaryKey;column:DetailId;type:int;not null" json:"detail_id"`
+	DetailId   int32     `gorm:"primaryKey;autoIncrement:false;column:DetailId;type:int;not null" json:"detail_id"`
 	TrxId      int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
 	MusicId    int32     `gorm:"column:MusicId;type:int;not null" json:"music_id" validate:"required"`
 	Urutan     *int32    `gorm:"column:Urutan;type:int" json:"urutan" validate:"omitempty"`
@@ -995,7 +1027,7 @@ func (KelasMusik) TableName() string {
 }
 
 type KelasAbsensi struct {
-	Id        int32     `gorm:"primaryKey;column:Id;type:int;not null" json:"id"`
+	Id        int32     `gorm:"primaryKey;autoIncrement:false;column:Id;type:int;not null" json:"id"`
 	TrxId     int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
 	TrxDate   DateTime  `gorm:"column:TrxDate;type:date;not null" json:"trx_date" validate:"required"`
 	IdPeserta int32     `gorm:"column:IdPeserta;type:int;not null" json:"id_peserta" validate:"required"`
@@ -1012,7 +1044,7 @@ func (KelasAbsensi) TableName() string {
 }
 
 type DonasiSxy struct {
-	ID              int32    `gorm:"primaryKey;column:id" json:"id"`
+	ID              int32    `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	NoKwitansi      string   `gorm:"column:nokwitansi" json:"no_kwitansi" validate:"required,max=50"`
 	Tanggal         DateOnly `gorm:"column:tanggal" json:"tanggal"`
 	Donatur         int32    `gorm:"column:donatur" json:"donatur_id"`
@@ -1034,7 +1066,7 @@ type DonasiSxy struct {
 func (DonasiSxy) TableName() string { return "T_SXY_TRANSAKSI" }
 
 type DonasiSxyResponse struct {
-	ID                int32     `gorm:"primaryKey;column:id" json:"id"`
+	ID                int32     `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	NoKwitansi        string    `gorm:"column:nokwitansi" json:"no_kwitansi"`
 	NoKupon           *string   `gorm:"column:nokupon" json:"no_kupon"`
 	Tanggal           DateOnly  `gorm:"column:tanggal" json:"tanggal"`
@@ -1052,7 +1084,7 @@ type DonasiSxyResponse struct {
 }
 
 type WorkMapping struct {
-	ID        int64  `gorm:"primaryKey;column:Id;autoIncrement" json:"id"`
+	ID        int64  `gorm:"primaryKey;autoIncrement:false;column:Id;autoIncrement" json:"id"`
 	Divisi    string `gorm:"column:Divisi;type:varchar(50)" json:"divisi"`
 	SubDivisi string `gorm:"column:SubDivisi;type:varchar(50)" json:"sub_divisi"`
 	Status    bool   `gorm:"column:Status;type:bit;default:1" json:"status"`

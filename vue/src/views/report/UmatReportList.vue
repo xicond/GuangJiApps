@@ -43,13 +43,13 @@
             <el-form-item label="Status Umat">
               <LookupSelect v-model="filters.status_umat" placeholder="Pilih Status Umat"
                 :fetch-api="lookupApi.getLookupStatus" value-key="lookup_value" label-key="lookup_description" clearable
-                @change="onFilterChange" />
+                @change="onFilterChange" auto-populate />
             </el-form-item>
           </el-col>
 
           <el-col :xs="24" :sm="12" :md="6">
-            <el-form-item label="Nama Indonesia">
-              <el-input v-model="filters.nama_indo" placeholder="Cari Nama Indonesia..." clearable
+            <el-form-item label="Nama Ciu Tao">
+              <el-input v-model="filters.nama_indo" placeholder="Cari Nama Ciu Tao..." clearable
                 @input="onFilterChange" />
             </el-form-item>
           </el-col>
@@ -57,8 +57,8 @@
 
         <el-row :gutter="16" class="filter-row">
           <el-col :xs="24" :sm="12" :md="6">
-            <el-form-item label="Nama Mandarin">
-              <el-input v-model="filters.nama_mandarin" placeholder="Cari Nama Mandarin..." clearable
+            <el-form-item label="Nama Lain">
+              <el-input v-model="filters.nama_mandarin" placeholder="Cari Nama Lain..." clearable
                 @input="onFilterChange" />
             </el-form-item>
           </el-col>
@@ -70,8 +70,9 @@
           </el-col>
 
           <el-col :xs="24" :sm="12" :md="6">
-            <el-form-item label="Alias">
-              <el-input v-model="filters.alias" placeholder="Cari Alias..." clearable @input="onFilterChange" />
+            <el-form-item label="Alias / Pin Yin">
+              <el-input v-model="filters.alias" placeholder="Cari Alias / Pin Yin..." clearable
+                @input="onFilterChange" />
             </el-form-item>
           </el-col>
 
@@ -150,7 +151,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="alias" label="Alias / Pin Yin" width="120">
+        <el-table-column prop="alias" label="Alias / Pin Yin / Pin Yin" width="120">
           <template #default="{ row }">
             <span>{{ row.alias || '-' }}</span>
           </template>

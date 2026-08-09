@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -230,19 +231,18 @@ func (s *SxyDonaturService) Create(payload domain.SxyDonatur, c *gin.Context) (d
 		return domain.SxyDonatur{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	var maxID int32
-	s.db.Table("T_SXY_MST_DONATUR").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
-	payload.ID = maxID + 1
-
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
+	var genResult struct {
+		GeneratedId int32
+	}
+	nowStr := time.Now().Format("2006-01-02 15:04:05")
+	errId := s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "SXYDONATURID", nowStr, 1).Scan(&genResult).Error
+	if errId != nil {
+		return domain.SxyDonatur{}, fmt.Errorf("failed to generate ID: %w", errId)
 	}
 
+	payload.ID = genResult.GeneratedId
+
+	userID := getUserID(c)
 	payload.Status = true
 	payload.CreatedBy = userID
 	payload.CreatedDate = domain.NowDateTime()

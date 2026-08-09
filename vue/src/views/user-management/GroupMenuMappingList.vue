@@ -27,14 +27,14 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Nama Menu" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.menu_name" placeholder="Cari nama menu..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="12">
           <el-form-item label="URL Halaman" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.page_url" placeholder="Cari page url..." clearable :prefix-icon="Search"
               @input="onFilterChange" />

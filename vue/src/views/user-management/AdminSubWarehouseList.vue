@@ -27,21 +27,24 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="12">
           <el-form-item label="Nama Warehouse" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.full_name" placeholder="Cari nama sub wh..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="PIC" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.pic" placeholder="Cari PIC..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+      </el-row>
+      <el-row :gutter="16">
+
+        <el-col :xs="24" :sm="24" :md="24">
           <!-- <el-form-item label="Kode Dokumen" :label-position="isMobile? 'top' : 'right'">
             <el-input
               v-model="filters.doc_code"
@@ -51,7 +54,7 @@
               @input="onFilterChange"
             />
           </el-form-item> -->
-          <div>
+          <div class="filter-actions">
             <el-button :icon="Refresh" @click="resetFilters">Reset Filter</el-button>
           </div>
         </el-col>

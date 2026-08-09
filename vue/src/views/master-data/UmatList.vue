@@ -21,33 +21,36 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <!-- Filter Alias -->
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Alias" :label-position="isMobile ? 'top' : 'right'">
+        <!-- Filter Nama Ciu Tao -->
+        <el-col :xs="24" :sm="12" :md="8">
+          <el-form-item label="Nama Ciu Tao" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.namaindonesia" placeholder="Cari Nama Ciu Tao..." clearable :prefix-icon="User"
+              @input="onFilterChange" />
+          </el-form-item>
+        </el-col>
+
+        <!-- Filter Nama Lain -->
+        <el-col :xs="24" :sm="12" :md="8">
+          <el-form-item label="Nama Lain" :label-position="isMobile ? 'top' : 'right'">
+            <el-input v-model="filters.namamandarin" placeholder="Cari Nama Lain..." clearable :prefix-icon="Reading"
+              @input="onFilterChange" />
+          </el-form-item>
+        </el-col>
+
+        <!-- Filter Alias / Pin Yin -->
+        <el-col :xs="24" :sm="12" :md="8">
+          <el-form-item label="Alias / Pin Yin" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.alias" placeholder="Cari berdasarkan alias..." clearable :prefix-icon="Search"
               @input="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <!-- Filter Nama Indonesia -->
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Indonesia" :label-position="isMobile ? 'top' : 'right'">
-            <el-input v-model="filters.namaindonesia" placeholder="Cari nama indonesia..." clearable :prefix-icon="User"
-              @input="onFilterChange" />
-          </el-form-item>
-        </el-col>
-
-        <!-- Filter Nama Mandarin -->
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Nama Mandarin" :label-position="isMobile ? 'top' : 'right'">
-            <el-input v-model="filters.namamandarin" placeholder="Cari nama mandarin..." clearable
-              :prefix-icon="Reading" @input="onFilterChange" />
-          </el-form-item>
-        </el-col>
+      </el-row>
+      <el-row :gutter="16">
 
         <!-- Filter Tahun Ciu Tao Mandarin -->
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-form-item label="Tahun Ciu Tao Mandarin" :label-position="isMobile ? 'top' : 'right'">
+        <el-col :xs="24" :sm="12" :md="12">
+          <el-form-item label="Tahun Internasional Chiu Tao" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.tahunchiutaomandarin" placeholder="Exact match tahun (e.g. 2024)..." clearable
               :prefix-icon="Calendar" @input="onFilterChange" />
           </el-form-item>
@@ -72,19 +75,19 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="nama_indonesia" label="Nama Indonesia" min-width="160">
+        <el-table-column prop="nama_indonesia" label="Nama Ciu Tao" min-width="160">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.nama_indonesia }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="alias" label="Alias" min-width="120">
+        <el-table-column prop="alias" label="Alias / Pin Yin" min-width="120">
           <template #default="{ row }">
             <span>{{ row.alias || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="nama_mandarin" label="Nama Mandarin" min-width="140">
+        <el-table-column prop="nama_mandarin" label="Nama Lain" min-width="140">
           <template #default="{ row }">
             <span>{{ row.nama_mandarin || '-' }}</span>
           </template>

@@ -22,7 +22,7 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Donatur" :label-position="isMobile ? 'top' : 'right'">
             <LookupSelect v-model="filters.donatur" placeholder="Pilih Donatur"
               :fetch-api="sxyDonaturApi.getSxyDonaturs" value-key="id" label-key="nama" clearable
@@ -30,7 +30,7 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Penggalang Dana" :label-position="isMobile ? 'top' : 'right'">
             <LookupSelect v-model="filters.penggalang" placeholder="Pilih Penggalang Dana"
               :fetch-api="penggalangDanaApi.getPenggalangDanas" value-key="id" label-key="nama" clearable
@@ -38,14 +38,17 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Fotang" :label-position="isMobile ? 'top' : 'right'">
             <LookupSelect v-model="filters.fotang" placeholder="Pilih Fotang" :fetch-api="fotangApi.getFotangLookupSxy"
               value-key="lookup_value" label-key="lookup_description" clearable @change="onFilterChange" />
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+      </el-row>
+      <el-row :gutter="16" class="filter-row">
+
+        <el-col :xs="24" :sm="12" :md="12">
           <el-form-item label="Rentang Tanggal" :label-position="isMobile ? 'top' : 'right'">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="s/d" start-placeholder="Tgl Mulai"
               end-placeholder="Tgl Selesai" value-format="YYYY-MM-DD" clearable style="width: 100%"

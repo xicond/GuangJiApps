@@ -27,7 +27,7 @@
       </div>
 
       <el-row :gutter="16" class="filter-row">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col :xs="24" :sm="12" :md="12">
           <el-form-item label="Nama Group" :label-position="isMobile ? 'top' : 'right'">
             <el-input v-model="filters.group_name" placeholder="Cari nama group..." clearable :prefix-icon="Search"
               @input="onFilterChange" />

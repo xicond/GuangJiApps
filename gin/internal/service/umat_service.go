@@ -43,6 +43,13 @@ func NewUmatService(db *gorm.DB) *UmatService {
 	}
 }
 
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 	type lookupCheck struct {
 		fieldName  string
@@ -51,18 +58,18 @@ func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 	}
 
 	checks := [...]lookupCheck{
-		{fieldName: "status_umat", categoryID: "B_STATUS", val: payload.StatusUmat},
-		{fieldName: "tim_kerja", categoryID: "B_TIMKERJA", val: payload.TimKerja},
-		{fieldName: "kelas_khusus", categoryID: "B_KELAS", val: payload.KelasKhusus},
-		{fieldName: "kelas_umum", categoryID: "B_KELASUMUM", val: payload.KelasUmum},
-		{fieldName: "tempat_sd2", categoryID: "B_FOTHANG", val: payload.TempatSd2},
-		{fieldName: "tempat_sd3", categoryID: "B_FOTHANG", val: payload.TempatSd3},
+		{fieldName: "status_umat", categoryID: "B_STATUS", val: derefString(payload.StatusUmat)},
+		{fieldName: "tim_kerja", categoryID: "B_TIMKERJA", val: derefString(payload.TimKerja)},
+		{fieldName: "kelas_khusus", categoryID: "B_KELAS", val: derefString(payload.KelasKhusus)},
+		{fieldName: "kelas_umum", categoryID: "B_KELASUMUM", val: derefString(payload.KelasUmum)},
+		{fieldName: "tempat_sd2", categoryID: "B_FOTHANG", val: derefString(payload.TempatSd2)},
+		{fieldName: "tempat_sd3", categoryID: "B_FOTHANG", val: derefString(payload.TempatSd3)},
 		{fieldName: "fotang_aktif", categoryID: "B_FOTHANG", val: payload.FotangAktif},
 		{fieldName: "fotang_chiutao", categoryID: "B_FOTHANG", val: payload.FotangChiutao},
 		{fieldName: "tcs", categoryID: "B_TCS", val: payload.Tcs},
 		{fieldName: "waktu_chiutao_mandarin", categoryID: "B_WAKTUCIUTAO", val: payload.WaktuChiutaoMandarin},
-		{fieldName: "pendidikan", categoryID: "B_PENDIDIKAN", val: payload.Pendidikan},
-		{fieldName: "pekerjaan", categoryID: "B_PEKERJAAN", val: payload.Pekerjaan},
+		{fieldName: "pendidikan", categoryID: "B_PENDIDIKAN", val: derefString(payload.Pendidikan)},
+		{fieldName: "pekerjaan", categoryID: "B_PEKERJAAN", val: derefString(payload.Pekerjaan)},
 	}
 
 	activeChecks := make([]lookupCheck, 0, len(checks))
@@ -112,7 +119,7 @@ func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 	return nil
 }
 
-func (s *UmatService) List(page int, filters map[string]string, limit int) ([]domain.Umat, int64, error) { //[]domain.Umat {
+func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.Umat, int64, error) { //[]domain.Umat {
 	var items []domain.Umat
 	var total int64
 
@@ -125,8 +132,23 @@ func (s *UmatService) List(page int, filters map[string]string, limit int) ([]do
 	}
 	offset := (page - 1) * limit
 
+	var subWhVal int64
+	userID := getUserID(c)
+	row := s.db.Model(&domain.AdminMatrix{}).
+		Where("LOGINID = ?", userID).
+		Select("SUBWHID").
+		Row()
+	if row != nil {
+		_ = row.Scan(&subWhVal)
+	}
+
 	// Base query
-	query := s.db.Table("T_BUS_UMAT").Where("status = ?", true)
+	query := s.db.Table("T_BUS_UMAT").
+		Where("fotangaktif = ?", subWhVal).
+		Where("status = ?", true).
+		Where("namaindonesia <> ''").
+		Where("namaindonesia is not null ")
+
 	// Dynamic optional search on fields (dengan whitelist kolom aman dari SQL Injection)
 	type FilterRule struct {
 		Column string
@@ -202,7 +224,8 @@ func (s *UmatService) List(page int, filters map[string]string, limit int) ([]do
 	now := time.Now()
 	for i := range items {
 		if !items[i].TanggalLahir.IsZero() && items[i].TanggalLahir.Year() > 1900 {
-			items[i].Usia = int32(now.Year() - items[i].TanggalLahir.Year())
+			u := int32(now.Year() - items[i].TanggalLahir.Year())
+			items[i].Usia = &u
 		}
 		if items[i].JenisKelaminInfo != nil && items[i].JenisKelaminInfo.LookupDescription != nil && *items[i].JenisKelaminInfo.LookupDescription != "" {
 			items[i].JenisKelamin = *items[i].JenisKelaminInfo.LookupDescription
@@ -221,20 +244,123 @@ func (s *UmatService) Create(payload domain.Umat, c *gin.Context) (domain.Umat, 
 		return domain.Umat{}, err
 	}
 
-	// item.Id = int.Parse(DalBrand.GenerateId_UmatId(DateTime.Now, 1)[0]);
-	//item.Kode = DalBrand.GenerateId_UmatId(DateTime.Now, 1)[0];
-	// item.Kode = CurrentLogin.SubWhName + "-" + item.Id.ToString();
+	type SubWhInfo struct {
+		SubWhId  string `gorm:"column:SUBWHID"`
+		FullName string `gorm:"column:FULL_NAME"`
+	}
 
-	// 2. IMPORTANT: Do NOT generate a random UnixNano string for ID!
-	// Your SQL Server schema defines [id] INT NOT NULL.
-	// If it is NOT an IDENTITY column, we calculate the next integer sequence manually.
-	var maxID int32
-	s.db.Table("T_BUS_UMAT").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
-	payload.ID = maxID + 1
+	var (
+		genResult struct {
+			GeneratedId int32
+		}
+		subWhResult   SubWhInfo
+		errId         error
+		errSubWh      error
+		errPenanggung error
+		errPengajak   error
+		wg            sync.WaitGroup
+	)
 
-	// item.Id = int.Parse(DalBrand.GenerateId_UmatId(DateTime.Now, 1)[0]);
-	//item.Kode = DalBrand.GenerateId_UmatId(DateTime.Now, 1)[0];
-	// item.Kode = CurrentLogin.SubWhName + "-" + item.Id.ToString();
+	userID := getUserID(c)
+
+	needPenanggung := (payload.Penanggung != nil && string(*payload.Penanggung) != "") && (payload.PenanggungManual == nil || *payload.PenanggungManual == "")
+	needPengajak := (payload.Pengajak != nil && string(*payload.Pengajak) != "") && (payload.PengajakManual == nil || *payload.PengajakManual == "")
+
+	tasksCount := 2
+	if needPenanggung {
+		tasksCount++
+	}
+	if needPengajak {
+		tasksCount++
+	}
+
+	wg.Add(tasksCount)
+
+	// Goroutine 1: Execute SP_APP_GenerateId concurrently
+	go func() {
+		defer wg.Done()
+		nowStr := time.Now().Format("2006-01-02 15:04:05")
+		errId = s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "UMAT", nowStr, 1).Scan(&genResult).Error
+	}()
+
+	// Goroutine 2: Execute SubWhInfo query concurrently
+	go func() {
+		defer wg.Done()
+		subQuery := s.db.Table("T_WH_USER_MATRIX_MST AS A").
+			Select("1").
+			Where("A.LOGINID = ?", userID).
+			Where("A.SUBWHID = T_WH_SUBWH_MST.SUBWHID")
+
+		errSubWh = s.db.Table("T_WH_SUBWH_MST").
+			Select("SUBWHID, FULL_NAME").
+			Where("EXISTS (?)", subQuery).
+			Limit(1).
+			Scan(&subWhResult).Error
+	}()
+
+	// Goroutine 3: Lookup Penanggung concurrently if needed
+	if needPenanggung {
+		go func() {
+			defer wg.Done()
+			var temp []domain.Umat
+			if err := s.db.Where("id = ?", *payload.Penanggung).Limit(1).Find(&temp).Select("namaindonesia, namamandarin, alias").Error; err != nil {
+				errPenanggung = fmt.Errorf("Penanggung %s not found: %w", *payload.Penanggung, err)
+				return
+			}
+			if len(temp) > 0 {
+				pn := temp[0].NamaIndonesia
+				if pn == "" && temp[0].NamaMandarin != nil {
+					pn = *temp[0].NamaMandarin
+				}
+				if pn == "" && temp[0].Alias != nil {
+					pn = *temp[0].Alias
+				}
+				payload.PenanggungManual = &pn
+			}
+		}()
+	}
+
+	// Goroutine 4: Lookup Pengajak concurrently if needed
+	if needPengajak {
+		go func() {
+			defer wg.Done()
+			var temp []domain.Umat
+			if err := s.db.Where("id = ?", *payload.Pengajak).Limit(1).Find(&temp).Select("namaindonesia, namamandarin, alias").Error; err != nil {
+				errPengajak = fmt.Errorf("Pengajak %s not found: %w", *payload.Pengajak, err)
+				return
+			}
+			if len(temp) > 0 {
+				pn := temp[0].NamaIndonesia
+				if pn == "" && temp[0].NamaMandarin != nil {
+					pn = *temp[0].NamaMandarin
+				}
+				if pn == "" && temp[0].Alias != nil {
+					pn = *temp[0].Alias
+				}
+				payload.PengajakManual = &pn
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if errId != nil {
+		return domain.Umat{}, fmt.Errorf("failed to generate id: %w", errId)
+	}
+	if errSubWh != nil {
+		log.Printf("[UmatService.Create] warning querying sub warehouse info for user %d: %v", userID, errSubWh)
+	}
+	if errPenanggung != nil {
+		return domain.Umat{}, errPenanggung
+	}
+	if errPengajak != nil {
+		return domain.Umat{}, errPengajak
+	}
+
+	// payload.FotangAktif = subWhResult.SubWhId
+	payload.ID = genResult.GeneratedId
+	kode := fmt.Sprintf("%s-%d", subWhResult.FullName, genResult.GeneratedId)
+	payload.Kode = &kode
 
 	// 3. Populate matching schema structural constraints
 	payload.Status = true                  // Active status mapping
@@ -255,7 +381,8 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 		return domain.Umat{}, fmt.Errorf("umat %s not found", id)
 	}
 	if !item.TanggalLahir.IsZero() && item.TanggalLahir.Year() > 1900 {
-		item.Usia = int32(time.Now().Year() - item.TanggalLahir.Year())
+		u := int32(time.Now().Year() - item.TanggalLahir.Year())
+		item.Usia = &u
 	}
 	// Dont activate this, get from JenisKelaminInfo
 	/* if item.JenisKelaminInfo != nil && item.JenisKelaminInfo.LookupDescription != nil && *item.JenisKelaminInfo.LookupDescription != "" {
@@ -280,17 +407,25 @@ func (s *UmatService) Update(id string, payload domain.Umat, c *gin.Context) (do
 	}
 	userIDInt32 := int32(parsedInt)
 
-	var item domain.Umat
-	// 2. Fetch the existing item using .Take() to avoid default sorting bugs
+	var (
+		item          domain.Umat
+		errFetchItem  error
+		errPenanggung error
+		errPengajak   error
+		wg            sync.WaitGroup
+	)
+
+	// Goroutine 1: Fetch existing item using .Take() to avoid default sorting bugs
 	if err := s.db.Where("id = ?", userIDInt32).Take(&item).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return domain.Umat{}, fmt.Errorf("umat %s not found", id)
+			errFetchItem = fmt.Errorf("umat %s not found", id)
+		} else {
+			errFetchItem = err
 		}
-		return domain.Umat{}, err
 	}
 
 	// 3. Map values onto the actual field variables present in your legacy schema
-	item.Kode = payload.Kode
+	// item.Kode = payload.Kode
 	item.Alias = payload.Alias
 	item.NamaIndonesia = payload.NamaIndonesia
 	item.Marga = payload.Marga
@@ -338,6 +473,75 @@ func (s *UmatService) Update(id string, payload domain.Umat, c *gin.Context) (do
 	item.Keterangan = payload.Keterangan
 	item.Email = payload.Email
 	item.ImagePath = payload.ImagePath
+
+	needPenanggung := (payload.Penanggung != nil && string(*payload.Penanggung) != "") && (payload.PenanggungManual == nil || *payload.PenanggungManual == "")
+	needPengajak := (payload.Pengajak != nil && string(*payload.Pengajak) != "") && (payload.PengajakManual == nil || *payload.PengajakManual == "")
+
+	tasksCount := 1
+	if needPenanggung {
+		tasksCount++
+	}
+	if needPengajak {
+		tasksCount++
+	}
+
+	wg.Add(tasksCount)
+
+	// Goroutine 2: Lookup Penanggung concurrently if needed
+	if needPenanggung {
+		go func() {
+			defer wg.Done()
+			var temp []domain.Umat
+			if err := s.db.Where("id = ?", *payload.Penanggung).Limit(1).Select("namaindonesia, namamandarin, alias").Find(&temp).Error; err != nil {
+				errPenanggung = fmt.Errorf("Penanggung %s not found: %w", *payload.Penanggung, err)
+				return
+			}
+			if len(temp) > 0 {
+				pn := temp[0].NamaIndonesia
+				if pn == "" && temp[0].NamaMandarin != nil {
+					pn = *temp[0].NamaMandarin
+				}
+				if pn == "" && temp[0].Alias != nil {
+					pn = *temp[0].Alias
+				}
+				payload.PenanggungManual = &pn
+			}
+		}()
+	}
+
+	// Goroutine 3: Lookup Pengajak concurrently if needed
+	if needPengajak {
+		go func() {
+			defer wg.Done()
+			var temp []domain.Umat
+			if err := s.db.Where("id = ?", *payload.Pengajak).Limit(1).Select("namaindonesia, namamandarin, alias").Find(&temp).Error; err != nil {
+				errPengajak = fmt.Errorf("Pengajak %s not found: %w", *payload.Pengajak, err)
+				return
+			}
+			if len(temp) > 0 {
+				pn := temp[0].NamaIndonesia
+				if pn == "" && temp[0].NamaMandarin != nil {
+					pn = *temp[0].NamaMandarin
+				}
+				if pn == "" && temp[0].Alias != nil {
+					pn = *temp[0].Alias
+				}
+				payload.PengajakManual = &pn
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if errFetchItem != nil {
+		return domain.Umat{}, errFetchItem
+	}
+	if errPenanggung != nil {
+		return domain.Umat{}, errPenanggung
+	}
+	if errPengajak != nil {
+		return domain.Umat{}, errPengajak
+	}
 
 	// Legacy metadata mappings
 	item.ModAct = "U"                   // 'U' standard legacy flag for Update

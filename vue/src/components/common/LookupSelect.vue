@@ -39,6 +39,7 @@ const props = withDefaults(
     clearable?: boolean
     pageSize?: number
     initialOption?: any
+    autoPopulate?: boolean
   }>(),
   {
     modelValue: '',
@@ -46,7 +47,8 @@ const props = withDefaults(
     valueKey: 'lookup_value',
     labelKey: 'lookup_description',
     clearable: true,
-    pageSize: 10
+    pageSize: 10,
+    autoPopulate: false
   }
 )
 
@@ -245,10 +247,10 @@ watch(
 )
 
 onMounted(() => {
-  if (
-    (props.modelValue !== undefined && props.modelValue !== null && props.modelValue !== '') ||
-    props.initialOption
-  ) {
+  const hasValue = props.modelValue !== undefined && props.modelValue !== null && props.modelValue !== ''
+  const shouldPopulate = hasValue || !!props.initialOption || props.autoPopulate
+
+  if (shouldPopulate) {
     loadData(1, '')
   }
 })

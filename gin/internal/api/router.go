@@ -1,9 +1,11 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"runtime/debug"
@@ -205,6 +207,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	rdb := database.GetRedisClient(cfg)
 
 	loginLimiter := middleware.NewLoginRateLimiter(cfg)
+	ocrLimiter := middleware.NewUserRateLimiter(cfg, 1, time.Minute/60*18, "ocr_limiter:")
 
 	r.POST(cfg.BaseURL+"/login", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
@@ -618,6 +621,35 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 	})
+	protected.POST("/umats/ocr", ocrLimiter.Middleware(), func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		fileHeader, err := c.FormFile("file")
+		if err != nil {
+			fileHeader, err = c.FormFile("image")
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "File gambar wajib diunggah (field 'file' atau 'image')"})
+				return
+			}
+		}
+
+		file, err := fileHeader.Open()
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal membuka file gambar"})
+			return
+		}
+		defer file.Close()
+
+		result, err := umatService.Ocr(file, fileHeader, c)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"data":     result,
+			"resource": "UmatOCR",
+		})
+	})
 	protected.GET("/umats/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
@@ -635,11 +667,40 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.POST("/umats", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.Umat
-		if err := c.ShouldBindJSON(&payload); err != nil {
-			respondValidationError(c, err)
+		var (
+			created domain.Umat
+			err     error
+		)
+		contentType := c.ContentType()
+		if contentType == "application/json" {
+			if err := c.ShouldBindJSON(&payload); err != nil {
+				respondValidationError(c, err)
+				return
+			}
+			created, err = umatService.Create(payload, nil, c)
+		} else if strings.HasPrefix(contentType, "multipart/form-data") {
+			if err := c.Request.ParseMultipartForm(2 << 20); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal memproses multipart form"})
+				return
+			}
+			// Ambil data JSON dari form field "data" (jika dikirim)
+			rawJSON := c.PostForm("data")
+			if rawJSON != "" {
+				if err := json.Unmarshal([]byte(rawJSON), &payload); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON di dalam form field tidak valid"})
+					return
+				}
+			}
+			var fileHeader *multipart.FileHeader
+			fileHeader, _ = c.FormFile("foto")
+			if fileHeader == nil {
+				fileHeader, _ = c.FormFile("file")
+			}
+			created, err = umatService.Create(payload, fileHeader, c)
+		} else {
+			c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Content-Type tidak didukung"})
 			return
 		}
-		created, err := umatService.Create(payload, c)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -654,13 +715,42 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		var payload domain.Umat
-		if err := c.ShouldBindJSON(&payload); err != nil {
-			respondValidationError(c, err)
+		var (
+			updated domain.Umat
+			errUpd  error
+		)
+		contentType := c.ContentType()
+		if contentType == "application/json" {
+			if err := c.ShouldBindJSON(&payload); err != nil {
+				respondValidationError(c, err)
+				return
+			}
+			updated, errUpd = umatService.Update(c.Param("id"), payload, nil, c)
+		} else if strings.HasPrefix(contentType, "multipart/form-data") {
+			if err := c.Request.ParseMultipartForm(2 << 20); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal memproses multipart form"})
+				return
+			}
+			// Ambil data JSON dari form field "data" (jika dikirim)
+			rawJSON := c.PostForm("data")
+			if rawJSON != "" {
+				if err := json.Unmarshal([]byte(rawJSON), &payload); err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON di dalam form field tidak valid"})
+					return
+				}
+			}
+			var fileHeader *multipart.FileHeader
+			fileHeader, _ = c.FormFile("foto")
+			if fileHeader == nil {
+				fileHeader, _ = c.FormFile("file")
+			}
+			updated, errUpd = umatService.Update(c.Param("id"), payload, fileHeader, c)
+		} else {
+			c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Content-Type tidak didukung"})
 			return
 		}
-		updated, err := umatService.Update(c.Param("id"), payload, c)
-		if err != nil {
-			respondError(c, err)
+		if errUpd != nil {
+			respondError(c, errUpd)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": updated, "resource": "Umat"})
@@ -2436,7 +2526,7 @@ func respondValidationError(c *gin.Context, err error) {
 	// path, method := getPathAndMethod(c)
 	// log.Printf("[API VALIDATION ERROR 400] path=%s method=%s err=%v", path, method, err)
 	c.JSON(http.StatusBadRequest, gin.H{
-		"error":   err.Error(),
+		"error":   "Invalid Input",
 		"details": FormatValidationError(err),
 	})
 }

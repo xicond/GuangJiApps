@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -97,4 +98,79 @@ func (l *LoginRateLimiter) Reset(c *gin.Context) {
 	key := l.GetKey(c)
 	ctx := c.Request.Context()
 	_, _ = l.store.Reset(ctx, key, l.rate)
+}
+
+type UserRateLimiter struct {
+	instance *limiter.Limiter
+	store    limiter.Store
+	rate     limiter.Rate
+}
+
+func NewUserRateLimiter(cfg config.Config, limit int64, period time.Duration, prefix string) *UserRateLimiter {
+	rate := limiter.Rate{
+		Period: period,
+		Limit:  limit,
+	}
+
+	var store limiter.Store
+	if rdb := database.GetRedisClient(cfg); rdb != nil {
+		rs, err := redisstore.NewStoreWithOptions(rdb, limiter.StoreOptions{
+			Prefix: prefix,
+		})
+		if err == nil {
+			store = rs
+		} else {
+			log.Printf("[RateLimiter] Failed to create Redis store for %s, fallback to memory: %v\n", prefix, err)
+		}
+	}
+
+	if store == nil {
+		store = memorystore.NewStore()
+	}
+
+	instance := limiter.New(store, rate)
+	return &UserRateLimiter{
+		instance: instance,
+		store:    store,
+		rate:     rate,
+	}
+}
+
+func (u *UserRateLimiter) Middleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var key string
+		if userIDVal, exists := c.Get("userID"); exists && userIDVal != nil {
+			key = fmt.Sprintf("user_%v", userIDVal)
+		} else {
+			key = c.ClientIP()
+		}
+
+		limCtx, err := u.instance.Get(c.Request.Context(), key)
+		if err != nil {
+			c.Next()
+			return
+		}
+
+		c.Header("X-RateLimit-Limit", strconv.FormatInt(limCtx.Limit, 10))
+		c.Header("X-RateLimit-Remaining", strconv.FormatInt(limCtx.Remaining, 10))
+		c.Header("X-RateLimit-Reset", strconv.FormatInt(limCtx.Reset, 10))
+
+		if limCtx.Reached {
+			now := time.Now().Unix()
+			retryAfterSeconds := limCtx.Reset - now
+			if retryAfterSeconds <= 0 {
+				retryAfterSeconds = 1
+			}
+			c.Header("Retry-After", strconv.FormatInt(retryAfterSeconds, 10))
+			c.Header("X-Retry-After", strconv.FormatInt(retryAfterSeconds, 10))
+			c.JSON(429, gin.H{
+				"error":       fmt.Sprintf("Terlalu banyak permintaan. Harap tunggu %d detik.", retryAfterSeconds),
+				"retry_after": retryAfterSeconds,
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
 }

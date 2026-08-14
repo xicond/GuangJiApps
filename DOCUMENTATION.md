@@ -315,3 +315,72 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 2. **IIS Seamless Header Configuration** (`vue/public/web.config`):
    - Configured an outbound rewrite rule (`Set Content-Encoding gzip for static assets`) in `web.config` to attach `Content-Encoding: gzip` HTTP response header for static files (`.js`, `.css`, images, `.svg`, `.html`, `.json`, etc.).
 
+---
+
+## [Completed] Persistent Offline Warning Notification (`vue/src/layouts/MainLayout.vue`)
+
+### Changes Made:
+- Imported `useOnline` from `@vueuse/core` in [MainLayout.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/layouts/MainLayout.vue#L172).
+- Added reactive watcher on `isOnline`:
+  - **When Offline (`isOnline === false`)**: Displays an `ElNotification.warning` with `duration: 0` (persistent notification that stays open until network connectivity returns).
+  - **When Online (`isOnline === true`)**: Automatically closes the active offline notification handle via `.close()`.
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] PWA Asset Update Detection & Page Change Application (`vue/src/sw.ts` & `vue/src/utils/pwaUpdate.ts`)
+
+### Changes Made:
+1. **Service Worker Update Broadcast & Skip Waiting** ([sw.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/sw.ts#L25-L45)):
+   - Added message listener for `SKIP_WAITING` event to immediately activate new Service Workers.
+   - Added `activate` event handler broadcasting `{ type: 'SW_UPDATED' }` via `postMessage` to all active window clients when new cached assets are activated.
+
+2. **Router Navigation Update Guard** ([pwaUpdate.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/utils/pwaUpdate.ts)):
+   - Created `initPwaUpdate(router)` utility initialized in [main.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/main.ts#L25).
+   - Listens to Workbox `onNeedRefresh` and SW `SW_UPDATED` messages to mark `hasPendingUpdate = true`.
+   - On page navigation (`router.beforeEach`), if a SW update is pending, triggers `updateSW(true)` (reloading seamlessly to apply updated assets on page change).
+   - Automatically checks `registration.update()` on every route change (`router.afterEach`) to detect newly deployed builds.
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Umat Image Processing, Cross-Platform Validation & `UmatFoto` One-To-One Record ([umat_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/umat_service.go))
+
+### Changes Made:
+1. **Optional Image Header Processing** ([umat_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/umat_service.go)):
+   - Updated `UmatService.Create` and `UmatService.Update` signatures to accept `fileHeader *multipart.FileHeader` (allowing `nil`).
+2. **Image Validation Engine**:
+   - Max file size limit: 8MB (`8 * 1024 * 1024` bytes).
+   - Image format validation via MIME detection & `image.DecodeConfig` (JPEG, PNG, GIF).
+   - Resolution validation: Width (200px - 2000px), Height (400px - 4000px).
+   - Aspect ratio validation: 2:4 ratio (`width / height == 0.5` with tolerance `±0.03`).
+   - Structured error format on validation failure: `{"error": "Invalid Input", "details": {"foto": [...]}}` with HTTP 400 status.
+3. **Cross-Platform Filename Sanitization**:
+   - Added `sanitizeFilename(name string) string` helper ensuring filenames are safe for Linux and Windows (sanitizes `< > : " / \ | ? * \x00-\x1f`, trims spaces, normalizes path separators, and prevents Windows reserved filenames like `CON`, `PRN`, `AUX`, `NUL`).
+4. **Configurable Storage & `UmatFoto` Database Recording**:
+   - Storage directory configurable via `UPLOAD_DIR` env variable (default `./uploads`).
+   - Saves file to `./uploads/{Umat.Id}/{filename}` (`DocPath` = `{Umat.Id}`, `DocFile` = `{DocPath}/{filename}`).
+   - Upserts record in `T_BUS_UMAT_FOTO` (`UmatFoto`) with `FileID` generated via `s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "FILE", nowStr, 1)`.
+- Verified compilation with `go build ./...` and unit tests with `go test -run TestSanitizeFilename ./internal/service/...`.
+
+---
+
+## [Completed] Frontend Photo Capture, 2:4 Cropper & Postman Multipart Collection Update
+
+### Changes Made:
+1. **Postman Collection Update** ([apps-gin.postman_collection.json](file:///Users/xicond/Workspace/www/GuangJiApps/gin/postman/apps-gin.postman_collection.json)):
+   - Added `Umat - Create (Multipart with Photo)` and `Umat - Update (Multipart with Photo)` endpoints with `formdata` containing `"data"` (JSON payload) and `"foto"` (file header).
+2. **Vue Multipart API Support** ([umat.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/api/umat.ts)):
+   - Updated `umatApi.createUmat` and `umatApi.updateUmat` to accept optional `photoFile?: File | Blob | null`.
+   - Sends `FormData` with `multipart/form-data` content-type header when `photoFile` is present.
+3. **Photo Capture & 2:4 Aspect Ratio Cropper** ([UmatPhotoUpload.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatPhotoUpload.vue)):
+   - Installed `vue-advanced-cropper` package.
+   - HTML5 File Input with `accept="image/jpeg,image/png,image/webp,image/gif"` and `capture="environment"` for mobile camera and gallery picking.
+   - Custom MediaDevices API live camera stream modal (`navigator.mediaDevices.getUserMedia`) for desktop/mobile browser video feed capture.
+   - Interactive cropper modal enforcing strict **2:4 aspect ratio** (`aspectRatio: 2/4`) and output resolution.
+4. **Form Integration**:
+   - Embedded `UmatPhotoUpload` into Section 1 of [UmatForm.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatForm.vue).
+   - Updated [UmatCreateList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/UmatCreateList.vue) and [UmatEditList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/UmatEditList.vue) to forward `photoFile` blob to `createUmat` and `updateUmat`.
+5. **Responsive Layout Tuning**:
+   - Updated `.photo-preview-container` in [UmatPhotoUpload.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatPhotoUpload.vue) to `width: 100%`, `max-width: 210px`, and `aspect-ratio: 3 / 4` for responsive scaling across devices.
+- Verified with `npx vue-tsc --noEmit`, passing cleanly with 0 type errors.

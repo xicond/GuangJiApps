@@ -98,8 +98,8 @@
     </el-collapse>
 
     <!-- Dialog Popup Add / Edit Peserta -->
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Peserta' : 'Edit Peserta'" width="720px"
-      destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Peserta' : 'Edit Peserta'"
+      :width="isMobile ? '90%' : '600px'" destroy-on-close>
       <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
         class="mb-4" />
@@ -207,6 +207,7 @@ import { umatApi } from '../../api/umat'
 import FieldErrors from '../common/FieldErrors.vue'
 import type { KelasPeserta } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
+import { scrollToFormError } from '../../utils/scroll'
 
 const props = defineProps<{
   kelasId: string | number
@@ -381,7 +382,7 @@ const umatOptions = ref<Umat[]>([])
 const loadingUmat = ref(false)
 
 async function searchUmat(query: string) {
-  if (!query || query.trim().length < 2) {
+  if (!query || query.trim().length < 1) {
     umatOptions.value = []
     return
   }
@@ -517,7 +518,10 @@ async function submitForm() {
   submitting.value = true
   try {
     const valid = await formRef.value.validate().catch(() => false)
-    if (!valid) return
+    if (!valid) {
+      scrollToFormError()
+      return
+    }
     dialogFieldErrors.value = {}
 
     const payload: Partial<KelasPeserta> = {
@@ -550,13 +554,14 @@ async function submitForm() {
     dialogVisible.value = false
     if (isExpanded.value) fetchPeserta()
   } catch (err: any) {
-    console.error('Error submitting peserta form:', err)
+    console.error('Failed to save peserta:', err)
     if (err.response?.data?.details) {
       dialogFieldErrors.value = err.response.data.details
       ElMessage.error(err.response.data.error || 'Invalid Inputs, Silahkan periksa kolom form')
     } else {
       ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data peserta')
     }
+    scrollToFormError()
   } finally {
     submitting.value = false
   }

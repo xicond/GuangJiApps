@@ -163,20 +163,11 @@ func (s *AdminSubWarehouseService) Update(id string, payload domain.AdminSubWare
 		return domain.AdminSubWarehouse{}, err
 	}
 
-	userID := int64(1)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int64(uid)
-			}
-		}
-	}
-
 	item.WhId = payload.WhId
 	item.FullName = payload.FullName
 	item.Pic = payload.Pic
 	item.DocCode = payload.DocCode
-	item.UpdateUId = userID
+	item.UpdateUId = toInt64(getUserID(c))
 	item.LstUpdate = domain.NowDateTime()
 	item.FlagProductions = payload.FlagProductions
 	item.SubWhType = payload.SubWhType

@@ -220,23 +220,21 @@ func (s *DonasiSxyService) Create(payload domain.DonasiSxy, c *gin.Context) (dom
 		return domain.DonasiSxy{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	var maxID int32
-	s.db.Table("T_SXY_TRANSAKSI").Select("ISNULL(MAX(id), 0)").Row().Scan(&maxID)
-	payload.ID = maxID + 1
-
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
+	var genResult struct {
+		GeneratedId int32
+	}
+	nowStr := time.Now().Format("2006-01-02 15:04:05")
+	errId := s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "SXYTRXID", nowStr, 1).Scan(&genResult).Error
+	if errId != nil {
+		return domain.DonasiSxy{}, fmt.Errorf("failed to generate ID: %w", errId)
 	}
 
+	payload.ID = genResult.GeneratedId
+
 	payload.Status = true
-	payload.CreatedBy = userID
+	payload.CreatedBy = getUserID(c)
 	payload.CreatedDate = domain.NowDateTime()
-	payload.UpdatedBy = userID
+	payload.UpdatedBy = getUserID(c)
 	payload.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Create(&payload).Error; err != nil {
@@ -274,15 +272,6 @@ func (s *DonasiSxyService) Update(id string, payload domain.DonasiSxy, c *gin.Co
 		return domain.DonasiSxy{}, err
 	}
 
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
-	}
-
 	item.NoKwitansi = payload.NoKwitansi
 	item.Tanggal = payload.Tanggal
 	item.Donatur = payload.Donatur
@@ -294,7 +283,7 @@ func (s *DonasiSxyService) Update(id string, payload domain.DonasiSxy, c *gin.Co
 	item.TanggalTransfer = payload.TanggalTransfer
 	item.AtasNama = payload.AtasNama
 	item.TtkSent = payload.TtkSent
-	item.UpdatedBy = userID
+	item.UpdatedBy = getUserID(c)
 	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
@@ -317,17 +306,8 @@ func (s *DonasiSxyService) Delete(id string, c *gin.Context) error {
 		return err
 	}
 
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
-	}
-
 	item.Status = false
-	item.UpdatedBy = userID
+	item.UpdatedBy = getUserID(c)
 	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {

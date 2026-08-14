@@ -333,12 +333,15 @@ async function handleEdit(code: string) {
   }
 }
 
+import { scrollToFormError } from '../../utils/scroll'
+
 async function handleSubmit() {
   if (!formRef.value) return
 
   try {
     await formRef.value.validate()
   } catch {
+    scrollToFormError()
     return
   }
 
@@ -374,6 +377,7 @@ async function handleSubmit() {
     console.error('Failed to submit topic form:', err)
     const errObj = err as { response?: { data?: { error?: string } }; message?: string }
     ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal menyimpan data topic')
+    scrollToFormError()
   } finally {
     submitting.value = false
   }

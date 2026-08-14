@@ -122,9 +122,9 @@ func (s *AdminService) Create(payload domain.Admin, c *gin.Context) (domain.Admi
 		return domain.Admin{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	var maxID int32
-	s.db.Table("T_Login_Mst").Select("ISNULL(MAX(LoginId), 0)").Row().Scan(&maxID)
-	payload.ID = maxID + 1
+	// var maxID int32
+	// s.db.Table("T_Login_Mst").Select("ISNULL(MAX(LoginId), 0)").Row().Scan(&maxID)
+	// payload.ID = maxID + 1
 
 	if payload.Password != "" {
 		payload.Password = EncryptPassword(payload.Password)

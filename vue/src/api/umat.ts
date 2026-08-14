@@ -48,20 +48,58 @@ export const umatApi = {
   },
 
   /**
-   * Create a new Umat record.
+   * Create a new Umat record with optional photo file.
    */
-  async createUmat(payload: Partial<Umat>): Promise<UmatSingleResponse> {
+  async createUmat(
+    payload: Partial<Umat>,
+    photoFile?: File | Blob | null
+  ): Promise<UmatSingleResponse> {
+    if (photoFile) {
+      const formData = new FormData()
+      formData.append('data', JSON.stringify(payload))
+      formData.append('foto', photoFile, (photoFile as File).name || 'foto.jpg')
+      const response = await apiClient.post<UmatSingleResponse>('/v1/umats', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      return response.data
+    }
     const response = await apiClient.post<UmatSingleResponse>('/v1/umats', payload)
     return response.data
   },
 
   /**
-   * Update an existing Umat record.
+   * Perform OCR image recognition on an uploaded document/image file.
+   */
+  async ocrUmat(file: File): Promise<{ data: any; resource: string }> {
+    const formData = new FormData()
+    formData.append('file', file, file.name)
+    const response = await apiClient.post<{ data: any; resource: string }>(
+      '/v1/umats/ocr',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      }
+    )
+    return response.data
+  },
+
+  /**
+   * Update an existing Umat record with optional photo file.
    */
   async updateUmat(
     id: number | string,
-    payload: Partial<Umat>
+    payload: Partial<Umat>,
+    photoFile?: File | Blob | null
   ): Promise<UmatSingleResponse> {
+    if (photoFile) {
+      const formData = new FormData()
+      formData.append('data', JSON.stringify(payload))
+      formData.append('foto', photoFile, (photoFile as File).name || 'foto.jpg')
+      const response = await apiClient.patch<UmatSingleResponse>(`/v1/umats/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      return response.data
+    }
     const response = await apiClient.patch<UmatSingleResponse>(`/v1/umats/${id}`, payload)
     return response.data
   },

@@ -47,6 +47,7 @@ import KelasDonasiTable from '../../components/kelas/KelasDonasiTable.vue'
 import KelasDonasiBarangTable from '../../components/kelas/KelasDonasiBarangTable.vue'
 import { kelasApi } from '../../api/kelas'
 import type { Kelas } from '../../types/kelas'
+import { scrollToFormError } from '../../utils/scroll'
 
 const route = useRoute()
 const router = useRouter()
@@ -107,6 +108,7 @@ async function handleUpdate(payload: Partial<Kelas>) {
     } else {
       ElMessage.error(err.response?.data?.error || err.message || 'Gagal memperbarui data kelas')
     }
+    scrollToFormError()
   } finally {
     submitting.value = false
   }

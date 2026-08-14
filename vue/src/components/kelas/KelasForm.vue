@@ -1,32 +1,17 @@
 <template>
   <el-card shadow="never" class="form-card" v-loading="submitting">
-    <el-alert
-      v-if="props.fieldErrors && Object.keys(props.fieldErrors).length > 0"
-      type="error"
-      show-icon
+    <el-alert v-if="props.fieldErrors && Object.keys(props.fieldErrors).length > 0" type="error" show-icon
       title="Invalid Inputs"
       description="Terdapat kesalahan pengisian form pada beberapa kolom di bawah ini. Silahkan periksa pesan kesalahan berwarna merah."
-      class="validation-alert mb-4"
-    />
+      class="validation-alert mb-4" />
 
-    <el-form
-      ref="formRef"
-      :model="formData"
-      :rules="formRules"
-      label-position="top"
-      class="kelas-form"
-    >
+    <el-form ref="formRef" :model="formData" :rules="formRules" label-position="top" class="kelas-form">
       <el-row :gutter="20">
         <!-- Kelas Selection (Required) -->
         <el-col :xs="24" :sm="12">
           <el-form-item label="Kelas" prop="kode_kelas" :error="hasFieldError('kode_kelas') ? ' ' : undefined">
-            <LookupSelect
-              v-model="formData.kode_kelas"
-              placeholder="Pilih Kelas..."
-              :fetch-api="kelasApi.getKelasLookup"
-              :initial-option="formData.kelas_name"
-              :clearable="false"
-            />
+            <LookupSelect v-model="formData.kode_kelas" placeholder="Pilih Kelas..."
+              :fetch-api="kelasApi.getKelasLookup" :initial-option="formData.kelas_name" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('kode_kelas')" />
           </el-form-item>
         </el-col>
@@ -34,13 +19,8 @@
         <!-- Fotang Selection -->
         <el-col :xs="24" :sm="12">
           <el-form-item label="Fotang" prop="kode_fotang" :error="hasFieldError('kode_fotang') ? ' ' : undefined">
-            <LookupSelect
-              v-model="formData.kode_fotang"
-              placeholder="Pilih Fotang..."
-              :fetch-api="fotangApi.getFotangLookup"
-              :initial-option="formData.fotang_name"
-              :clearable="false"
-            />
+            <LookupSelect v-model="formData.kode_fotang" placeholder="Pilih Fotang..."
+              :fetch-api="fotangApi.getFotangLookup" :initial-option="formData.fotang_name" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('kode_fotang')" />
           </el-form-item>
         </el-col>
@@ -49,51 +29,12 @@
       <el-row :gutter="20">
         <!-- Tanggal Pelaksanaan Kelas (Date Range) -->
         <el-col :xs="24" :sm="24">
-          <el-form-item
-            label="Tanggal Pelaksanaan Kelas"
-            prop="date_range"
-            :error="hasFieldError('start_date') || hasFieldError('end_date') ? ' ' : undefined"
-          >
-            <el-date-picker
-              v-model="dateRange"
-              type="daterange"
-              range-separator="s/d"
-              start-placeholder="Tanggal Mulai"
-              end-placeholder="Tanggal Selesai"
-              value-format="YYYY-MM-DD"
-              style="width: 100%"
-              :clearable="false"
-              unlink-panels
-            />
+          <el-form-item label="Tanggal Pelaksanaan Kelas" prop="date_range"
+            :error="hasFieldError('start_date') || hasFieldError('end_date') ? ' ' : undefined">
+            <el-date-picker v-model="dateRange" type="daterange" range-separator="s/d" start-placeholder="Tanggal Mulai"
+              end-placeholder="Tanggal Selesai" value-format="YYYY-MM-DD" style="width: 100%" :clearable="false"
+              unlink-panels />
             <FieldErrors :errors="[...getFieldErrors('start_date'), ...getFieldErrors('end_date')]" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="20">
-        <!-- Lokasi -->
-        <el-col :xs="24" :sm="12">
-          <el-form-item label="Lokasi Pelaksanaan" prop="lokasi" :error="hasFieldError('lokasi') ? ' ' : undefined">
-            <el-input
-              v-model="formData.lokasi"
-              placeholder="Contoh: Gedung Utama Lt. 2"
-              maxlength="50"
-              show-word-limit
-            />
-            <FieldErrors :errors="getFieldErrors('lokasi')" />
-          </el-form-item>
-        </el-col>
-
-        <!-- PIC -->
-        <el-col :xs="24" :sm="12">
-          <el-form-item label="PIC / Penanggung Jawab" prop="pic" :error="hasFieldError('pic') ? ' ' : undefined">
-            <el-input
-              v-model="formData.pic"
-              placeholder="Nama Penanggung Jawab"
-              maxlength="100"
-              show-word-limit
-            />
-            <FieldErrors :errors="getFieldErrors('pic')" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -102,41 +43,46 @@
         <!-- Level -->
         <el-col :xs="24" :sm="12">
           <el-form-item label="Tingkat / Level" prop="level" :error="hasFieldError('level') ? ' ' : undefined">
-            <LookupSelect
-              v-model="formData.level"
-              placeholder="Pilih Level..."
-              :fetch-api="lookupApi.getLookupKelasLevel"
-              :clearable="false"
-            />
+            <LookupSelect v-model="formData.level" placeholder="Pilih Level..."
+              :fetch-api="lookupApi.getLookupKelasLevel" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('level')" />
           </el-form-item>
         </el-col>
 
         <!-- Deadline -->
         <el-col :xs="24" :sm="12">
-          <el-form-item label="Batas Pendaftaran (Deadline)" prop="deadline" :error="hasFieldError('deadline') ? ' ' : undefined">
-            <el-date-picker
-              v-model="formData.deadline"
-              type="date"
-              placeholder="Pilih Tanggal Deadline"
-              value-format="YYYY-MM-DD"
-              style="width: 100%"
-            />
+          <el-form-item label="Batas Pendaftaran (Deadline)" prop="deadline"
+            :error="hasFieldError('deadline') ? ' ' : undefined">
+            <el-date-picker v-model="formData.deadline" type="date" placeholder="Pilih Tanggal Deadline"
+              value-format="YYYY-MM-DD" style="width: 100%" />
             <FieldErrors :errors="getFieldErrors('deadline')" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <el-row :gutter="20">
+        <!-- Lokasi -->
+        <el-col :xs="24" :sm="12">
+          <el-form-item label="Lokasi Pelaksanaan" prop="lokasi" :error="hasFieldError('lokasi') ? ' ' : undefined">
+            <el-input v-model="formData.lokasi" placeholder="Contoh: Gedung Utama Lt. 2" maxlength="50"
+              show-word-limit />
+            <FieldErrors :errors="getFieldErrors('lokasi')" />
+          </el-form-item>
+        </el-col>
+
+        <!-- PIC -->
+        <el-col :xs="24" :sm="12">
+          <el-form-item label="PIC / Penanggung Jawab" prop="pic" :error="hasFieldError('pic') ? ' ' : undefined">
+            <el-input v-model="formData.pic" placeholder="Nama Penanggung Jawab" maxlength="100" show-word-limit />
+            <FieldErrors :errors="getFieldErrors('pic')" />
           </el-form-item>
         </el-col>
       </el-row>
 
       <!-- Keterangan -->
       <el-form-item label="Keterangan" prop="keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
-        <el-input
-          v-model="formData.keterangan"
-          type="textarea"
-          :rows="3"
-          placeholder="Catatan tambahan mengenai kegiatan kelas..."
-          maxlength="200"
-          show-word-limit
-        />
+        <el-input v-model="formData.keterangan" type="textarea" :rows="3"
+          placeholder="Catatan tambahan mengenai kegiatan kelas..." maxlength="200" show-word-limit />
         <FieldErrors :errors="getFieldErrors('keterangan')" />
       </el-form-item>
 
@@ -145,7 +91,9 @@
         <el-collapse-item name="1">
           <template #title>
             <div class="mc-collapse-title">
-              <el-icon><User /></el-icon>
+              <el-icon>
+                <User />
+              </el-icon>
               <span>{{ isMobile ? 'Detail MC' : 'Daftar Pembawa Acara / MC (Opsional)' }}</span>
             </div>
           </template>
@@ -188,12 +136,7 @@
       <!-- Form Actions -->
       <div class="form-actions">
         <el-button :disabled="submitting" @click="handleCancel">Batal</el-button>
-        <el-button
-          type="primary"
-          :loading="submitting"
-          :disabled="submitting"
-          @click="handleSubmit"
-        >
+        <el-button type="primary" :loading="submitting" :disabled="submitting" @click="handleSubmit">
           {{ submitText }}
         </el-button>
       </div>
@@ -291,6 +234,21 @@ const dateRange = computed<[string, string] | null>({
 const formRules = reactive<FormRules>({
   kode_kelas: [
     { required: true, message: 'Silahkan pilih Kode Kelas', trigger: 'change' }
+  ],
+  kode_fotang: [
+    { required: true, message: 'Silahkan pilih Fotang', trigger: 'change' }
+  ],
+  date_range: [
+    { required: true, message: 'Silahkan pilih Tanggal Mulai', trigger: 'change' }
+  ],
+  start_date: [
+    { required: true, message: 'Silahkan pilih Tanggal Mulai', trigger: 'change' }
+  ],
+  end_date: [
+    { required: true, message: 'Silahkan pilih Tanggal Selesai', trigger: 'change' }
+  ],
+  level: [
+    { required: true, message: 'Silahkan pilih Level', trigger: 'change' }
   ]
 })
 
@@ -346,6 +304,18 @@ watch(
   { immediate: true, deep: true }
 )
 
+import { scrollToFormError } from '../../utils/scroll'
+
+watch(
+  () => props.fieldErrors,
+  (newErrors) => {
+    if (newErrors && Object.keys(newErrors).length > 0) {
+      scrollToFormError()
+    }
+  },
+  { immediate: true, deep: true }
+)
+
 async function handleSubmit() {
   if (!formRef.value) return
   await formRef.value.validate((valid) => {
@@ -355,6 +325,8 @@ async function handleSubmit() {
       delete payload.kelas_name
       delete payload.fotang_name
       emit('submit', payload)
+    } else {
+      scrollToFormError()
     }
   })
 }

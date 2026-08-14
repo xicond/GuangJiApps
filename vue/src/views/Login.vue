@@ -7,13 +7,19 @@
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item command="system">
-              <el-icon><Monitor /></el-icon> System Mode
+              <el-icon>
+                <Monitor />
+              </el-icon> System Mode
             </el-dropdown-item>
             <el-dropdown-item command="light">
-              <el-icon><Sunny /></el-icon> Light Mode
+              <el-icon>
+                <Sunny />
+              </el-icon> Light Mode
             </el-dropdown-item>
             <el-dropdown-item command="dark">
-              <el-icon><Moon /></el-icon> Dark Mode
+              <el-icon>
+                <Moon />
+              </el-icon> Dark Mode
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -28,53 +34,25 @@
         </div>
       </template>
 
-      <el-form
-        ref="loginFormRef"
-        :model="form"
-        :rules="rules"
-        label-position="top"
-        size="large"
-        @keyup.enter="handleLogin"
-      >
+      <el-form ref="loginFormRef" :model="form" :rules="rules" label-position="top" size="large"
+        @keyup.enter="handleLogin">
         <el-form-item label="Username" prop="username">
-          <el-input
-            v-model="form.username"
-            placeholder="Enter username"
-            :prefix-icon="User"
-            :disabled="loading || isLockedOut"
-            clearable
-          />
+          <el-input v-model="form.username" placeholder="Enter username" :prefix-icon="User"
+            :disabled="loading || isLockedOut" clearable autocomplete="username" />
         </el-form-item>
 
         <el-form-item label="Password" prop="password">
-          <el-input
-            v-model="form.password"
-            type="password"
-            placeholder="Enter password"
-            :prefix-icon="Lock"
-            :disabled="loading || isLockedOut"
-            show-password
-            clearable
-          />
+          <el-input v-model="form.password" type="password" placeholder="Enter password" :prefix-icon="Lock"
+            :disabled="loading || isLockedOut" show-password clearable autocomplete="current-password" />
         </el-form-item>
 
-        <el-alert
-          v-if="errorMessage || isLockedOut"
+        <el-alert v-if="errorMessage || isLockedOut"
           :title="isLockedOut ? `${errorMessage || 'Terlalu banyak percobaan login.'} Silakan coba lagi dalam ${formattedCountdown}.` : errorMessage"
-          type="error"
-          show-icon
-          :closable="false"
-          class="error-alert"
-        />
+          type="error" show-icon :closable="false" class="error-alert" />
 
         <el-form-item class="submit-item">
-          <el-button
-            type="primary"
-            class="login-button"
-            :loading="loading"
-            :disabled="loading || isLockedOut"
-            @click="handleLogin"
-          >
+          <el-button type="primary" class="login-button" :loading="loading" :disabled="loading || isLockedOut"
+            @click="handleLogin">
             <template v-if="isLockedOut">Coba Lagi dalam {{ formattedCountdown }}</template>
             <template v-else>Sign In</template>
           </el-button>

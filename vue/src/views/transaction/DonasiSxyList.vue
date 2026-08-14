@@ -94,7 +94,7 @@
         <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150" align="right">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-'
-              }}</span>
+            }}</span>
           </template>
         </el-table-column>
 
@@ -153,12 +153,6 @@
             label-key="nama" clearable />
         </el-form-item>
 
-        <el-form-item label="Penggalang Dana" prop="penggalang_id">
-          <LookupSelect v-model="formData.penggalang_id" placeholder="Pilih Penggalang Dana..."
-            :fetch-api="penggalangDanaApi.getPenggalangDanas" :get-item-api="penggalangDanaApi.getPenggalangDanaById"
-            value-key="id" label-key="nama" clearable />
-        </el-form-item>
-
         <el-form-item label="Tipe Sumbangan" prop="tipe_sumbangan">
           <LookupSelect v-model="formData.tipe_sumbangan" placeholder="Pilih Tipe Sumbangan..."
             :fetch-api="lookupApi.getLookupTipeSumbangan" value-key="lookup_value" label-key="lookup_description"
@@ -166,8 +160,14 @@
         </el-form-item>
 
         <el-form-item label="Jumlah (Rp)" prop="jumlah">
-          <el-input-number v-model="formData.jumlah" :min="0" :precision="0" controls-position="right"
+          <el-input-number v-model="formData.jumlah" :min="1000" :precision="0" controls-position="right"
             style="width: 100%" placeholder="Masukkan nominal sumbangan" />
+        </el-form-item>
+
+        <el-form-item label="Penggalang Dana" prop="penggalang_id">
+          <LookupSelect v-model="formData.penggalang_id" placeholder="Pilih Penggalang Dana..."
+            :fetch-api="penggalangDanaApi.getPenggalangDanas" :get-item-api="penggalangDanaApi.getPenggalangDanaById"
+            value-key="id" label-key="nama" clearable />
         </el-form-item>
 
         <el-form-item label="No. Kupon" prop="no_kupon">
@@ -289,6 +289,15 @@ const formRules: FormRules = {
   no_kwitansi: [
     { required: true, message: 'No. Kwitansi wajib diisi', trigger: 'blur' },
     { max: 50, message: 'No. Kwitansi maksimal 50 karakter', trigger: 'blur' }
+  ],
+  tanggal: [
+    { required: true, message: 'Tanggal sumbangan wajib diisi', trigger: 'blur' }
+  ],
+  donatur_id: [
+    { required: true, message: 'Donatur wajib diisi', trigger: 'blur' }
+  ],
+  tipe_sumbangan: [
+    { required: true, message: 'Tipe sumbangan wajib diisi', trigger: 'blur' }
   ],
   jumlah: [
     { required: true, message: 'Jumlah sumbangan wajib diisi', trigger: 'blur' }

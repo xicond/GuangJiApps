@@ -35,6 +35,8 @@ import UmatForm from '../../components/umat/UmatForm.vue'
 import { umatApi } from '../../api/umat'
 import type { Umat } from '../../types/umat'
 
+import { scrollToFormError } from '../../utils/scroll'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -71,11 +73,11 @@ async function loadUmat() {
   }
 }
 
-async function handleUpdate(payload: Partial<Umat>) {
+async function handleUpdate(payload: Partial<Umat>, photoFile?: File | Blob | null) {
   submitting.value = true
   fieldErrors.value = {}
   try {
-    await umatApi.updateUmat(umatId, payload)
+    await umatApi.updateUmat(umatId, payload, photoFile)
     ElNotification({
       title: 'Berhasil',
       message: 'Data umat berhasil diperbarui',
@@ -90,6 +92,7 @@ async function handleUpdate(payload: Partial<Umat>) {
     } else {
       ElMessage.error(err.response?.data?.error || err.message || 'Gagal memperbarui data umat')
     }
+    scrollToFormError()
   } finally {
     submitting.value = false
   }

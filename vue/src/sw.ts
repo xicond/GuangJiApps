@@ -23,6 +23,26 @@ cleanupOutdatedCaches()
 // Fallback to [] so dev mode doesn't crash on undefined __WB_MANIFEST
 precacheAndRoute(self.__WB_MANIFEST || [])
 
+// Listen for SKIP_WAITING message from client
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting()
+    }
+})
+
+// Notify open window clients when a new SW version is activated (assets update)
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        (async () => {
+            await self.clients.claim()
+            const clients = await self.clients.matchAll({ type: 'window' })
+            for (const client of clients) {
+                client.postMessage({ type: 'SW_UPDATED' })
+            }
+        })()
+    )
+})
+
 // 1. Match GET requests to /v1/lookup/
 registerRoute(
     ({ url, request }) => {

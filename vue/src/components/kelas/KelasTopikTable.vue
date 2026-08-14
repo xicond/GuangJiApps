@@ -92,8 +92,8 @@
     </el-collapse>
 
     <!-- Dialog Popup Add / Edit Topik -->
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Topik' : 'Edit Topik'" width="640px"
-      destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Topik' : 'Edit Topik'"
+      :width="isMobile ? '90%' : '600px'" destroy-on-close>
       <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
         class="mb-4" />
@@ -103,7 +103,7 @@
           <el-col :span="12">
             <el-form-item label="Nama Topik" prop="kode_topik" :error="hasFieldError('kode_topik') ? ' ' : undefined">
               <LookupSelect v-model="form.kode_topik" placeholder="Pilih Nama Topik..." :fetch-api="fetchTopicLookup"
-                value-key="topic_code" label-key="topic_name" :initial-option="initialTopicOption" />
+                value-key="topic_code" label-key="topic_name" :initial-option="initialTopicOption" :clearable="false" />
               <FieldErrors :errors="getFieldErrors('kode_topik')" />
             </el-form-item>
           </el-col>
@@ -116,36 +116,39 @@
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="Keterangan">
+            <el-form-item label="Desc">
               <span class="static-text">{{ selectedTopic?.description || form.keterangan || '-' }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="Durasi (Menit)" :error="hasFieldError('durasi') ? ' ' : undefined">
-              <el-input-number v-model="form.durasi" :min="0" :step="15" controls-position="right"
-                style="width: 100%" />
-              <FieldErrors :errors="getFieldErrors('durasi')" />
+            <el-form-item label="Tanggal Topik" prop="topik_date"
+              :error="hasFieldError('topik_date') ? ' ' : undefined">
+              <el-date-picker v-model="form.topik_date" type="date" placeholder="Pilih tanggal" format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD" style="width: 100%" :clearable="false" />
+              <FieldErrors :errors="getFieldErrors('topik_date')" />
             </el-form-item>
           </el-col>
+
         </el-row>
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="Urutan" :error="hasFieldError('urutan') ? ' ' : undefined">
-              <el-input-number v-model="form.urutan" :min="1" controls-position="right" style="width: 100%" />
-              <FieldErrors :errors="getFieldErrors('urutan')" />
+            <el-form-item label="Durasi (Menit)" prop="durasi" :error="hasFieldError('durasi') ? ' ' : undefined">
+              <el-input-number v-model="form.durasi" :min="1" :step="5" controls-position="right" style="width: 100%" />
+              <FieldErrors :errors="getFieldErrors('durasi')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="Tanggal Topik" :error="hasFieldError('topik_date') ? ' ' : undefined">
-              <el-date-picker v-model="form.topik_date" type="date" placeholder="Pilih tanggal" format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD" style="width: 100%" />
-              <FieldErrors :errors="getFieldErrors('topik_date')" />
+            <el-form-item label="Urutan" prop="urutan" :error="hasFieldError('urutan') ? ' ' : undefined">
+              <el-input-number v-model="form.urutan" :min="1" :step="1" controls-position="right" style="width: 100%" />
+              <FieldErrors :errors="getFieldErrors('urutan')" />
             </el-form-item>
           </el-col>
+
         </el-row>
 
-        <el-form-item label="Penceramah Internal" :error="hasFieldError('penceramah') ? ' ' : undefined">
+        <el-form-item label="Penceramah Internal" prop="penceramah"
+          :error="hasFieldError('penceramah') ? ' ' : undefined">
           <el-select v-model="form.penceramah" filterable remote clearable reserve-keyword
             placeholder="Cari penceramah (Umat)..." :remote-method="searchUmat" :loading="loadingUmat"
             style="width: 100%">
@@ -154,17 +157,18 @@
           <FieldErrors :errors="getFieldErrors('penceramah')" />
         </el-form-item>
 
-        <el-form-item label="Penceramah Eksternal" :error="hasFieldError('penceramah_ext') ? ' ' : undefined">
+        <el-form-item label="Penceramah Eksternal" prop="penceramah_ext"
+          :error="hasFieldError('penceramah_ext') ? ' ' : undefined">
           <el-input v-model="form.penceramah_ext" placeholder="Nama penceramah luar (bila ada)" maxlength="100" />
           <FieldErrors :errors="getFieldErrors('penceramah_ext')" />
         </el-form-item>
 
-        <el-form-item label="Penterjemah" :error="hasFieldError('penterjemah') ? ' ' : undefined">
+        <el-form-item label="Penterjemah" prop="penterjemah" :error="hasFieldError('penterjemah') ? ' ' : undefined">
           <el-input v-model="form.penterjemah" placeholder="Nama penterjemah" maxlength="200" />
           <FieldErrors :errors="getFieldErrors('penterjemah')" />
         </el-form-item>
 
-        <el-form-item label="Keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
+        <el-form-item label="Keterangan" prop="keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
           <el-input v-model="form.keterangan" placeholder="Keterangan topik" maxlength="200" />
           <FieldErrors :errors="getFieldErrors('keterangan')" />
         </el-form-item>
@@ -304,7 +308,9 @@ const initialTopicOption = computed(() => {
 })
 
 const formRules: FormRules = {
-  kode_topik: [{ required: true, message: 'Harap pilih Nama Topik', trigger: 'change' }]
+  kode_topik: [{ required: true, message: 'Harap pilih Nama Topik', trigger: 'change' }],
+  topik_date: [{ required: true, message: 'Harap pilih Tanggal Topik', trigger: 'change' }],
+  penceramah_ext: [{ required: true, message: 'Harap masukkan Penceramah Eksternal', trigger: 'change' }],
 }
 
 const umatOptions = ref<Umat[]>([])

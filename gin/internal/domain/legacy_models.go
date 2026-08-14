@@ -32,6 +32,8 @@ var FieldTranslations = map[string]string{
 	"EndDate":                   "Tanggal Selesai",
 	"start_date":                "Tanggal Mulai",
 	"end_date":                  "Tanggal Selesai",
+	"tanggal_chiutao_int":       "Tanggal Ciu Tao",
+	"waktu_chiutao_mandarin":    "Waktu Ciu Tao",
 }
 
 // GetFieldLabel translates a field identifier (struct namespace like "Umat.NamaIndonesia",
@@ -118,7 +120,7 @@ func FormatFieldName(s string) string {
 
 // Admin represents table [dbo].[T_Login_Mst]
 type Admin struct {
-	ID           int32    `gorm:"primaryKey;autoIncrement:false;column:LoginId" json:"id"`
+	ID           int32    `gorm:"primaryKey;column:LoginId" json:"id"`
 	Username     string   `gorm:"column:Username" json:"username" validate:"required,max=50"`
 	Password     string   `gorm:"column:Password" json:"-" validate:"omitempty,max=50"`
 	GroupId      int32    `gorm:"column:GroupId" json:"group_id,omitempty"`
@@ -308,6 +310,24 @@ type Umat struct {
 }
 
 func (Umat) TableName() string { return "T_BUS_UMAT" }
+
+type UmatFoto struct {
+	FileID      int32      `gorm:"column:FileID;primaryKey;autoIncrement:false" json:"file_id"`
+	Id          *int32     `gorm:"column:Id" json:"id"`
+	DocPath     *string    `gorm:"column:DocPath;type:varchar(1000)" json:"doc_path" validate:"omitempty,max=1000"`
+	DocFile     *string    `gorm:"column:DocFile;type:varchar(1000)" json:"doc_file" validate:"omitempty,max=1000"`
+	DocFileName *string    `gorm:"column:DocFileName;type:varchar(150)" json:"doc_file_name" validate:"omitempty,max=150"`
+	DocDesc     *string    `gorm:"column:DocDesc;type:varchar(2000)" json:"doc_desc" validate:"omitempty,max=2000"`
+	Status      *bool      `gorm:"column:Status" json:"status"`
+	ModBy       *int32     `gorm:"column:ModBy" json:"mod_by"`
+	ModAct      *string    `gorm:"column:ModAct;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
+	ModDate     *time.Time `gorm:"column:ModDate" json:"mod_date"`
+}
+
+// TableName menentukan nama tabel secara eksplisit di SQL Server
+func (UmatFoto) TableName() string {
+	return "T_BUS_UMAT_FOTO"
+}
 
 type AppLookup struct {
 	LookupId          string    `gorm:"primaryKey;autoIncrement:false;column:LookupId;type:varchar(25);not null" json:"lookup_id" validate:"omitempty,max=25"`

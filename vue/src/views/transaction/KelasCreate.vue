@@ -26,6 +26,7 @@ import { Back } from '@element-plus/icons-vue'
 import KelasForm from '../../components/kelas/KelasForm.vue'
 import { kelasApi } from '../../api/kelas'
 import type { Kelas } from '../../types/kelas'
+import { scrollToFormError } from '../../utils/scroll'
 
 const router = useRouter()
 const submitting = ref(false)
@@ -54,6 +55,7 @@ async function handleCreate(payload: Partial<Kelas>) {
     } else {
       ElMessage.error(err.response?.data?.error || err.message || 'Gagal menambahkan data kelas')
     }
+    scrollToFormError()
   } finally {
     submitting.value = false
   }

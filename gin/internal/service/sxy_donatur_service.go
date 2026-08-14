@@ -284,15 +284,6 @@ func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur, c *gin.
 		return domain.SxyDonatur{}, err
 	}
 
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
-	}
-
 	item.No = payload.No
 	item.Nama = payload.Nama
 	item.Mandarin = payload.Mandarin
@@ -302,7 +293,7 @@ func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur, c *gin.
 	item.Telepon = payload.Telepon
 	item.Mobile = payload.Mobile
 	item.Email = payload.Email
-	item.UpdatedBy = userID
+	item.UpdatedBy = getUserID(c)
 	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
@@ -325,17 +316,8 @@ func (s *SxyDonaturService) Delete(id string, c *gin.Context) error {
 		return err
 	}
 
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
-	}
-
 	item.Status = false
-	item.UpdatedBy = userID
+	item.UpdatedBy = getUserID(c)
 	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {

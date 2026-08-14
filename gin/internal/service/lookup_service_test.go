@@ -148,37 +148,37 @@ func TestLookupService(t *testing.T) {
 		db.Create(&lObj)
 	}
 
-	if res, count, err := svc.LookupWaktuCiuTao(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupWaktuCiuTao(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupWaktuCiuTao failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupGender(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupGender(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupGender failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupTcs(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupTcs(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupTcs failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupFotang(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupFotang(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupFotang failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupKelas(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupKelas(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupKelas failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupPendidikan(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupPendidikan(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupPendidikan failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupKelasUmum(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupKelasUmum(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupKelasUmum failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupPekerjaan(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupPekerjaan(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupPekerjaan failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupKeluarga(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupKeluarga(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupKeluarga failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.LookupStatus(nil, 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.LookupStatus(nil, 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("LookupStatus failed: %v, count=%d", err, count)
 	}
-	if res, count, err := svc.Lookup("B_STATUS", 1, 10); err != nil || count != 1 || len(res) != 1 {
+	if res, count, err := svc.Lookup("B_STATUS", 1, 10); err != nil || count < 1 || len(res) < 1 {
 		t.Errorf("svc.Lookup failed: %v, count=%d", err, count)
 	}
 

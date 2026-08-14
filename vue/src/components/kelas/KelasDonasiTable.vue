@@ -63,7 +63,7 @@
 
     <!-- Dialog Popup Add / Edit Donasi -->
     <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Donasi Uang' : 'Edit Donasi Uang'"
-      width="520px" destroy-on-close>
+      :width="isMobile ? '90%' : '600px'" destroy-on-close>
       <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
         class="mb-4" />
@@ -75,7 +75,7 @@
         </el-form-item>
 
         <el-form-item label="Jumlah Donasi" prop="donasi" :error="hasFieldError('donasi') ? ' ' : undefined">
-          <el-input-number v-model="form.donasi" :min="0" :precision="2" :step="50000" controls-position="right"
+          <el-input-number v-model="form.donasi" :min="100" :precision="2" :step="1000" controls-position="right"
             style="width: 100%" />
           <FieldErrors :errors="getFieldErrors('donasi')" />
         </el-form-item>

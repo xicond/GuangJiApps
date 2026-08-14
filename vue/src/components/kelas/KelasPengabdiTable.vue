@@ -84,8 +84,8 @@
     </el-collapse>
 
     <!-- Dialog Popup Add / Edit Pengabdi -->
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Pengabdi' : 'Edit Pengabdi'" width="720px"
-      destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Pengabdi' : 'Edit Pengabdi'"
+      :width="isMobile ? '90%' : '600px'" destroy-on-close>
       <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
         class="mb-4" />
@@ -128,7 +128,7 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Sumbangan" :error="hasFieldError('sumbangan') ? ' ' : undefined">
-              <el-input-number v-model="form.sumbangan" :min="0" :precision="2" :step="10000" controls-position="right"
+              <el-input-number v-model="form.sumbangan" :min="100" :precision="0" :step="1000" controls-position="right"
                 style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('sumbangan')" />
             </el-form-item>

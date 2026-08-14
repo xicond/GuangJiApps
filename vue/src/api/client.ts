@@ -31,7 +31,7 @@ const { canRunTest,
   measureSpeedInOneSecond } = useQuickStreamSpeedTest()
 
 // Map untuk menyimpan referensi timer tiap request aktif
-const activeTimers = new Map<string, number>()
+const activeTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 apiClient.interceptors.request.use(
   (config) => {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -60,11 +61,16 @@ func (s *KelasAbsensiService) Create(payload domain.KelasAbsensi, c *gin.Context
 		return domain.KelasAbsensi{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	if payload.Id == 0 {
-		var maxID int32
-		s.db.Table("T_TRX_KELAS_ABSENSI").Select("ISNULL(MAX(Id), 0)").Row().Scan(&maxID)
-		payload.Id = maxID + 1
+	var genResult struct {
+		GeneratedId int32
 	}
+	nowStr := time.Now().Format("2006-01-02 15:04:05")
+	errId := s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "TRXKLA", nowStr, 1).Scan(&genResult).Error
+	if errId != nil {
+		return domain.KelasAbsensi{}, fmt.Errorf("failed to generate ID: %w", errId)
+	}
+
+	payload.Id = genResult.GeneratedId
 
 	userID := getUserID(c)
 	statusTrue := true

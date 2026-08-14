@@ -151,7 +151,7 @@
 
     <!-- Create / Edit Dialog -->
     <el-dialog v-model="dialogVisible" :title="isEditing ? `Edit Admin #${editingId}` : 'Tambah Admin Baru'"
-      :width="isMobile ? '88%' : '560px'" destroy-on-close @closed="resetForm">
+      :width="isMobile ? '90%' : '560px'" destroy-on-close @closed="resetForm">
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="130px"
         :label-position="isMobile ? 'top' : 'right'">
         <el-form-item label="Username" prop="username">
@@ -437,6 +437,8 @@ function resetForm() {
   formData.is_warehouse = false
 }
 
+import { scrollToFormError } from '../../utils/scroll'
+
 /**
  * Submit Form (Create or Update).
  */
@@ -444,7 +446,10 @@ async function submitForm() {
   if (!formRef.value) return
 
   await formRef.value.validate(async (valid) => {
-    if (!valid) return
+    if (!valid) {
+      scrollToFormError()
+      return
+    }
 
     submitting.value = true
     try {
@@ -485,6 +490,7 @@ async function submitForm() {
     } catch (err: any) {
       console.error('Failed to save admin:', err)
       ElMessage.error(err.response?.data?.error || err.message || 'Gagal menyimpan data admin')
+      scrollToFormError()
     } finally {
       submitting.value = false
     }

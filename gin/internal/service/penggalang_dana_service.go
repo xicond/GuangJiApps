@@ -213,15 +213,6 @@ func (s *PenggalangDanaService) Update(id string, payload domain.PenggalangDana,
 		return domain.PenggalangDana{}, err
 	}
 
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
-	}
-
 	item.No = payload.No
 	item.Nama = payload.Nama
 	item.Mandarin = payload.Mandarin
@@ -231,7 +222,7 @@ func (s *PenggalangDanaService) Update(id string, payload domain.PenggalangDana,
 	item.Telepon = payload.Telepon
 	item.Mobile = payload.Mobile
 	item.Email = payload.Email
-	item.UpdatedBy = userID
+	item.UpdatedBy = getUserID(c)
 	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {
@@ -254,17 +245,8 @@ func (s *PenggalangDanaService) Delete(id string, c *gin.Context) error {
 		return err
 	}
 
-	userID := int32(0)
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userID = int32(uid)
-			}
-		}
-	}
-
 	item.Status = false
-	item.UpdatedBy = userID
+	item.UpdatedBy = getUserID(c)
 	item.UpdatedDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {

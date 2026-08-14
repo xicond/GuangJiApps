@@ -60,7 +60,7 @@
 
     <!-- Dialog Popup Add / Edit Donasi Barang -->
     <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Donasi Barang' : 'Edit Donasi Barang'"
-      width="520px" destroy-on-close>
+      :width="isMobile ? '90%' : '600px'" destroy-on-close>
       <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
         class="mb-4" />

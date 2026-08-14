@@ -170,24 +170,30 @@ async function loadData(targetPage = 1, query = '', forceRefresh = false) {
 async function checkAndFetchMissingSelectedValue() {
   const currentVal = props.modelValue
   if (currentVal === undefined || currentVal === null || currentVal === '') return
-  const exists = options.value.some((item) => String(getOptionValue(item)) === String(currentVal))
+  const exists = options.value.some(
+    (item) =>
+      String(getOptionValue(item)) === String(currentVal) ||
+      String(item.lookup_description) === String(currentVal) ||
+      String(item.lookup_value) === String(currentVal)
+  )
   if (!exists) {
     try {
-      const resVal = await props.fetchApi({ lookup_value: String(currentVal), limit: 1 })
-      if (resVal?.data && resVal.data.length > 0) {
-        ensureInitialOption(resVal.data[0])
-        return
+      let res = await props.fetchApi({ lookup_value: String(currentVal), limit: 1 })
+      if (!res?.data || res.data.length === 0) {
+        res = await props.fetchApi({ lookup_description: String(currentVal), limit: 1 })
       }
-      /* const resId = await props.fetchApi({ lookup_id: String(currentVal), limit: 1 })
-      if (resId?.data && resId.data.length > 0) {
-        ensureInitialOption(resId.data[0])
-        return
-      } */
-      /* const resDirectId = await props.fetchApi({ id: currentVal, limit: 1 })
-      if (resDirectId?.data && resDirectId.data.length > 0) {
-        ensureInitialOption(resDirectId.data[0])
-        return
-      } */
+      if (!res?.data || res.data.length === 0) {
+        res = await props.fetchApi({ search: String(currentVal), limit: 1 })
+      }
+      if (res?.data && res.data.length > 0) {
+        const item = res.data[0]
+        ensureInitialOption(item)
+        const optVal = getOptionValue(item)
+        if (optVal && String(optVal) !== String(currentVal)) {
+          emit('update:modelValue', optVal)
+          emit('change', optVal)
+        }
+      }
     } catch (e) {
       // Ignore lookup error for missing selected item
     }

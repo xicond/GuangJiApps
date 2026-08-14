@@ -1,47 +1,20 @@
 <template>
-  <el-dialog
-    :model-value="modelValue"
-    title="Change Password"
-    width="460px"
-    :before-close="handleClose"
-    destroy-on-close
-    append-to-body
-  >
-    <el-form
-      ref="formRef"
-      :model="form"
-      :rules="rules"
-      label-position="top"
-      @keyup.enter="handleSubmit"
-    >
+  <el-dialog :model-value="modelValue" title="Change Password" :width="isMobile ? '90%' : '600px'"
+    :before-close="handleClose" destroy-on-close append-to-body>
+    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @keyup.enter="handleSubmit">
       <el-form-item label="Old Password" prop="oldPassword">
-        <el-input
-          v-model="form.oldPassword"
-          type="password"
-          show-password
-          placeholder="Enter current password"
-          :prefix-icon="Lock"
-        />
+        <el-input v-model="form.oldPassword" type="password" show-password placeholder="Enter current password"
+          :prefix-icon="Lock" />
       </el-form-item>
 
       <el-form-item label="New Password" prop="newPassword">
-        <el-input
-          v-model="form.newPassword"
-          type="password"
-          show-password
-          placeholder="Enter new password"
-          :prefix-icon="Key"
-        />
+        <el-input v-model="form.newPassword" type="password" show-password placeholder="Enter new password"
+          :prefix-icon="Key" />
       </el-form-item>
 
       <el-form-item label="Confirm New Password" prop="confirmPassword">
-        <el-input
-          v-model="form.confirmPassword"
-          type="password"
-          show-password
-          placeholder="Confirm new password"
-          :prefix-icon="Key"
-        />
+        <el-input v-model="form.confirmPassword" type="password" show-password placeholder="Confirm new password"
+          :prefix-icon="Key" />
       </el-form-item>
     </el-form>
 
@@ -58,6 +31,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { Lock, Key } from '@element-plus/icons-vue'
@@ -66,6 +40,9 @@ import { useAuthStore } from '../stores/auth'
 const props = defineProps<{
   modelValue: boolean
 }>()
+
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void

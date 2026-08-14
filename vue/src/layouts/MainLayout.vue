@@ -52,8 +52,8 @@
             <el-menu-item v-if="hasSubMenu('Master Data', 'Topik')" index="/master-data/topic">Topic</el-menu-item>
             <el-menu-item v-if="hasSubMenu('Master Data', 'Kegiatan')"
               index="/master-data/activity">Activity</el-menu-item>
-            <el-menu-item v-if="hasSubMenu('Master Data', 'Tim Kerja')" index="/master-data/tim-kerja">Tim
-              Kerja</el-menu-item>
+            <!-- <el-menu-item v-if="hasSubMenu('Master Data', 'Tim Kerja')" index="/master-data/tim-kerja">Tim
+              Kerja</el-menu-item> -->
             <el-menu-item v-if="hasSubMenu('Master Data', 'Tahun Ciu Tao')" index="/master-data/tahun-ciu-tao">Tahun Ciu
               Tao</el-menu-item>
             <el-menu-item v-if="hasSubMenu('Master Data', 'Penggalang Dana')"
@@ -71,8 +71,8 @@
               </el-icon>
               <span>Transaction</span>
             </template>
-            <el-menu-item v-if="hasSubMenu('Transaction', 'Kegiatan')"
-              index="/master-data/activity">Activity</el-menu-item>
+            <!-- <el-menu-item v-if="hasSubMenu('Transaction', 'Kegiatan')"
+              index="/master-data/activity">Activity</el-menu-item> -->
             <el-menu-item v-if="hasSubMenu('Transaction', 'Kelas')" index="/transaction/kelas">Kelas</el-menu-item>
             <el-menu-item v-if="hasSubMenu('Transaction', 'Donasi SXY')" index="/transaction/donasi-sxy">Donasi
               Sxy</el-menu-item>
@@ -169,7 +169,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
+import { useBreakpoints, breakpointsTailwind, useOnline } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
@@ -197,6 +197,34 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const isOnline = useOnline()
+let offlineNotificationHandle: ReturnType<typeof ElNotification> | null = null
+
+watch(
+  isOnline,
+  (online) => {
+    if (!online) {
+      if (!offlineNotificationHandle) {
+        offlineNotificationHandle = ElNotification.warning({
+          title: 'Koneksi Terputus',
+          message: 'Anda sedang offline. Beberapa fitur mungkin terbatas.',
+          duration: 0,
+          showClose: false,
+          onClose: () => {
+            offlineNotificationHandle = null
+          }
+        })
+      }
+    } else {
+      if (offlineNotificationHandle) {
+        offlineNotificationHandle.close()
+        offlineNotificationHandle = null
+      }
+    }
+  },
+  { immediate: true }
+)
+
 const { speedMbps, lastTestCompletedAt } = useQuickStreamSpeedTest()
 let lastNotificationTime = 0
 const NOTIFY_THROTTLE_MS = 5000
@@ -208,8 +236,8 @@ watch(lastTestCompletedAt, () => {
       lastNotificationTime = now
       ElNotification.warning({
         title: 'Slow Connection',
-        message: `Your internet speed is slow (${speedMbps.value} Mbps). Some processes will use cache.`,
-        duration: 4000
+        message: `Your internet speed is slow (${speedMbps.value == 0 ? '< 1 Mbps' : `${speedMbps.value} Mbps`}). Some processes will use cache.`,
+        duration: 7000
       })
     }
   }

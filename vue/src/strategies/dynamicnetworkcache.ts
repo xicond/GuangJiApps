@@ -8,13 +8,13 @@ export interface DynamicNetworkCacheStrategyOptions extends StrategyOptions {
 export class DynamicNetworkCacheStrategy extends Strategy {
     private timeoutMs: number;
     private debounceMs: number;
-    private debounceMap: Map<string, number>; // Diubah ke number (tipe setTimeout di browser/SW)
+    private debounceMap: Map<string, ReturnType<typeof setTimeout>>; // Diubah ke number (tipe setTimeout di browser/SW)
 
     constructor(options: DynamicNetworkCacheStrategyOptions = {}) {
         super(options);
         this.timeoutMs = options.timeoutMs ?? 500;
         this.debounceMs = options.debounceMs ?? 5000;
-        this.debounceMap = new Map<string, number>();
+        this.debounceMap = new Map<string, ReturnType<typeof setTimeout>>();
     }
 
     protected async _handle(request: Request, handler: StrategyHandler): Promise<Response> {
@@ -116,7 +116,7 @@ export class DynamicNetworkCacheStrategy extends Strategy {
             } catch (err) {
                 console.warn('Background update failed for:', url, err);
             }
-        }, this.debounceMs) as number;
+        }, this.debounceMs);
 
         this.debounceMap.set(url, timerId);
     }

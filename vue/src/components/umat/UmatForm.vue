@@ -17,107 +17,120 @@
         </div>
       </template>
 
-      <el-row :gutter="16">
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Nama Chiu Tao" prop="nama_indonesia" required
-            :error="hasFieldError('nama_indonesia') ? ' ' : undefined">
-            <el-input v-model="formData.nama_indonesia" placeholder="Masukkan nama Chiu Tao" />
-            <FieldErrors :errors="getFieldErrors('nama_indonesia')" />
-          </el-form-item>
+      <el-row :gutter="16" align="top">
+        <el-col :xs="24" :sm="24" :md="6"
+          style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+          <AppFormItem style="width:100%" label="Foto Umat (3:4)" prop="foto"
+            :error="hasFieldError('foto') ? ' ' : undefined">
+            <UmatPhotoUpload :initial-url="props.initialData.image_path" @change="onPhotoChange" />
+            <FieldErrors :errors="getFieldErrors('foto')" />
+          </AppFormItem>
         </el-col>
+        <el-col :xs="24" :sm="24" :md="18">
+          <el-row :gutter="16">
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Nama Chiu Tao" prop="nama_indonesia" required
+                :error="hasFieldError('nama_indonesia') ? ' ' : undefined">
+                <el-input v-model="formData.nama_indonesia" placeholder="Masukkan nama Chiu Tao" />
+                <FieldErrors :errors="getFieldErrors('nama_indonesia')" />
+              </AppFormItem>
+            </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Alias / Pin Yin / Pin Yin" prop="alias"
-            :error="hasFieldError('alias') ? ' ' : undefined">
-            <el-input v-model="formData.alias" placeholder="Masukkan alias / Pin Yin" />
-            <FieldErrors :errors="getFieldErrors('alias')" />
-          </el-form-item>
-        </el-col>
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Alias / Pin Yin / Pin Yin" prop="alias"
+                :error="hasFieldError('alias') ? ' ' : undefined">
+                <el-input v-model="formData.alias" placeholder="Masukkan alias / Pin Yin" />
+                <FieldErrors :errors="getFieldErrors('alias')" />
+              </AppFormItem>
+            </el-col>
 
-        <!-- <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Marga" prop="marga" :error="hasFieldError('marga') ? ' ' : undefined">
+            <!-- <el-col :xs="24" :sm="12" :md="8">
+          <AppFormItem label="Marga" prop="marga" :error="hasFieldError('marga') ? ' ' : undefined">
             <el-input v-model="formData.marga" placeholder="Masukkan marga" />
             <FieldErrors :errors="getFieldErrors('marga')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col> -->
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Nama Lain" prop="nama_mandarin"
-            :error="hasFieldError('nama_mandarin') ? ' ' : undefined">
-            <el-input v-model="formData.nama_mandarin" placeholder="Masukkan nama lain / panggilan" />
-            <FieldErrors :errors="getFieldErrors('nama_mandarin')" />
-          </el-form-item>
-        </el-col>
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Nama Lain" prop="nama_mandarin"
+                :error="hasFieldError('nama_mandarin') ? ' ' : undefined">
+                <el-input v-model="formData.nama_mandarin" placeholder="Masukkan nama lain / panggilan" />
+                <FieldErrors :errors="getFieldErrors('nama_mandarin')" />
+              </AppFormItem>
+            </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Jenis Kelamin" prop="jenis_kelamin"
-            :error="hasFieldError('jenis_kelamin') ? ' ' : undefined" required>
-            <el-select v-model="formData.jenis_kelamin" placeholder="Pilih jenis kelamin" class="w-full">
-              <el-option label="乾 PRIA" value="001" />
-              <el-option label="坤 WANITA" value="002" />
-              <el-option label="童 ANAK PRIA" value="003" />
-              <el-option label="女 ANAK WANITA" value="004" />
-            </el-select>
-            <FieldErrors :errors="getFieldErrors('jenis_kelamin')" />
-          </el-form-item>
-        </el-col>
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Jenis Kelamin" prop="jenis_kelamin"
+                :error="hasFieldError('jenis_kelamin') ? ' ' : undefined" required>
+                <el-select v-model="formData.jenis_kelamin" placeholder="Pilih jenis kelamin" class="w-full">
+                  <el-option label="乾 PRIA" value="001" />
+                  <el-option label="坤 WANITA" value="002" />
+                  <el-option label="童 ANAK PRIA" value="003" />
+                  <el-option label="女 ANAK WANITA" value="004" />
+                </el-select>
+                <FieldErrors :errors="getFieldErrors('jenis_kelamin')" />
+              </AppFormItem>
+            </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Tempat Lahir" prop="tempat_lahir"
-            :error="hasFieldError('tempat_lahir') ? ' ' : undefined">
-            <el-input v-model="formData.tempat_lahir" placeholder="Tempat lahir" />
-            <FieldErrors :errors="getFieldErrors('tempat_lahir')" />
-          </el-form-item>
-        </el-col>
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Tempat Lahir" prop="tempat_lahir"
+                :error="hasFieldError('tempat_lahir') ? ' ' : undefined">
+                <el-input v-model="formData.tempat_lahir" placeholder="Tempat lahir" />
+                <FieldErrors :errors="getFieldErrors('tempat_lahir')" />
+              </AppFormItem>
+            </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Tanggal Lahir" prop="tanggal_lahir"
-            :error="hasFieldError('tanggal_lahir') ? ' ' : undefined" required>
-            <el-date-picker v-model="formData.tanggal_lahir" type="date" placeholder="Pilih tanggal lahir"
-              format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :clearable="false" />
-            <FieldErrors :errors="getFieldErrors('tanggal_lahir')" />
-          </el-form-item>
-        </el-col>
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Tanggal Lahir" prop="tanggal_lahir"
+                :error="hasFieldError('tanggal_lahir') ? ' ' : undefined" required>
+                <el-date-picker v-model="formData.tanggal_lahir" type="date" placeholder="Pilih tanggal lahir"
+                  format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :clearable="false" />
+                <FieldErrors :errors="getFieldErrors('tanggal_lahir')" />
+              </AppFormItem>
+            </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Pendidikan" prop="pendidikan" :error="hasFieldError('pendidikan') ? ' ' : undefined">
-            <LookupSelect v-model="formData.pendidikan" placeholder="Pilih pendidikan"
-              :fetch-api="lookupApi.getLookupPendidikan" auto-populate />
-            <FieldErrors :errors="getFieldErrors('pendidikan')" />
-          </el-form-item>
-        </el-col>
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Pendidikan" prop="pendidikan" :error="hasFieldError('pendidikan') ? ' ' : undefined">
+                <LookupSelect v-model="formData.pendidikan" placeholder="Pilih pendidikan"
+                  :fetch-api="lookupApi.getLookupPendidikan" auto-populate />
+                <FieldErrors :errors="getFieldErrors('pendidikan')" />
+              </AppFormItem>
+            </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Pekerjaan" prop="pekerjaan" :error="hasFieldError('pekerjaan') ? ' ' : undefined">
-            <LookupSelect v-model="formData.pekerjaan" placeholder="Pilih pekerjaan"
-              :fetch-api="lookupApi.getLookupPekerjaan" auto-populate />
-            <FieldErrors :errors="getFieldErrors('pekerjaan')" />
-          </el-form-item>
-        </el-col>
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Pekerjaan" prop="pekerjaan" :error="hasFieldError('pekerjaan') ? ' ' : undefined">
+                <LookupSelect v-model="formData.pekerjaan" placeholder="Pilih pekerjaan"
+                  :fetch-api="lookupApi.getLookupPekerjaan" auto-populate />
+                <FieldErrors :errors="getFieldErrors('pekerjaan')" />
+              </AppFormItem>
+            </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Kode Buku" prop="kode_buku" :error="hasFieldError('kode_buku') ? ' ' : undefined">
-            <el-input v-model="formData.kode_buku" placeholder="Masukkan kode buku (e.g. UMT-001)" />
-            <FieldErrors :errors="getFieldErrors('kode_buku')" />
-          </el-form-item>
-        </el-col>
+            <el-col :xs="24" :sm="12" :md="8">
+              <AppFormItem label="Kode Buku" prop="kode_buku" :error="hasFieldError('kode_buku') ? ' ' : undefined">
+                <el-input v-model="formData.kode_buku" placeholder="Masukkan kode buku (e.g. UMT-001)" />
+                <FieldErrors :errors="getFieldErrors('kode_buku')" />
+              </AppFormItem>
+            </el-col>
 
-      </el-row>
+          </el-row>
 
-      <el-row :gutter="16">
-        <!-- <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Tim Kerja" prop="tim_kerja" :error="hasFieldError('tim_kerja') ? ' ' : undefined">
+          <el-row :gutter="16">
+            <!-- <el-col :xs="24" :sm="12" :md="8">
+          <AppFormItem label="Tim Kerja" prop="tim_kerja" :error="hasFieldError('tim_kerja') ? ' ' : undefined">
             <LookupSelect v-model="formData.tim_kerja" placeholder="Pilih tim kerja"
               :fetch-api="lookupApi.getLookupTimKerja" />
             <FieldErrors :errors="getFieldErrors('tim_kerja')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col> -->
 
-        <el-col :xs="24">
-          <el-form-item label="Keterangan" prop="keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
-            <el-input v-model="formData.keterangan" type="textarea" :rows="3" placeholder="Keterangan tambahan..." />
-            <FieldErrors :errors="getFieldErrors('keterangan')" />
-          </el-form-item>
+            <el-col :xs="24">
+              <AppFormItem label="Keterangan" prop="keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
+                <el-input v-model="formData.keterangan" type="textarea" :rows="3"
+                  placeholder="Keterangan tambahan..." />
+                <FieldErrors :errors="getFieldErrors('keterangan')" />
+              </AppFormItem>
+            </el-col>
+          </el-row>
         </el-col>
       </el-row>
     </el-card>
@@ -135,102 +148,102 @@
 
       <el-row :gutter="16">
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Tanggal Ciu Tao (Masehi)" prop="tanggal_chiutao_int"
+          <AppFormItem label="Tanggal Ciu Tao (Masehi)" prop="tanggal_chiutao_int"
             :error="hasFieldError('tanggal_chiutao_int') ? ' ' : undefined" required>
             <el-date-picker v-model="formData.tanggal_chiutao_int" type="date" placeholder="Tanggal Ciu Tao Masehi"
               format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('tanggal_chiutao_int')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <!-- <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Tanggal Ciu Tao (Man)" prop="tanggal_chiutao_man" :error="hasFieldError('tanggal_chiutao_man') ? ' ' : undefined">
+          <AppFormItem label="Tanggal Ciu Tao (Man)" prop="tanggal_chiutao_man" :error="hasFieldError('tanggal_chiutao_man') ? ' ' : undefined">
             <el-input v-model="formData.tanggal_chiutao_man" placeholder="Tanggal Ciu Tao Mandarin" />
             <FieldErrors :errors="getFieldErrors('tanggal_chiutao_man')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col> -->
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Waktu Ciu Tao" prop="waktu_chiutao_mandarin"
+          <AppFormItem label="Waktu Ciu Tao" prop="waktu_chiutao_mandarin"
             :error="hasFieldError('waktu_chiutao_mandarin') ? ' ' : undefined" required>
             <LookupSelect v-model="formData.waktu_chiutao_mandarin" placeholder="Pilih waktu ciu tao"
               :fetch-api="lookupApi.getLookupWaktuCiuTao" :clearable="false" auto-populate />
             <FieldErrors :errors="getFieldErrors('waktu_chiutao_mandarin')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Fotang Ciu Tao" prop="fotang_chiutao"
+          <AppFormItem label="Fotang Ciu Tao" prop="fotang_chiutao"
             :error="hasFieldError('fotang_chiutao') ? ' ' : undefined" required>
             <LookupSelect v-model="formData.fotang_chiutao" placeholder="Pilih fotang ciu tao"
               :fetch-api="fotangApi.getFotangLookup" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('fotang_chiutao')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Tien Chuan Se (TCS)" prop="tcs" :error="hasFieldError('tcs') ? ' ' : undefined" required>
+          <AppFormItem label="Tien Chuan Se (TCS)" prop="tcs" :error="hasFieldError('tcs') ? ' ' : undefined" required>
             <LookupSelect v-model="formData.tcs" placeholder="Pilih TCS" :fetch-api="lookupApi.getLookupTcs"
               :clearable="false" />
             <FieldErrors :errors="getFieldErrors('tcs')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Marga Tcs Lain" prop="nama_tcs_lain"
+          <AppFormItem label="Marga Tcs Lain" prop="nama_tcs_lain"
             :error="hasFieldError('nama_tcs_lain') ? ' ' : undefined">
             <el-input v-model="formData.nama_tcs_lain" placeholder="Marga Tcs Lain" />
             <FieldErrors :errors="getFieldErrors('nama_tcs_lain')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Uang Pahala" prop="uang_pahala" :error="hasFieldError('uang_pahala') ? ' ' : undefined">
+          <AppFormItem label="Uang Pahala" prop="uang_pahala" :error="hasFieldError('uang_pahala') ? ' ' : undefined">
             <el-input-number v-model="formData.uang_pahala" :min="10000" :step="1000" placeholder="0" class="w-full" />
             <FieldErrors :errors="getFieldErrors('uang_pahala')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Status Umat" prop="status_umat" :error="hasFieldError('status_umat') ? ' ' : undefined"
+          <AppFormItem label="Status Umat" prop="status_umat" :error="hasFieldError('status_umat') ? ' ' : undefined"
             required>
             <LookupSelect v-model="formData.status_umat" placeholder="Pilih status umat"
               :fetch-api="lookupApi.getLookupStatus" :clearable="false" auto-populate />
             <FieldErrors :errors="getFieldErrors('status_umat')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item v-if="formData.pengajak || !formData.pengajak_manual" label="Pengajak" prop="pengajak"
+          <AppFormItem v-if="formData.pengajak || !formData.pengajak_manual" label="Pengajak" prop="pengajak"
             :error="hasFieldError('pengajak') ? ' ' : undefined" required>
             <LookupSelect v-model="formData.pengajak" placeholder="Cari & pilih pengajak" :fetch-api="umatApi.getUmats"
               :get-item-api="umatApi.getUmatById" value-key="id" label-key="nama_indonesia"
               :label-formatter="formatUmatLabel" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('pengajak')" />
-          </el-form-item>
+          </AppFormItem>
 
-          <el-form-item v-else label="Pengajak" prop="pengajak_manual"
+          <AppFormItem v-else label="Pengajak" prop="pengajak_manual"
             :error="hasFieldError('pengajak_manual') ? ' ' : undefined" required>
             <el-input v-model="formData.pengajak_manual" placeholder="Pengajak" />
             <FieldErrors :errors="getFieldErrors('pengajak_manual')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item v-if="formData.penanggung || !formData.penanggung_manual" label="Penanggung" prop="penanggung"
+          <AppFormItem v-if="formData.penanggung || !formData.penanggung_manual" label="Penanggung" prop="penanggung"
             :error="hasFieldError('penanggung') ? ' ' : undefined" required>
             <LookupSelect v-model="formData.penanggung" placeholder="Cari & pilih penanggung"
               :fetch-api="umatApi.getUmats" :get-item-api="umatApi.getUmatById" value-key="id"
               label-key="nama_indonesia" :label-formatter="formatUmatLabel" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('penanggung')" />
-          </el-form-item>
+          </AppFormItem>
 
-          <el-form-item v-else label="Penanggung" prop="penanggung_manual"
+          <AppFormItem v-else label="Penanggung" prop="penanggung_manual"
             :error="hasFieldError('penanggung_manual') ? ' ' : undefined" required>
             <el-input v-model="formData.penanggung_manual" placeholder="Penanggung" />
             <FieldErrors :errors="getFieldErrors('penanggung_manual')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
       </el-row>
@@ -249,62 +262,62 @@
 
       <el-row :gutter="16">
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Telepon" prop="telepon" :error="hasFieldError('telepon') ? ' ' : undefined">
+          <AppFormItem label="Telepon" prop="telepon" :error="hasFieldError('telepon') ? ' ' : undefined">
             <el-input v-model="formData.telepon" placeholder="Nomor telepon" />
             <FieldErrors :errors="getFieldErrors('telepon')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Mobile" prop="mobile" :error="hasFieldError('mobile') ? ' ' : undefined">
+          <AppFormItem label="Mobile" prop="mobile" :error="hasFieldError('mobile') ? ' ' : undefined">
             <el-input v-model="formData.mobile" placeholder="Nomor Mobile" />
             <FieldErrors :errors="getFieldErrors('mobile')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Email" prop="email" :error="hasFieldError('email') ? ' ' : undefined">
+          <AppFormItem label="Email" prop="email" :error="hasFieldError('email') ? ' ' : undefined">
             <el-input v-model="formData.email" placeholder="Alamat email" type="email" />
             <FieldErrors :errors="getFieldErrors('email')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Alamat Domisili" prop="alamat" :error="hasFieldError('alamat') ? ' ' : undefined">
+          <AppFormItem label="Alamat Domisili" prop="alamat" :error="hasFieldError('alamat') ? ' ' : undefined">
             <el-input v-model="formData.alamat" type="textarea" :rows="2" placeholder="Alamat domisili" />
             <FieldErrors :errors="getFieldErrors('alamat')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Alamat Lain" prop="alamat2" :error="hasFieldError('alamat2') ? ' ' : undefined">
+          <AppFormItem label="Alamat Lain" prop="alamat2" :error="hasFieldError('alamat2') ? ' ' : undefined">
             <el-input v-model="formData.alamat2" type="textarea" :rows="2" placeholder="Alamat lain" />
             <FieldErrors :errors="getFieldErrors('alamat2')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Wilayah" prop="wilayah" :error="hasFieldError('wilayah') ? ' ' : undefined">
+          <AppFormItem label="Wilayah" prop="wilayah" :error="hasFieldError('wilayah') ? ' ' : undefined">
             <el-input v-model="formData.wilayah" type="text" placeholder="Wilayah" />
             <FieldErrors :errors="getFieldErrors('wilayah')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Fotang Aktif" prop="fotang_aktif"
-            :error="hasFieldError('fotang_aktif') ? ' ' : undefined" required>
+          <AppFormItem label="Fotang Aktif" prop="fotang_aktif" :error="hasFieldError('fotang_aktif') ? ' ' : undefined"
+            required>
             <LookupSelect v-model="formData.fotang_aktif" placeholder="Pilih fotang aktif"
               :fetch-api="fotangApi.getFotangLookup" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('fotang_aktif')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item label="Nama Fotang Lain" prop="nama_fotang_lain"
+          <AppFormItem label="Nama Fotang Lain" prop="nama_fotang_lain"
             :error="hasFieldError('nama_fotang_lain') ? ' ' : undefined">
             <el-input v-model="formData.nama_fotang_lain" placeholder="Nama fotang lain" />
             <FieldErrors :errors="getFieldErrors('nama_fotang_lain')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
       </el-row>
@@ -324,20 +337,20 @@
 
       <el-row :gutter="16">
         <el-col :xs="24" :sm="12" :md="12">
-          <el-form-item label="Kelas Umum" prop="kelas_umum" :error="hasFieldError('kelas_umum') ? ' ' : undefined">
+          <AppFormItem label="Kelas Umum" prop="kelas_umum" :error="hasFieldError('kelas_umum') ? ' ' : undefined">
             <LookupSelect v-model="formData.kelas_umum" placeholder="Pilih kelas umum"
               :fetch-api="lookupApi.getLookupKelasUmum" />
             <FieldErrors :errors="getFieldErrors('kelas_umum')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="12">
-          <el-form-item label="Kelas Khusus" prop="kelas_khusus"
+          <AppFormItem label="Kelas Khusus" prop="kelas_khusus"
             :error="hasFieldError('kelas_khusus') ? ' ' : undefined">
             <LookupSelect v-model="formData.kelas_khusus" placeholder="Pilih kelas khusus"
               :fetch-api="lookupApi.getLookupKelas" />
             <FieldErrors :errors="getFieldErrors('kelas_khusus')" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
       </el-row>
@@ -345,7 +358,7 @@
 
         <!-- Sidang Dharma Pemula (Sd3) -->
         <el-col :xs="24" :sm="12" :md="12">
-          <el-form-item prop="sd3"
+          <AppFormItem prop="sd3"
             :error="hasFieldError('sd3') || hasFieldError('tanggal_sd3') || hasFieldError('tempat_sd3') ? ' ' : undefined">
             <template #label>
               <div @click.stop>
@@ -358,12 +371,12 @@
               :fetch-api="fotangApi.getFotangLookup" :disabled="!formData.sd3" class="w-full mt-2" />
             <FieldErrors
               :errors="getFieldErrors('sd3').concat(getFieldErrors('tanggal_sd3')).concat(getFieldErrors('tempat_sd3'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <!-- Fo Kuei Li Cie Pan (Sd2) -->
         <el-col :xs="24" :sm="12" :md="12">
-          <el-form-item prop="sd2"
+          <AppFormItem prop="sd2"
             :error="hasFieldError('sd2') || hasFieldError('tanggal_sd2') || hasFieldError('tempat_sd2') ? ' ' : undefined">
             <template #label>
               <div @click.stop>
@@ -376,7 +389,7 @@
               :fetch-api="fotangApi.getFotangLookup" :disabled="!formData.sd2" class="w-full mt-2" />
             <FieldErrors
               :errors="getFieldErrors('sd2').concat(getFieldErrors('tanggal_sd2')).concat(getFieldErrors('tempat_sd2'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
       </el-row>
@@ -384,7 +397,7 @@
       <el-row :gutter="16">
         <!-- Ikrar Checkboxes -->
         <el-col :xs="24">
-          <el-form-item label="Ikrar" prop="ikrar" :error="hasFieldError('ikrar_1') ? ' ' : undefined">
+          <AppFormItem label="Ikrar" prop="ikrar" :error="hasFieldError('ikrar_1') ? ' ' : undefined">
             <div class="ikrar-checkbox-group">
               <el-checkbox v-model="formData.ikrar_1" label="Ikrar 重聖輕凡" />
               <el-checkbox v-model="formData.ikrar_2" label="Ikrar 財法雙施" />
@@ -395,14 +408,14 @@
             </div>
             <FieldErrors
               :errors="getFieldErrors('ikrar_1').concat(getFieldErrors('ikrar_2')).concat(getFieldErrors('ikrar_3')).concat(getFieldErrors('ikrar_4')).concat(getFieldErrors('ikrar_5')).concat(getFieldErrors('ikrar_6'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
       </el-row>
 
       <el-row :gutter="16">
         <!-- Ren Chai Pan -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item prop="ren_chai_pan"
+          <AppFormItem prop="ren_chai_pan"
             :error="hasFieldError('ren_chai_pan') || hasFieldError('tanggal_ren_chai_pan') ? ' ' : undefined">
             <template #label>
               <div @click.stop>
@@ -412,12 +425,12 @@
             <el-date-picker v-model="formData.tanggal_ren_chai_pan" type="date" placeholder="Tanggal Ren Chai Pan"
               format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!formData.ren_chai_pan" />
             <FieldErrors :errors="getFieldErrors('ren_chai_pan').concat(getFieldErrors('tanggal_ren_chai_pan'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <!-- Lien Ciang Pan -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item prop="lien_ciang_pan"
+          <AppFormItem prop="lien_ciang_pan"
             :error="hasFieldError('lien_ciang_pan') || hasFieldError('tanggal_lien_ciang_pan') ? ' ' : undefined">
             <template #label>
               <div @click.stop>
@@ -427,12 +440,12 @@
             <el-date-picker v-model="formData.tanggal_lien_ciang_pan" type="date" placeholder="Tanggal Lien Ciang Pan"
               format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!formData.lien_ciang_pan" />
             <FieldErrors :errors="getFieldErrors('lien_ciang_pan').concat(getFieldErrors('tanggal_lien_ciang_pan'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <!-- Ciang Yen Pan -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item prop="ciang_yen_pan"
+          <AppFormItem prop="ciang_yen_pan"
             :error="hasFieldError('ciang_yen_pan') || hasFieldError('tanggal_ciang_yen_pan') ? ' ' : undefined">
             <template #label>
               <div @click.stop>
@@ -442,12 +455,12 @@
             <el-date-picker v-model="formData.tanggal_ciang_yen_pan" type="date" placeholder="Tanggal Ciang Yen Pan"
               format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!formData.ciang_yen_pan" />
             <FieldErrors :errors="getFieldErrors('ciang_yen_pan').concat(getFieldErrors('tanggal_ciang_yen_pan'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <!-- Ching Khou -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item prop="ching_khou"
+          <AppFormItem prop="ching_khou"
             :error="hasFieldError('ching_khou') || hasFieldError('tanggal_ching_khou') ? ' ' : undefined">
             <template #label>
               <div @click.stop>
@@ -457,12 +470,12 @@
             <el-date-picker v-model="formData.tanggal_ching_khou" type="date" placeholder="Tanggal Ching Khou"
               format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!formData.ching_khou" />
             <FieldErrors :errors="getFieldErrors('ching_khou').concat(getFieldErrors('tanggal_ching_khou'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <!-- An Cuo -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item prop="tanggal_ancuo"
+          <AppFormItem prop="tanggal_ancuo"
             :error="hasFieldError('tanggal_ancuo') || hasFieldError('nama_cetya_rumah') ? ' ' : undefined">
             <template #label>
               <div @click.stop>
@@ -471,17 +484,17 @@
             </template>
             <el-date-picker v-model="formData.tanggal_ancuo" type="date" placeholder="Tanggal An Cuo"
               format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!hasAnCuo" />
-            <el-form-item prop="nama_cetya_rumah" class="w-full mt-2" style="margin-bottom: 0;">
+            <AppFormItem prop="nama_cetya_rumah" class="w-full mt-2" style="margin-bottom: 0;">
               <el-input v-model="formData.nama_cetya_rumah" placeholder="Nama Cetya Rumah" :disabled="!hasAnCuo"
                 class="w-full" />
-            </el-form-item>
+            </AppFormItem>
             <FieldErrors :errors="getFieldErrors('tanggal_ancuo').concat(getFieldErrors('nama_cetya_rumah'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
 
         <!-- Meninggal -->
         <el-col :xs="24" :sm="12" :md="8">
-          <el-form-item prop="meninggal"
+          <AppFormItem prop="meninggal"
             :error="hasFieldError('meninggal') || hasFieldError('tanggal_meninggal') ? ' ' : undefined">
             <template #label>
               <div @click.stop>
@@ -491,7 +504,7 @@
             <el-date-picker v-model="formData.tanggal_meninggal" type="date" placeholder="Tanggal Meninggal"
               format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!formData.meninggal" />
             <FieldErrors :errors="getFieldErrors('meninggal').concat(getFieldErrors('tanggal_meninggal'))" />
-          </el-form-item>
+          </AppFormItem>
         </el-col>
       </el-row>
     </el-card>
@@ -515,7 +528,9 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { User, Phone, Calendar, Notebook, Check } from '@element-plus/icons-vue'
 import type { Umat } from '../../types/umat'
 import LookupSelect from '../common/LookupSelect.vue'
+import AppFormItem from '../common/AppFormItem.vue'
 import FieldErrors from '../common/FieldErrors.vue'
+import UmatPhotoUpload from './UmatPhotoUpload.vue'
 import lookupApi from '../../api/lookup'
 import fotangApi from '../../api/fotang'
 import umatApi from '../../api/umat'
@@ -536,11 +551,16 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'submit', payload: Partial<Umat>): void
+  (e: 'submit', payload: Partial<Umat>, photoFile?: Blob | null): void
   (e: 'cancel'): void
 }>()
 
 const formRef = ref<FormInstance>()
+const photoFile = ref<Blob | null>(null)
+
+function onPhotoChange(fileBlob: Blob | null) {
+  photoFile.value = fileBlob
+}
 
 function getFieldErrors(fieldName: string): string[] {
   if (!props.fieldErrors) return []
@@ -588,7 +608,7 @@ const formData = ref<Partial<Umat>>({
   tempat_sd3: '',
   kelas_umum: '',
   kelas_khusus: '',
-  status_umat: '',
+  status_umat: 'B_STATUS006',
   tim_kerja: '',
   posisi: '',
   ikrar_1: false,
@@ -610,6 +630,19 @@ const formData = ref<Partial<Umat>>({
   keterangan: '',
   // status: true
 })
+
+watch(
+  () => props.initialData,
+  (newVal) => {
+    if (newVal && Object.keys(newVal).length > 0) {
+      formData.value = {
+        ...formData.value,
+        ...newVal
+      }
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 watch(
   () => formData.value.sd3,
@@ -724,12 +757,26 @@ const rules: FormRules = {
   ],
 }
 
+import { scrollToFormError } from '../../utils/scroll'
+
+watch(
+  () => props.fieldErrors,
+  (newErrors) => {
+    if (newErrors && Object.keys(newErrors).length > 0) {
+      scrollToFormError()
+    }
+  },
+  { immediate: true, deep: true }
+)
+
 async function handleSubmit() {
   if (!formRef.value) return
   await formRef.value.validate((valid) => {
     if (valid) {
       const payload = trimTargetFields(formData.value)
-      emit('submit', payload)
+      emit('submit', payload, photoFile.value || undefined)
+    } else {
+      scrollToFormError()
     }
   })
 }
@@ -772,7 +819,7 @@ function handleCancel() {
   margin-top: 0.5rem;
 }
 
-:deep(.el-form-item__label .el-checkbox) {
+:deep(.AppFormItem__label .el-checkbox) {
   margin-right: 0;
   height: auto;
   font-weight: 600;

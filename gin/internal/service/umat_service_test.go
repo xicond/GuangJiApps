@@ -48,7 +48,7 @@ func TestUmatService(t *testing.T) {
 		JenisKelamin:  "L",
 		StatusUmat:    &invalidStatus,
 	}
-	_, err = svc.Create(invalidUmat, c)
+	_, err = svc.Create(invalidUmat, nil, c)
 	if err == nil {
 		t.Fatalf("expected error when creating umat with invalid StatusUmat, got nil")
 	}
@@ -69,7 +69,7 @@ func TestUmatService(t *testing.T) {
 		StatusUmat:           &statusUmat,
 	}
 
-	created, err := svc.Create(umat, c)
+	created, err := svc.Create(umat, nil, c)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestUmatService(t *testing.T) {
 
 	// 4. Update
 	created.NamaIndonesia = "Budi Updated"
-	updated, err := svc.Update("1", created, c)
+	updated, err := svc.Update("1", created, nil, c)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -121,3 +121,70 @@ func TestUmatService(t *testing.T) {
 		t.Errorf("expected 0 active items after delete, got total %d", totalAfter)
 	}
 }
+
+func TestSanitizeFilename(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"normal.jpg", "normal.jpg"},
+		{"../path/to/file.png", "file.png"},
+		{"CON.jpg", "_CON.jpg"},
+		{"invalid<>:?*name.png", "invalid_____name.png"},
+		{"my file name.jpg", "my_file_name.jpg"},
+	}
+
+	for _, tt := range tests {
+		result := sanitizeFilename(tt.input)
+		if result != tt.expected {
+			t.Errorf("sanitizeFilename(%q) = %q, expected %q", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestParseUmatOcrText(t *testing.T) {
+	rawText := "一掛號單\n編\n號:3986\n姓名\nNAMA:楊慧鈴 鈴\n年齡\nUMUR: 51\n教育\nPENDIDIKAN: SI\n地址\n性別 Wanita\nJENIS KELAMIN\nALAMAT: Il. Fatmawati No-30\n電話: 081933363639\n引師\nPERANTARA:伍輝生\n保師\nPENANGGUNG:徐·盛超\n點傳師:林榮茂\n日期\nTANGGAL:丙午年六月二十七日 9/8′26\n功德費: Rp.10.000 未"
+
+	parsed := ParseUmatOcrText(rawText)
+
+	if parsed["nama_indonesia"] != "楊慧鈴" {
+		t.Errorf("expected nama_indonesia '楊慧鈴', got '%v'", parsed["nama_indonesia"])
+	}
+	if parsed["nama_mandarin"] != "楊慧鈴" {
+		t.Errorf("expected nama_mandarin '楊慧鈴', got '%v'", parsed["nama_mandarin"])
+	}
+	if parsed["alias"] != "Yang Hui Ling" {
+		t.Errorf("expected alias 'Yang Hui Ling', got '%v'", parsed["alias"])
+	}
+	if parsed["usia"] != 51 {
+		t.Errorf("expected usia 51, got '%v'", parsed["usia"])
+	}
+	if parsed["pendidikan"] != "S1" {
+		t.Errorf("expected pendidikan 'S1', got '%v'", parsed["pendidikan"])
+	}
+	if parsed["jenis_kelamin"] != "WANITA" {
+		t.Errorf("expected jenis_kelamin 'WANITA', got '%v'", parsed["jenis_kelamin"])
+	}
+	if parsed["alamat"] != "JL. Fatmawati No-30" {
+		t.Errorf("expected alamat 'JL. Fatmawati No-30', got '%v'", parsed["alamat"])
+	}
+	if parsed["mobile"] != "081933363639" {
+		t.Errorf("expected mobile '081933363639', got '%v'", parsed["mobile"])
+	}
+	if parsed["pengajak_manual"] != "伍輝生" {
+		t.Errorf("expected pengajak_manual '伍輝生', got '%v'", parsed["pengajak_manual"])
+	}
+	if parsed["penanggung_manual"] != "徐盛超" {
+		t.Errorf("expected penanggung_manual '徐盛超', got '%v'", parsed["penanggung_manual"])
+	}
+	if parsed["tcs"] != "林榮茂" {
+		t.Errorf("expected tcs '林榮茂', got '%v'", parsed["tcs"])
+	}
+	if parsed["uang_pahala"] != float64(10000) {
+		t.Errorf("expected uang_pahala 10000, got '%v'", parsed["uang_pahala"])
+	}
+	if parsed["waktu_chiutao_mandarin"] != "未" {
+		t.Errorf("expected waktu_chiutao_mandarin '未', got '%v'", parsed["waktu_chiutao_mandarin"])
+	}
+}
+

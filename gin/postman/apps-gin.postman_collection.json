@@ -927,6 +927,40 @@
           "response": []
         },
         {
+          "name": "Umat - OCR Recognition",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/umats/ocr",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats",
+                "ocr"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Umat - List",
           "request": {
             "method": "GET",
@@ -1000,12 +1034,49 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"UMAT001\",\n  \"name\": \"Umat One\"\n}",
+              "raw": "{\n  \"namaindonesia\": \"Budi Santoso\",\n  \"jenis_kelamin\": \"001\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/umats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Umat - Create (Multipart with Photo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "data",
+                  "value": "{\n  \"namaindonesia\": \"Budi Santoso\",\n  \"jenis_kelamin\": \"001\"\n}",
+                  "type": "text"
+                },
+                {
+                  "key": "foto",
+                  "src": "",
+                  "type": "file"
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/v1/umats",
@@ -1065,12 +1136,57 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"UMAT002\",\n  \"name\": \"Umat Two\",\n  \"active\": false\n}",
+              "raw": "{\n  \"namaindonesia\": \"Budi Updated\",\n  \"jenis_kelamin\": \"001\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/v1/umats/:resourceId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "umats",
+                ":resourceId"
+              ],
+              "variable": [
+                {
+                  "key": "resourceId",
+                  "value": "12",
+                  "description": "The unique numerical ID of the record"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Umat - Update (Multipart with Photo)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "data",
+                  "value": "{\n  \"namaindonesia\": \"Budi Updated\",\n  \"jenis_kelamin\": \"001\"\n}",
+                  "type": "text"
+                },
+                {
+                  "key": "foto",
+                  "src": "",
+                  "type": "file"
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/v1/umats/:resourceId",

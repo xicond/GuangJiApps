@@ -89,7 +89,7 @@
           <el-col :xs="24" :sm="12" :md="8">
             <el-form-item label="Rentang Usia (Tahun)">
               <div class="age-range-container">
-                <el-input-number v-model="filters.usia_dari" :min="0"
+                <el-input-number v-model="filters.usia_dari" :min="1"
                   :max="filters.usia_sampai != null ? filters.usia_sampai : 120" controls-position="right"
                   placeholder="Dari" class="age-input" @change="onUsiaDariChange" />
                 <span class="range-separator">s/d</span>
@@ -135,14 +135,15 @@
         empty-text="Tidak ada data laporan umat yang ditemukan">
         <el-table-column label="No" v-if="isDesktop" :index="getRowIndex" type="index" width="80" fixed="left" />
 
-        <el-table-column prop="kode" v-if="isDesktop" label="Kode Umat" width="120" align="center" fixed="left" />
 
         <el-table-column prop="nama_indonesia" label="Nama Chiu Tao" min-width="125"
-          :fixed="!isDesktop ? false : 'right'">
+          :fixed="!isDesktop ? false : 'left'">
           <template #default="{ row }">
-            <span class="font-semibold">{{ row.nama_indonesia || '-' }}</span>
+            <span class="font-semibold">{{ row.nama_indonesia.trim() || row.nama_mandarin.trim() || row.alias.trim() ||
+              '-' }}</span>
           </template>
         </el-table-column>
+        <el-table-column prop="kode" v-if="isDesktop" label="Kode Umat" width="120" align="center" />
         <el-table-column prop="jenis_kelamin" label="Jenis Kelamin" width="120" align="center" />
 
         <el-table-column prop="nama_mandarin" label="Nama Lain" width="140" align="center">
@@ -183,7 +184,7 @@
 
         <el-table-column prop="alamat" label="Alamat" min-width="200">
           <template #default="{ row }">
-            <span>{{ row.alamat + ' ' + row.alamat1 || '-' }}</span>
+            <span>{{ row.alamat + ' ' + row.alamat2 || '-' }}</span>
           </template>
         </el-table-column>
 

@@ -7,10 +7,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 import './style.css'
-import { registerSW } from 'virtual:pwa-register'
-
-// Register Workbox PWA service worker (Production build only)
-registerSW({ immediate: true })
+import { initPwaUpdate } from './utils/pwaUpdate'
 
 const app = createApp(App)
 
@@ -21,5 +18,8 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(createPinia())
 app.use(router)
 app.use(ElementPlus)
+
+// Initialize Workbox PWA service worker and route update listener
+initPwaUpdate(router)
 
 app.mount('#app')

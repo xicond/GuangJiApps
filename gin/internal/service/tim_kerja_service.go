@@ -181,18 +181,9 @@ func (s *TimKerjaService) Delete(id string, c *gin.Context) error {
 		return err
 	}
 
-	userIDStr := "1"
-	if c != nil {
-		if val, exists := c.Get("userID"); exists {
-			if uid, ok := val.(int); ok {
-				userIDStr = strconv.Itoa(uid)
-			}
-		}
-	}
-
 	item.Status = false
 	item.ModAct = "D"
-	item.ModBy = userIDStr
+	item.ModBy = strconv.Itoa(int(getUserID(c)))
 	item.ModDate = domain.NowDateTime()
 
 	if err := s.db.Save(&item).Error; err != nil {

@@ -75,7 +75,7 @@
         </el-form-item>
 
         <el-form-item label="Jumlah Donasi" prop="donasi" :error="hasFieldError('donasi') ? ' ' : undefined">
-          <el-input-number v-model="form.donasi" :min="100" :precision="2" :step="1000" controls-position="right"
+          <el-input-number v-model="form.donasi" :min="1000" :precision="2" :step="1000" controls-position="right"
             style="width: 100%" />
           <FieldErrors :errors="getFieldErrors('donasi')" />
         </el-form-item>

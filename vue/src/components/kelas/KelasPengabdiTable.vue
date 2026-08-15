@@ -128,8 +128,8 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="Sumbangan" :error="hasFieldError('sumbangan') ? ' ' : undefined">
-              <el-input-number v-model="form.sumbangan" :min="100" :precision="0" :step="1000" controls-position="right"
-                style="width: 100%" />
+              <el-input-number v-model="form.sumbangan" :min="1000" :precision="0" :step="1000"
+                controls-position="right" style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('sumbangan')" />
             </el-form-item>
           </el-col>

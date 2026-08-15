@@ -2,7 +2,9 @@ package service
 
 import (
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
@@ -127,11 +129,58 @@ func TestSanitizeFilename(t *testing.T) {
 		input    string
 		expected string
 	}{
+		// Standard valid filenames
 		{"normal.jpg", "normal.jpg"},
-		{"../path/to/file.png", "file.png"},
-		{"CON.jpg", "_CON.jpg"},
-		{"invalid<>:?*name.png", "invalid_____name.png"},
+		{"photo_2026-08-15.png", "photo_2026-08-15.png"},
 		{"my file name.jpg", "my_file_name.jpg"},
+
+		// Directory / Path Traversal (Linux & Windows)
+		{"../path/to/file.png", "file.png"},
+		{"../../../../etc/passwd", "passwd"},
+		{"..\\..\\..\\boot.ini", "boot.ini"},
+		{"C:\\Windows\\System32\\cmd.exe", "cmd.exe"},
+		{"\\\\server\\share\\secret.png", "secret.png"},
+		{"/var/www/uploads/shell.php", "shell.php"},
+
+		// Windows Reserved Device Names (Exact & Case-Insensitive)
+		{"CON.jpg", "_CON.jpg"},
+		{"con.PNG", "_con.PNG"},
+		{"PRN.pdf", "_PRN.pdf"},
+		{"AUX.png", "_AUX.png"},
+		{"NUL.jpg", "_NUL.jpg"},
+		{"COM1.png", "_COM1.png"},
+		{"com1.jpg", "_com1.jpg"},
+		{"COM9.png", "_COM9.png"},
+		{"LPT1.txt", "_LPT1.txt"},
+		{"lpt9.jpeg", "_lpt9.jpeg"},
+		{"CLOCK$.txt", "_CLOCK$.txt"},
+		{"COM1", "_COM1"},
+
+		// Windows Device Names with Colons / Streams / Trailing Aliases
+		{"COM1:", "_COM1_"},
+		{"COM1:stream", "COM1_stream"},
+		{"COM1. .jpg", "_COM1._.jpg"},
+		{"file.png::$DATA", "file.png__$DATA"},
+		{"file.png:stream", "file.png_stream"},
+
+		// Invalid Characters & Control Characters (ASCII & DEL)
+		{"invalid<>:?*name.png", "invalid_____name.png"},
+		{"shell.php\x00.jpg", "shell.php_.jpg"},
+		{"file\x07name\x1b.jpg", "file_name_.jpg"},
+		{"file\x7fname.png", "file_name.png"},
+
+		// Dangerous Unicode Characters (Zero-width space, RLO override, BOM)
+		{"test\u202Egnp.exe", "test_gnp.exe"},           // Right-to-Left Override (RLO)
+		{"file\u200Bname.jpg", "file_name.jpg"},           // Zero-Width Space
+		{"file\u200Cname.png", "file_name.png"},           // Zero-Width Non-Joiner
+		{"\uFEFFimage.jpg", "_image.jpg"},                 // Byte Order Mark (BOM)
+
+		// CJK (Chinese, Japanese, Korean) Allowed Filenames
+		{"中文文件名.jpg", "中文文件名.jpg"},
+		{"張三_楊慧鈴_佛堂.png", "張三_楊慧鈴_佛堂.png"},
+		{"日本語画像.jpeg", "日本語画像.jpeg"},
+		{"한국어_파일.png", "한국어_파일.png"},
+		{"中文 文件 名.jpg", "中文_文件_名.jpg"},
 	}
 
 	for _, tt := range tests {
@@ -139,6 +188,42 @@ func TestSanitizeFilename(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("sanitizeFilename(%q) = %q, expected %q", tt.input, result, tt.expected)
 		}
+	}
+
+	// Test fallback default filename generation for empty / dot inputs
+	emptyInputs := []string{"", "   ", ".", "..", "  .  ", "  ..  "}
+	for _, input := range emptyInputs {
+		res := sanitizeFilename(input)
+		if !strings.HasPrefix(res, "image_") || !strings.HasSuffix(res, ".jpg") {
+			t.Errorf("sanitizeFilename(%q) = %q, expected default 'image_*.jpg'", input, res)
+		}
+	}
+
+	// Test long ASCII filename truncation (max 150 bytes, preserving extension)
+	longInput := strings.Repeat("a", 200) + ".jpg"
+	longResult := sanitizeFilename(longInput)
+	if len(longResult) > 150 {
+		t.Errorf("expected len <= 150 bytes, got %d for long filename", len(longResult))
+	}
+	if !strings.HasSuffix(longResult, ".jpg") {
+		t.Errorf("expected long filename to preserve .jpg extension, got %q", longResult)
+	}
+
+	// Test CJK / multibyte long filename truncation (max runes = maxBytes / 2 = 75 runes, preserving extension & valid UTF-8)
+	cjkLongInput := strings.Repeat("中文", 50) + ".jpg" // 100 CJK runes
+	cjkLongResult := sanitizeFilename(cjkLongInput)
+	if !utf8.ValidString(cjkLongResult) {
+		t.Errorf("expected valid UTF-8 string for CJK long filename, got invalid bytes: %q", cjkLongResult)
+	}
+	cjkRunes := []rune(cjkLongResult)
+	if len(cjkRunes) > 79 { // 75 base runes + 4 ext runes (.jpg)
+		t.Errorf("expected max 79 runes for CJK long filename (75 base + 4 ext), got %d runes", len(cjkRunes))
+	}
+	if len(cjkLongResult) > 150 {
+		t.Errorf("expected len <= 150 bytes, got %d bytes for CJK long filename", len(cjkLongResult))
+	}
+	if !strings.HasSuffix(cjkLongResult, ".jpg") {
+		t.Errorf("expected CJK long filename to preserve .jpg extension, got %q", cjkLongResult)
 	}
 }
 

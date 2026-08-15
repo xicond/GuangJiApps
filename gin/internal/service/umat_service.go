@@ -272,33 +272,69 @@ func sanitizeFilename(name string) string {
 	name = filepath.Base(name)
 	name = strings.TrimSpace(name)
 	if name == "" || name == "." || name == ".." {
-		name = "image_" + time.Now().Format("20060102150405") + ".jpg"
+		return "image_" + time.Now().Format("20060102150405") + ".jpg"
 	}
 
-	re := regexp.MustCompile(`[<>:"/\\|?*\x00-\x1f]`)
+	// Filter dangerous characters:
+	// - Windows invalid chars: <>:"/\|?*
+	// - ASCII control chars: \x00-\x1f, \x7f
+	// - Unicode control & direction override chars: \x{200b}-\x{200d}, \x{202a}-\x{202e}, \x{feff}
+	re := regexp.MustCompile(`[<>:"/\\|?*\x00-\x1f\x7f\x{200b}-\x{200d}\x{202a}-\x{202e}\x{feff}]`)
 	clean := re.ReplaceAllString(name, "_")
 	clean = strings.ReplaceAll(clean, " ", "_")
 
 	ext := filepath.Ext(clean)
 	base := strings.TrimSuffix(clean, ext)
 	upperBase := strings.ToUpper(base)
+	upperBaseClean := strings.TrimRight(upperBase, " ._")
+
 	reservedNames := map[string]bool{
 		"CON": true, "PRN": true, "AUX": true, "NUL": true,
 		"COM1": true, "COM2": true, "COM3": true, "COM4": true, "COM5": true,
 		"COM6": true, "COM7": true, "COM8": true, "COM9": true,
 		"LPT1": true, "LPT2": true, "LPT3": true, "LPT4": true, "LPT5": true,
-		"LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
+		"LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true, "CLOCK$": true,
 	}
-	if reservedNames[upperBase] {
+	if reservedNames[upperBase] || reservedNames[upperBaseClean] {
 		clean = "_" + clean
 	}
 
-	if len(clean) > 150 {
-		if len(ext) < 150 {
-			clean = clean[:150-len(ext)] + ext
-		} else {
-			clean = clean[:150]
+	// Ensure length does not exceed 150 bytes and is rune-safe (no partial UTF-8 sequences)
+	maxBytes := 150
+	if len(clean) > maxBytes {
+		targetLen := maxBytes - len(ext)
+		if targetLen < 1 {
+			targetLen = maxBytes
+			ext = ""
 		}
+
+		baseStr := strings.TrimSuffix(clean, ext)
+		baseRunes := []rune(baseStr)
+
+		// If string contains non-ASCII / multibyte (e.g. CJK), cap max runes to maxBytes / 2 (75 runes)
+		hasMultiByte := false
+		for _, r := range baseRunes {
+			if r > 127 {
+				hasMultiByte = true
+				break
+			}
+		}
+
+		maxRunes := targetLen
+		if hasMultiByte && maxRunes > maxBytes/2 {
+			maxRunes = maxBytes / 2
+		}
+
+		if len(baseRunes) > maxRunes {
+			baseRunes = baseRunes[:maxRunes]
+		}
+
+		truncatedBase := string(baseRunes)
+		for len(truncatedBase)+len(ext) > maxBytes && len(baseRunes) > 0 {
+			baseRunes = baseRunes[:len(baseRunes)-1]
+			truncatedBase = string(baseRunes)
+		}
+		clean = truncatedBase + ext
 	}
 	return clean
 }

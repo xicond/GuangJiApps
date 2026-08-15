@@ -199,7 +199,7 @@
 
         <el-col :xs="24" :sm="12" :md="8">
           <AppFormItem label="Uang Pahala" prop="uang_pahala" :error="hasFieldError('uang_pahala') ? ' ' : undefined">
-            <el-input-number v-model="formData.uang_pahala" :min="10000" :step="1000" placeholder="0" class="w-full" />
+            <el-input-number v-model="formData.uang_pahala" :min="0" :step="1000" placeholder="0" class="w-full" />
             <FieldErrors :errors="getFieldErrors('uang_pahala')" />
           </AppFormItem>
         </el-col>

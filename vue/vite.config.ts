@@ -15,8 +15,12 @@ function compressInPlacePlugin(): Plugin {
       const distDir = path.resolve(process.cwd(), 'dist')
       if (!fs.existsSync(distDir)) return
 
-      const targetExts = ['.js', '.mjs', '.css', '.html', '.svg', '.png', '.jpg', '.jpeg', '.webp', '.ico', '.json', '.webmanifest']
+      const targetExts = [
+        '.js', '.mjs', '.css', '.html', '.svg', '.png',
+        '.jpg', '.jpeg', '.webp', '.ico', '.json', '.webmanifest'
+      ]
 
+      let count = 0
       const compressRecursive = (dir: string) => {
         const entries = fs.readdirSync(dir, { withFileTypes: true })
         for (const entry of entries) {
@@ -29,7 +33,9 @@ function compressInPlacePlugin(): Plugin {
               const content = fs.readFileSync(fullPath)
               if (content.length > 0) {
                 const compressed = zlib.gzipSync(content, { level: 9 })
+                // Seamlessly overwrite original file in-place with gzip data
                 fs.writeFileSync(fullPath, compressed)
+                count++
               }
             }
           }
@@ -37,6 +43,7 @@ function compressInPlacePlugin(): Plugin {
       }
 
       compressRecursive(distDir)
+      // console.log(`\x1b[36m[vite-plugin-compress-in-place]\x1b[0m Seamlessly compressed ${count} static assets in-place in dist/`)
     }
   }
 }
@@ -49,7 +56,6 @@ export default defineConfig(({ mode }) => {
     base: env.VITE_BASE_URL || '/',
     plugins: [
       vue(),
-      compressInPlacePlugin(),
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
@@ -96,7 +102,8 @@ export default defineConfig(({ mode }) => {
             }
           ]
         }
-      })
+      }),
+      compressInPlacePlugin()
     ],
     resolve: {
       alias: {

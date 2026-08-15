@@ -607,7 +607,7 @@ onMounted(() => {
 .view-container {
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  /* padding: 24px; */
   max-width: 100%;
   gap: 1.25rem;
 }

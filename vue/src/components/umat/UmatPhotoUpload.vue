@@ -13,7 +13,8 @@
         <el-icon class="upload-icon">
           <Picture />
         </el-icon>
-        <span class="upload-text">Upload / Ambil Foto (3:4)</span>
+        <span class="upload-text">{{ getDeviceType() === 'desktop' ? 'Upload Foto (3:4)' : 'Upload / Ambil Foto (3:4)'
+          }}</span>
       </div>
     </div>
 
@@ -75,6 +76,18 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'change', fileBlob: Blob | null): void
 }>()
+
+const getDeviceType = () => {
+  const ua = navigator.userAgent
+
+  if (/tablet|ipad|playbook|silk/i.test(ua)) {
+    return 'tablet'
+  }
+  if (/mobi|android|iphone|ipod/i.test(ua)) {
+    return 'mobile'
+  }
+  return 'desktop'
+}
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const previewUrl = ref<string>(props.initialUrl || '')

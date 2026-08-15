@@ -134,13 +134,17 @@ func TestSanitizeFilename(t *testing.T) {
 		{"photo_2026-08-15.png", "photo_2026-08-15.png"},
 		{"my file name.jpg", "my_file_name.jpg"},
 
-		// Directory / Path Traversal (Linux & Windows)
+		// Directory / Path Traversal & Windows Drive Symbols (Linux & Windows)
 		{"../path/to/file.png", "file.png"},
 		{"../../../../etc/passwd", "passwd"},
 		{"..\\..\\..\\boot.ini", "boot.ini"},
 		{"C:\\Windows\\System32\\cmd.exe", "cmd.exe"},
 		{"\\\\server\\share\\secret.png", "secret.png"},
 		{"/var/www/uploads/shell.php", "shell.php"},
+		{"segment1\\segment2\\..\\..\\..\\..\\..\\c:\\file.png", "file.png"},
+		{"C:boot.ini", "C_boot.ini"},
+		{"C:\\", "C_"},
+		{"C:", "C_"},
 
 		// Windows Reserved Device Names (Exact & Case-Insensitive)
 		{"CON.jpg", "_CON.jpg"},

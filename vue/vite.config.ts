@@ -1,6 +1,10 @@
 import { defineConfig, loadEnv, Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { VitePWA } from 'vite-plugin-pwa'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { fileURLToPath, URL } from 'node:url'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -56,6 +60,14 @@ export default defineConfig(({ mode }) => {
     base: env.VITE_BASE_URL || '/',
     plugins: [
       vue(),
+      AutoImport({
+        resolvers: [ElementPlusResolver()],
+      }),
+      Components({
+        resolvers: [ElementPlusResolver({
+          importStyle: 'css', // Mengimpor file CSS spesifik HANYA untuk komponen yang dipanggil
+        })],
+      }),
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
@@ -103,6 +115,13 @@ export default defineConfig(({ mode }) => {
           ]
         }
       }),
+      /* visualizer({
+        open: true, // Otomatis membuka browser setelah build selesai
+        filename: 'stats.html', // Nama file laporan output
+        gzipSize: true, // Menampilkan ukuran setelah kompresi gzip
+        brotliSize: true, // Menampilkan ukuran setelah kompresi brotli
+        template: 'treemap', // Model visualisasi ('sunburst', 'network', atau 'treemap')
+      }), */
       compressInPlacePlugin()
     ],
     resolve: {

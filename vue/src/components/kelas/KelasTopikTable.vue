@@ -124,7 +124,7 @@
             <el-form-item label="Tanggal Topik" prop="topik_date"
               :error="hasFieldError('topik_date') ? ' ' : undefined">
               <el-date-picker v-model="form.topik_date" type="date" placeholder="Pilih tanggal" format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD" style="width: 100%" :clearable="false" />
+                value-format="YYYY-MM-DD" style="width: 100%" :clearable="false" :disabled-date="disabledTopikDate" />
               <FieldErrors :errors="getFieldErrors('topik_date')" />
             </el-form-item>
           </el-col>
@@ -201,6 +201,8 @@ import type { Topic } from '../../types/topic'
 
 const props = defineProps<{
   kelasId: string | number
+  startDate?: string
+  endDate?: string
 }>()
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
@@ -307,9 +309,35 @@ const initialTopicOption = computed(() => {
   return { topic_code: form.value.kode_topik, topic_name: form.value.kode_topik }
 })
 
+function disabledTopikDate(time: Date): boolean {
+  if (props.startDate && dayjs(time).isBefore(dayjs(props.startDate), 'day')) {
+    return true
+  }
+  if (props.endDate && dayjs(time).isAfter(dayjs(props.endDate), 'day')) {
+    return true
+  }
+  return false
+}
+
+const validateTopikDateRange = (_rule: any, value: any, callback: any) => {
+  if (!value) {
+    return callback(new Error('Harap pilih Tanggal Topik'))
+  }
+  if (props.startDate && dayjs(value).isBefore(dayjs(props.startDate), 'day')) {
+    return callback(new Error(`Tanggal Topik tidak boleh sebelum Tanggal Mulai (${props.startDate})`))
+  }
+  if (props.endDate && dayjs(value).isAfter(dayjs(props.endDate), 'day')) {
+    return callback(new Error(`Tanggal Topik tidak boleh setelah Tanggal Selesai (${props.endDate})`))
+  }
+  callback()
+}
+
 const formRules: FormRules = {
   kode_topik: [{ required: true, message: 'Harap pilih Nama Topik', trigger: 'change' }],
-  topik_date: [{ required: true, message: 'Harap pilih Tanggal Topik', trigger: 'change' }],
+  topik_date: [
+    { required: true, message: 'Harap pilih Tanggal Topik', trigger: 'change' },
+    { validator: validateTopikDateRange, trigger: 'change' }
+  ],
   penceramah_ext: [{ required: true, message: 'Harap masukkan Penceramah Eksternal', trigger: 'change' }],
 }
 
@@ -387,11 +415,19 @@ function handleCurrentChange(newPage: number) {
 function openAddDialog() {
   dialogMode.value = 'add'
   dialogFieldErrors.value = {}
+
+  let defaultDate = dayjs().format('YYYY-MM-DD')
+  if (props.startDate) {
+    if (dayjs(defaultDate).isBefore(dayjs(props.startDate), 'day') || (props.endDate && dayjs(defaultDate).isAfter(dayjs(props.endDate), 'day'))) {
+      defaultDate = props.startDate
+    }
+  }
+
   form.value = {
     trx_id: props.kelasId,
     kode_topik: '',
     urutan: (topikList.value.length || 0) + 1,
-    topik_date: dayjs().format('YYYY-MM-DD'),
+    topik_date: defaultDate,
     penceramah: undefined,
     penceramah_ext: '',
     penterjemah: '',

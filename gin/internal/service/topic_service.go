@@ -45,9 +45,9 @@ func (s *TopicService) List(page int, filters map[string]string, limit int) ([]d
 	}
 
 	allowedFilters := map[string]FilterRule{
-		// "topic_code":     {Column: "TopicCode", IsLike: true},
-		"topic_name":     {Column: "TopicName", IsLike: true},
-		"topic_category": {Column: "TopicCategory", IsLike: true},
+		"lookup_description": {Column: "TopicName", IsLike: true},
+		"topic_name":         {Column: "TopicName", IsLike: true},
+		"topic_category":     {Column: "TopicCategory", IsLike: true},
 	}
 
 	for field, value := range filters {

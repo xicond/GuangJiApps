@@ -75,6 +75,7 @@ export interface UmatQueryParams {
   limit?: number
   alias?: string
   namaindonesia?: string
+  lookup_description?: string
   namamandarin?: string
   tahunchiutaomandarin?: string
 }

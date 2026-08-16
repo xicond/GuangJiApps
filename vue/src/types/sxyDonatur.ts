@@ -21,6 +21,7 @@ export interface SxyDonaturQueryParams {
   page?: number
   limit?: number
   nama?: string
+  lookup_description?: string
   mandarin?: string
   fotang?: number | string
 }

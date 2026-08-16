@@ -40,9 +40,10 @@ func (s *SxyDonaturService) List(page int, filters map[string]string, limit int)
 	// offset := (page - 1) * limit
 
 	allowedFilters := map[string]string{
-		"nama":     "nama",
-		"mandarin": "mandarin",
-		"fotang":   "fotang",
+		"lookup_description": "nama",
+		"nama":               "nama",
+		"mandarin":           "mandarin",
+		"fotang":             "fotang",
 	}
 
 	var nama string = ""
@@ -54,7 +55,7 @@ func (s *SxyDonaturService) List(page int, filters map[string]string, limit int)
 			continue
 		}
 		if _, exists := allowedFilters[field]; exists {
-			if field == "nama" {
+			if field == "lookup_description" || field == "nama" {
 				nama = value
 			}
 

@@ -58,6 +58,8 @@ const emit = defineEmits<{
 }>()
 
 const options = ref<any[]>([])
+const allLoadedOptions = ref<any[] | null>(null)
+const hasAllDataLoaded = ref(false)
 const loading = ref(false)
 const page = ref(1)
 const total = ref(0)
@@ -98,18 +100,10 @@ function getOptionLabel(item?: any): string {
 function ensureInitialOption(opt?: any) {
   if (!opt) return
   let itemToUse = { [props.valueKey]: opt[props.valueKey], [props.labelKey]: opt[props.labelKey] }
-  /* if (props.transformInitialOption) {
-    try {
-      itemToUse = props.transformInitialOption(opt) || opt
-    } catch (e) {
-      console.error('Error transforming initial option:', e)
-    }
-  } */
 
   const val = getOptionValue(itemToUse)
   if (val === undefined || val === null || val === '') return
   const exists = options.value.some((item) => String(getOptionValue(item)) === String(val))
-  // console.log('in', options.value, itemToUse, val, exists)
   if (!exists) {
     options.value = [itemToUse, ...options.value]
     selectKey.value++
@@ -127,6 +121,11 @@ watch(
 )
 
 async function loadData(targetPage = 1, query = '', forceRefresh = false) {
+  if (forceRefresh) {
+    hasAllDataLoaded.value = false
+    allLoadedOptions.value = null
+  }
+
   if (currentAbortController) {
     currentAbortController.abort()
   }
@@ -159,6 +158,16 @@ async function loadData(targetPage = 1, query = '', forceRefresh = false) {
     }
     await checkAndFetchMissingSelectedValue()
     total.value = res.meta?.total || options.value.length
+
+    if (query === '' && targetPage === 1) {
+      if (props.autoPopulate && total.value <= props.pageSize) {
+        hasAllDataLoaded.value = true
+        allLoadedOptions.value = [...options.value]
+      } else {
+        hasAllDataLoaded.value = false
+        allLoadedOptions.value = null
+      }
+    }
   } catch (err: unknown) {
     if (err instanceof Error && (err.name === 'AbortError' || err.name === 'CanceledError')) return
     console.error('Error fetching lookup options:', err)
@@ -201,6 +210,30 @@ async function checkAndFetchMissingSelectedValue() {
 }
 
 function handleRemoteSearch(query: string) {
+  if (props.autoPopulate && hasAllDataLoaded.value && allLoadedOptions.value) {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    const q = query.trim().toLowerCase()
+    searchQuery.value = query
+    if (!q) {
+      options.value = [...allLoadedOptions.value]
+    } else {
+      const filtered = allLoadedOptions.value.filter((item) => {
+        const label = getOptionLabel(item).toLowerCase()
+        const val = String(getOptionValue(item)).toLowerCase()
+        return label.includes(q) || val.includes(q)
+      })
+      const currentSelectedOpt = allLoadedOptions.value.find(
+        (item) => String(getOptionValue(item)) === String(props.modelValue)
+      )
+      if (currentSelectedOpt && !filtered.some((item) => String(getOptionValue(item)) === String(props.modelValue))) {
+        options.value = [currentSelectedOpt, ...filtered]
+      } else {
+        options.value = filtered
+      }
+    }
+    return
+  }
+
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
     loadData(1, query)
@@ -226,18 +259,30 @@ function onValueChange(val: string | number | undefined) {
 
 function onClear() {
   onValueChange('')
-  loadData(1, '', true)
+  if (props.autoPopulate && hasAllDataLoaded.value && allLoadedOptions.value) {
+    searchQuery.value = ''
+    options.value = [...allLoadedOptions.value]
+  } else {
+    loadData(1, '', true)
+  }
 }
 
 function onVisibleChange(visible: boolean) {
-  if (visible && options.value.length === 0) {
-    loadData(1, '')
+  if (visible) {
+    if (props.autoPopulate && hasAllDataLoaded.value && allLoadedOptions.value) {
+      searchQuery.value = ''
+      options.value = [...allLoadedOptions.value]
+    } else if (options.value.length === 0) {
+      loadData(1, '')
+    }
   }
 }
 
 watch(
   () => props.fetchApi,
   () => {
+    hasAllDataLoaded.value = false
+    allLoadedOptions.value = null
     loadData(1, '', true)
   }
 )

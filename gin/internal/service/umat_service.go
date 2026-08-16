@@ -187,6 +187,7 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 
 	allowedFilters := map[string]FilterRule{
 		"alias":                {Column: "alias", IsLike: true},
+		"lookup_description":   {Column: "namaindonesia", IsLike: true},
 		"namaindonesia":        {Column: "namaindonesia", IsLike: true},
 		"namamandarin":         {Column: "namamandarin", IsLike: true},          // Tahun menggunakan exact match (=)
 		"tahunchiutaomandarin": {Column: "tahunchiutaomandarin", IsLike: false}, // Tahun menggunakan exact match (=)

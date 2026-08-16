@@ -17,6 +17,7 @@ export interface TopicQueryParams {
   limit?: number
   topic_code?: string
   topic_name?: string
+  lookup_description?: string
   topic_category?: string
 }
 

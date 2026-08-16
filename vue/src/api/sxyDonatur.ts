@@ -20,6 +20,7 @@ export const sxyDonaturApi = {
     }
 
     if (params.nama) cleanParams.nama = params.nama
+    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
     if (params.mandarin) cleanParams.mandarin = params.mandarin
     if (params.fotang) cleanParams.fotang = params.fotang
 

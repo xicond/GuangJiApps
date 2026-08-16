@@ -21,6 +21,7 @@ export const topicApi = {
 
     if (params.topic_code) cleanParams.topic_code = params.topic_code
     if (params.topic_name) cleanParams.topic_name = params.topic_name
+    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
     if (params.topic_category) cleanParams.topic_category = params.topic_category
 
     const response = await apiClient.get<TopicListResponse>('/v1/topics', {

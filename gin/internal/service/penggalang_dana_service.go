@@ -39,9 +39,10 @@ func (s *PenggalangDanaService) List(page int, filters map[string]string, limit 
 	}
 
 	allowedFilters := map[string]string{
-		"nama":     "nama",
-		"mandarin": "mandarin",
-		"fotang":   "fotang",
+		"nama":               "nama",
+		"lookup_description": "nama",
+		"mandarin":           "mandarin",
+		"fotang":             "fotang",
 	}
 
 	var nama string = ""
@@ -53,7 +54,7 @@ func (s *PenggalangDanaService) List(page int, filters map[string]string, limit 
 			continue
 		}
 		if _, exists := allowedFilters[field]; exists {
-			if field == "nama" {
+			if field == "nama" || field == "lookup_description" {
 				nama = value
 			}
 

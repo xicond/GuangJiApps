@@ -1,12 +1,11 @@
-FROM golang:1.25-alpine AS build
+FROM golang:1.25.13-alpine3.24 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/server ./cmd/server
 
-FROM alpine:3.20
-RUN apk add --no-cache ca-certificates
+FROM gcr.io/distroless/static-debian12
 WORKDIR /app
 COPY --from=build /out/server /app/server
 EXPOSE 8080

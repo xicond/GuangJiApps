@@ -89,13 +89,13 @@
           </template>
         </el-table-column> -->
 
-        <!-- <el-table-column prop="flag_use" label="Status" width="110" align="center">
+        <el-table-column prop="flag_use" label="Status" width="110" align="center">
           <template #default="{ row }">
             <el-tag :type="row.flag_use ? 'success' : 'danger'" size="small">
               {{ row.flag_use ? 'Aktif' : 'Nonaktif' }}
             </el-tag>
           </template>
-        </el-table-column> -->
+        </el-table-column>
 
         <el-table-column prop="is_warehouse" label="Warehouse" width="120" align="center">
           <template #default="{ row }">
@@ -125,7 +125,7 @@
         <!-- Actions Column -->
         <el-table-column label="Aksi" width="130" align="center" :fixed="!isDesktop ? false : 'right'">
           <template #default="{ row }">
-            <div class="action-buttons">
+            <div class="action-buttons" v-if="row.flag_use">
               <el-button type="primary" size="small" circle :icon="Edit" title="Edit Admin"
                 @click="openEditDialog(row)" />
 

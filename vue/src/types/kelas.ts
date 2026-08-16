@@ -62,6 +62,7 @@ export interface KelasQueryParams {
   // lookup_value?: string
   // lookup_description?: string
   kelas?: string
+  lookup_description?: string
   start_date?: string
   end_date?: string
   fotang?: string

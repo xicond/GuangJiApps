@@ -832,6 +832,13 @@ function handleCancel() {
   padding: 0.25rem 0;
 }
 
+@media (max-width: 425px) {
+  .ikrar-checkbox-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
 .status-date-container {
   display: flex;
   align-items: center;

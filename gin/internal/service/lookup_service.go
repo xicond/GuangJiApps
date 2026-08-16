@@ -137,18 +137,18 @@ func Lookup(db *gorm.DB, categoryID string, page int, limit int, opts ...interfa
 		}
 
 		if searchVal != "" {
-			query = query.Where("(T_APP_LOOKUP.LookupDescription LIKE ? OR T_APP_LOOKUP.LookupValue LIKE ? OR T_APP_LOOKUP.LookupId LIKE ?)", "%"+searchVal+"%", "%"+searchVal+"%", "%"+searchVal+"%")
+			query = query.Where("(T_APP_LOOKUP.LookupDescription LIKE ?)", "%"+searchVal+"%")
 		} else {
 			if val, ok := filters["lookup_description"]; ok && val != "" {
-				query = query.Where("(T_APP_LOOKUP.LookupDescription LIKE ? OR T_APP_LOOKUP.LookupValue LIKE ? OR T_APP_LOOKUP.LookupId LIKE ?)", "%"+val+"%", "%"+val+"%", "%"+val+"%")
+				query = query.Where("(T_APP_LOOKUP.LookupDescription LIKE ?)", "%"+val+"%")
 			}
 
 			if val, ok := filters["lookup_value"]; ok && val != "" {
-				query = query.Where("(T_APP_LOOKUP.LookupValue = ? OR T_APP_LOOKUP.LookupId = ? OR T_APP_LOOKUP.LookupDescription = ?)", val, val, val)
+				query = query.Where("(T_APP_LOOKUP.LookupValue = ?)", val)
 			}
 
 			if val, ok := filters["lookup_id"]; ok && val != "" {
-				query = query.Where("(T_APP_LOOKUP.LookupId = ? OR T_APP_LOOKUP.LookupValue = ?)", val, val)
+				query = query.Where("(T_APP_LOOKUP.LookupId = ?)", val)
 			}
 		}
 	}

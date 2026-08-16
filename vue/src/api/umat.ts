@@ -24,6 +24,7 @@ export const umatApi = {
 
     if (params.alias) cleanParams.alias = params.alias
     if (params.namaindonesia) cleanParams.namaindonesia = params.namaindonesia
+    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
     if (params.namamandarin) cleanParams.namamandarin = params.namamandarin
     if (params.tahunchiutaomandarin) {
       cleanParams.tahunchiutaomandarin = params.tahunchiutaomandarin

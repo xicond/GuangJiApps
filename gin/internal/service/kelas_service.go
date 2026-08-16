@@ -87,12 +87,13 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 		page = 1
 	}
 	allowedFilters := map[string]bool{
-		"kelas":      true,
-		"start_date": true,
-		"startdate":  true,
-		"end_date":   true,
-		"enddate":    true,
-		"fotang":     true,
+		"kelas":              true,
+		"lookup_description": true,
+		"start_date":         true,
+		"startdate":          true,
+		"end_date":           true,
+		"enddate":            true,
+		"fotang":             true,
 	}
 
 	var kelas string = "0"
@@ -108,6 +109,8 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 			val := value
 			switch field {
 			case "kelas":
+				kelas = val
+			case "lookup_description":
 				kelas = val
 			case "start_date":
 				if isValidDate(val) {

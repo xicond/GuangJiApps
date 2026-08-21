@@ -119,7 +119,8 @@
 
         <el-form-item label="Periode Tanggal">
           <el-date-picker v-model="dateRange" type="daterange" range-separator="s/d" start-placeholder="Tanggal Mulai"
-            end-placeholder="Tanggal Selesai" value-format="YYYY-MM-DD" format="YYYY-MM-DD" style="width: 100%" />
+            end-placeholder="Tanggal Selesai" value-format="YYYY-MM-DD" format="YYYY-MM-DD" style="width: 100%"
+            :single-panel="isMobile" />
         </el-form-item>
 
         <el-form-item label="Keterangan" prop="description">

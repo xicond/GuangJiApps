@@ -3,13 +3,13 @@
     <el-collapse v-model="activeNames" class="custom-accordion" @change="handleAccordionChange">
       <el-collapse-item name="pengabdi">
         <template #title>
-          <div class="accordion-header" @click.stop>
+          <div class="accordion-header">
             <div class="header-title">
               <el-icon class="header-icon">
                 <Avatar />
               </el-icon>
               <span>{{ isDesktop ? 'Daftar Pengabdi' : 'Pengabdi' }}</span>
-              <el-tag size="small" type="info" class="ml-2">{{ total }} Pengabdi</el-tag>
+              <el-tag v-if="isExpanded && !isMobile" size="small" type="info" class="ml-2">{{ total }} Pengabdi</el-tag>
             </div>
             <div class="header-actions" @click.stop>
               <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
@@ -102,19 +102,18 @@
         </el-form-item>
 
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Tim Kerja" :error="hasFieldError('tim_kerja') ? ' ' : undefined">
               <LookupSelect v-model="form.tim_kerja" :fetch-api="lookupApi.getLookupTimKerja" value-key="lookup_value"
-                :initial-option="initialTimKerjaOption" placeholder="Pilih Tim Kerja..." :clearable="false"
-                @change="onTimKerjaChange" />
+                placeholder="Pilih Tim Kerja..." :clearable="false" @change="onTimKerjaChange" />
               <FieldErrors :errors="getFieldErrors('tim_kerja')" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Sub Kerja" :error="hasFieldError('sub_kerja') ? ' ' : undefined">
               <LookupSelect ref="subKerjaSelectRef" :key="String(form.tim_kerja)" v-model="form.sub_kerja"
                 :fetch-api="fetchSubKerjaApi" :disabled="!form.tim_kerja" value-key="lookup_value"
-                :initial-option="initialSubKerjaOption" placeholder="Pilih Sub Kerja..." />
+                placeholder="Pilih Sub Kerja..." />
               <FieldErrors :errors="getFieldErrors('sub_kerja')" />
             </el-form-item>
           </el-col>
@@ -126,14 +125,14 @@
         </el-form-item>
 
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Sumbangan" :error="hasFieldError('sumbangan') ? ' ' : undefined">
               <el-input-number v-model="form.sumbangan" :min="1000" :precision="0" :step="1000"
                 controls-position="right" style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('sumbangan')" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Barang" :error="hasFieldError('barang') ? ' ' : undefined">
               <el-input v-model="form.barang" placeholder="Barang sumbangan" maxlength="100" />
               <FieldErrors :errors="getFieldErrors('barang')" />
@@ -219,6 +218,7 @@ import { umatApi } from '../../api/umat'
 import lookupApi from '../../api/lookup'
 import LookupSelect from '../common/LookupSelect.vue'
 import FieldErrors from '../common/FieldErrors.vue'
+import { clearLookupCache } from '../../utils/lookupCache'
 import type { KelasPengabdi } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
 import type { LookupQueryParams } from '../../types/lookup'
@@ -396,13 +396,18 @@ function fetchSubKerjaApi(params: LookupQueryParams = {}, signal?: AbortSignal) 
   if (!form.value.tim_kerja) {
     return Promise.resolve({ data: [], meta: { page: 1, limit: 10, total: 0 } })
   }
-  return lookupApi.getLookupSubKerja(form.value.tim_kerja, params, signal)
+  return lookupApi.getLookupSubKerja(
+    form.value.tim_kerja,
+    { ...params, tim_kerja: form.value.tim_kerja },
+    signal
+  )
 }
 
 function onTimKerjaChange() {
   form.value.sub_kerja = ''
+  clearLookupCache(fetchSubKerjaApi)
   if (subKerjaSelectRef.value) {
-    subKerjaSelectRef.value.loadData(1, '')
+    subKerjaSelectRef.value.loadData(1, '', true)
   }
 }
 
@@ -411,29 +416,13 @@ watch(
   (newVal, oldVal) => {
     if (newVal !== oldVal && oldVal !== undefined) {
       form.value.sub_kerja = ''
+      clearLookupCache(fetchSubKerjaApi)
       if (subKerjaSelectRef.value) {
-        subKerjaSelectRef.value.loadData(1, '')
+        subKerjaSelectRef.value.loadData(1, '', true)
       }
     }
   }
 )
-
-const initialTimKerjaOption = computed(() => {
-  if (!form.value.tim_kerja) return undefined
-  return {
-    lookup_value: String(form.value.tim_kerja),
-    lookup_description: String(form.value.tim_kerja)
-  }
-})
-
-const initialSubKerjaOption = computed(() => {
-  if (!form.value.sub_kerja) return undefined
-  return {
-    // lookup_id: Number(form.value.sub_kerja),
-    lookup_value: String(form.value.sub_kerja),
-    // lookup_description: String(form.value.sub_kerja)
-  }
-})
 
 const umatOptions = ref<Umat[]>([])
 const loadingUmat = ref(false)
@@ -723,6 +712,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-right: 0.75rem;
 }
 
 .font-semibold {

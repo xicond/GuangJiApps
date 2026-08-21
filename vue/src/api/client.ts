@@ -5,12 +5,14 @@ import { useQuickStreamSpeedTest } from './useQuickStreamSpeedTest'
 
 declare module 'axios' {
   export interface InternalAxiosRequestConfig {
+    fetchOptions?: Record<string, any> | Omit<RequestInit, 'body' | 'signal' | 'headers' | 'method'>
     metadata?: {
       requestId: string
       startTime: number
     }
   }
   export interface AxiosRequestConfig {
+    fetchOptions?: Record<string, any> | Omit<RequestInit, 'body' | 'signal' | 'headers' | 'method'>
     metadata?: {
       requestId: string
       startTime: number
@@ -22,6 +24,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
 export const apiClient = axios.create({
   baseURL: API_BASE,
+  adapter: 'fetch',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -52,6 +55,9 @@ apiClient.interceptors.request.use(
     }, 1000)
 
     activeTimers.set(requestId, timer)
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(config.method || 'GET')) {
+      config.fetchOptions = { priority: 'high' }
+    }
     return config
   },
   (error) => Promise.reject(error)

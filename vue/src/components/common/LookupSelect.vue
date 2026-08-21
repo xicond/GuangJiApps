@@ -99,7 +99,10 @@ function getOptionLabel(item?: any): string {
 
 function ensureInitialOption(opt?: any) {
   if (!opt) return
-  let itemToUse = { [props.valueKey]: opt[props.valueKey], [props.labelKey]: opt[props.labelKey] }
+  let itemToUse = opt
+  if (typeof opt !== 'object') {
+    itemToUse = { [props.valueKey]: opt, [props.labelKey]: opt }
+  }
 
   const val = getOptionValue(itemToUse)
   if (val === undefined || val === null || val === '') return
@@ -141,23 +144,22 @@ async function loadData(targetPage = 1, query = '', forceRefresh = false) {
       limit: props.pageSize,
       lookup_description: query.trim() || undefined
     }
+
+    const currentSelectedOpt = options.value.find((item) => String(getOptionValue(item)) === String(props.modelValue))
+
     const res = await cachedFetchLookup(
       props.fetchApi,
       params,
       currentAbortController.signal,
       forceRefresh
     )
-
-    const currentSelectedOpt = options.value.find((item) => String(getOptionValue(item)) === String(props.modelValue))
     options.value = res.data || []
+    total.value = res.meta?.total || options.value.length
+
     if (currentSelectedOpt) {
       ensureInitialOption(currentSelectedOpt)
     }
-    if (props.initialOption) {
-      ensureInitialOption(props.initialOption)
-    }
     await checkAndFetchMissingSelectedValue()
-    total.value = res.meta?.total || options.value.length
 
     if (query === '' && targetPage === 1) {
       if (props.autoPopulate && total.value <= props.pageSize) {
@@ -187,12 +189,12 @@ async function checkAndFetchMissingSelectedValue() {
   )
   if (!exists) {
     try {
-      let res = await props.fetchApi({ lookup_value: String(currentVal), limit: 1 })
+      let res = await cachedFetchLookup(props.fetchApi, { lookup_value: String(currentVal), limit: 1 })
       if (!res?.data || res.data.length === 0) {
-        res = await props.fetchApi({ lookup_description: String(currentVal), limit: 1 })
+        res = await cachedFetchLookup(props.fetchApi, { lookup_description: String(currentVal), limit: 1 })
       }
       if (!res?.data || res.data.length === 0) {
-        res = await props.fetchApi({ search: String(currentVal), limit: 1 })
+        res = await cachedFetchLookup(props.fetchApi, { search: String(currentVal), limit: 1 })
       }
       if (res?.data && res.data.length > 0) {
         const item = res.data[0]
@@ -272,7 +274,7 @@ function onVisibleChange(visible: boolean) {
     if (props.autoPopulate && hasAllDataLoaded.value && allLoadedOptions.value) {
       searchQuery.value = ''
       options.value = [...allLoadedOptions.value]
-    } else if (options.value.length === 0) {
+    } else if (options.value.length <= 1) {
       loadData(1, '')
     }
   }
@@ -299,9 +301,7 @@ watch(
 
 onMounted(() => {
   const hasValue = props.modelValue !== undefined && props.modelValue !== null && props.modelValue !== ''
-  const shouldPopulate = hasValue || !!props.initialOption || props.autoPopulate
-
-  if (shouldPopulate) {
+  if (!hasValue && props.autoPopulate) {
     loadData(1, '')
   }
 })

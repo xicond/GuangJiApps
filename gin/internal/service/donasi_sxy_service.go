@@ -578,7 +578,7 @@ func (s *DonasiSxyService) ReportExcel(filters map[string]string, c *gin.Context
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("report server mengembalikan HTTP %d (fetch %v)", resp.StatusCode, fetchDuration)
+		return fmt.Errorf("report server mengembalikan HTTP %d (fetch %v): %s", resp.StatusCode, fetchDuration, reportURL)
 	}
 
 	contentType := resp.Header.Get("Content-Type")

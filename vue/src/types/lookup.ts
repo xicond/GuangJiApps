@@ -13,6 +13,7 @@ export interface LookupQueryParams {
   lookup_value?: string
   // lookup_id?: string
   search?: string
+  [key: string]: any
 }
 
 export interface LookupListResponse {

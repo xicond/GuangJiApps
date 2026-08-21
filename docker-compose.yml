@@ -63,7 +63,7 @@ services:
 
   gin-build:
     profiles: [ "build" ]
-    image: golang:1.25-alpine
+    image: golang:1.25.13-alpine3.24
     container_name: gin_build
     working_dir: /src
     environment:
@@ -127,6 +127,34 @@ services:
       resources:
         limits:
           cpus: '0.25' # Maksimal total CPU yang boleh dipakai (Batas Atas)
+
+  # SERVICE SEMGREP SECURITY AUDIT (ON-DEMAND)
+  semgrep:
+    profiles:
+      - tools
+    image: returntocorp/semgrep
+    container_name: semgrep_audit
+    volumes:
+      - ./vue:/app
+    working_dir: /app
+    command: >
+      /bin/sh -c "
+        if [ ! -d 'node_modules' ]; then
+          echo '[!] Error: Direktori node_modules tidak ditemukan. Jalankan npm install terlebih dahulu.';
+          exit 1;
+        fi;
+        echo '[+] Memulai pemindaian keamanan pada seluruh folder node_modules...';
+        echo '[+] Menggunakan rule: p/security-audit';
+        semgrep --config 'p/security-audit' node_modules --json --output semgrep-security-report.json;
+        STATUS=$$?;
+        if [ $$STATUS -eq 0 ]; then
+          echo '[✓] Pemindaian selesai. Laporan tersimpan di semgrep-security-report.json';
+        else
+          echo '[!] Pemindaian selesai dengan temuan kerentanan atau peringatan.';
+          echo '[✓] Laporan tersimpan di semgrep-security-report.json';
+        fi
+      "
+    restart: "no"
 
 volumes:
   go-compiler-cache:

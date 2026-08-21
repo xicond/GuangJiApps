@@ -2,15 +2,19 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { clientsClaim } from 'workbox-core'
 import { registerRoute } from 'workbox-routing'
-import {
-    StaleWhileRevalidate, CacheFirst,/* , NetworkOnly */
-    NetworkFirst
-} from 'workbox-strategies'
+// import {
+//     StaleWhileRevalidate, CacheFirst,/* , NetworkOnly */
+//     NetworkFirst
+// } from 'workbox-strategies'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { ExpirationPlugin } from 'workbox-expiration'
 import {
     DynamicNetworkCacheStrategy
 } from './strategies/dynamicnetworkcache'
+import {
+    DynamicLowNetworkCacheStrategy
+} from './strategies/dynamiclownetworkcache'
+
 // import { BackgroundSyncPlugin } from 'workbox-background-sync'
 declare let self: ServiceWorkerGlobalScope
 
@@ -50,10 +54,10 @@ registerRoute(
         // if (isMatch) console.log('[SW Route] Matched lookup:', url.pathname)
         return isMatch
     },
-    new DynamicNetworkCacheStrategy({
+    new DynamicLowNetworkCacheStrategy({
         cacheName: 'lookup-cache',
-        timeoutMs: 280,
         debounceMs: 2000,
+        lowNetworkDebounceMs: 1.5 * 60 * 1000, // 1.5 menit
         plugins: [
             new CacheableResponsePlugin({
                 statuses: [0, 200]

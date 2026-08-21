@@ -23,6 +23,10 @@ export async function cachedFetchLookup<T = unknown, P = Record<string, unknown>
     lookupCacheMap.set(fetchApiFn, fnCache as Map<string, CacheEntry<unknown>>)
   }
 
+  if (forceRefresh) {
+    fnCache.clear()
+  }
+
   const key = JSON.stringify(params)
   const now = Date.now()
   const existing = fnCache.get(key)

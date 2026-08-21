@@ -291,7 +291,7 @@ async function handleDownloadReport(id: string | number) {
   downloadingId.value = id
   const loadingInstance = ElLoading.service({
     lock: true,
-    text: 'Mendownload report Excel, mohon tunggu...',
+    text: 'Download Report Excel ...',
     background: 'rgba(0, 0, 0, 0.7)'
   })
   try {

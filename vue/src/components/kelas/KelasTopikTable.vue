@@ -3,13 +3,13 @@
     <el-collapse v-model="activeNames" class="custom-accordion" @change="handleAccordionChange">
       <el-collapse-item name="topik">
         <template #title>
-          <div class="accordion-header" @click.stop>
+          <div class="accordion-header">
             <div class="header-title">
               <el-icon class="header-icon">
                 <Document />
               </el-icon>
               <span>{{ isDesktop ? 'Daftar Topik / Materi Kelas' : 'Topik' }}</span>
-              <el-tag size="small" type="info" class="ml-2">{{ total }} Topik</el-tag>
+              <el-tag v-if="isExpanded && !isMobile" size="small" type="info" class="ml-2">{{ total }} Topik</el-tag>
             </div>
             <div class="header-actions" @click.stop>
               <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
@@ -100,31 +100,32 @@
 
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="140px" size="default" v-loading="submitting">
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Nama Topik" prop="kode_topik" :error="hasFieldError('kode_topik') ? ' ' : undefined">
               <LookupSelect v-model="form.kode_topik" placeholder="Pilih Nama Topik..." :fetch-api="fetchTopicLookup"
-                value-key="topic_code" label-key="topic_name" :initial-option="initialTopicOption" :clearable="false" />
+                value-key="topic_code" label-key="topic_name" :clearable="false" />
               <FieldErrors :errors="getFieldErrors('kode_topik')" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="Kategori">
-              <span class="static-text">{{ selectedTopic?.topic_category || '-' }}</span>
+          <el-col :md="12" :sm="24">
+            <el-form-item label="Kategori" :label-width="isMobile ? 'auto' : '80px'">
+              <span class="static-text">{{ selectedTopic?.topic_category_info?.lookup_description || '-' }}</span>
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Desc">
               <span class="static-text">{{ selectedTopic?.description || form.keterangan || '-' }}</span>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="Tanggal Topik" prop="topik_date"
+          <el-col :md="12" :sm="24">
+            <el-form-item label="Tanggal" :label-width="isMobile ? 'auto' : '80px'" prop="topik_date"
               :error="hasFieldError('topik_date') ? ' ' : undefined">
               <el-date-picker v-model="form.topik_date" type="date" placeholder="Pilih tanggal" format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD" style="width: 100%" :clearable="false" :disabled-date="disabledTopikDate" />
+                value-format="YYYY-MM-DD" style="width: 100%" :clearable="false" :disabled-date="disabledTopikDate"
+                :single-panel="isMobile" />
               <FieldErrors :errors="getFieldErrors('topik_date')" />
             </el-form-item>
           </el-col>
@@ -132,14 +133,15 @@
         </el-row>
 
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Durasi (Menit)" prop="durasi" :error="hasFieldError('durasi') ? ' ' : undefined">
               <el-input-number v-model="form.durasi" :min="1" :step="5" controls-position="right" style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('durasi')" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="Urutan" prop="urutan" :error="hasFieldError('urutan') ? ' ' : undefined">
+          <el-col :md="12" :sm="24">
+            <el-form-item label="Urutan" :label-width="isMobile ? 'auto' : '80px'" prop="urutan"
+              :error="hasFieldError('urutan') ? ' ' : undefined">
               <el-input-number v-model="form.urutan" :min="1" :step="1" controls-position="right" style="width: 100%" />
               <FieldErrors :errors="getFieldErrors('urutan')" />
             </el-form-item>
@@ -265,7 +267,7 @@ const selectedTopic = ref<Topic | null>(null)
 async function fetchTopicLookup(params: any, signal?: AbortSignal) {
   const query = params.lookup_description || ''
   const res = await topicApi.getTopikLookup(
-    { page: params.page || 1, limit: params.limit || 10, topic_name: query },
+    { page: params.page || 1, limit: params.limit || 10, topic_name: query, topic_code: params.lookup_value?.trim() },
     signal
   )
   if (res.data) {
@@ -302,12 +304,6 @@ watch(
   },
   { immediate: true }
 )
-
-const initialTopicOption = computed(() => {
-  if (!form.value.kode_topik) return undefined
-  if (selectedTopic.value) return selectedTopic.value
-  return { topic_code: form.value.kode_topik, topic_name: form.value.kode_topik }
-})
 
 function disabledTopikDate(time: Date): boolean {
   if (props.startDate && dayjs(time).isBefore(dayjs(props.startDate), 'day')) {
@@ -609,6 +605,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-right: 0.75rem;
 }
 
 .font-semibold {

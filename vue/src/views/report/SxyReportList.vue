@@ -7,7 +7,7 @@
         <p class="page-subtitle">Daftar laporan transaksi donasi SXY dan download file Excel</p>
       </div>
       <el-button type="success" size="large" :icon="Download" class="download-btn"
-        :disabled="dataList.length === 0 || loading || isDownloading" @click="handleDownloadExcel">
+        :disabled="dataList.length === 0 || loading || isDownloading || !hasActiveFilter" @click="handleDownloadExcel">
         Download Report Excel
       </el-button>
     </div>
@@ -52,7 +52,7 @@
           <el-form-item label="Rentang Tanggal" :label-position="isMobile ? 'top' : 'right'">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="s/d" start-placeholder="Tgl Mulai"
               end-placeholder="Tgl Selesai" value-format="YYYY-MM-DD" clearable style="width: 100%"
-              @change="onDateRangeChange" />
+              @change="onDateRangeChange" :single-panel="isMobile" />
           </el-form-item>
         </el-col>
       </el-row>
@@ -64,23 +64,19 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
-      <!-- <div v-if="totalJumlah > 0" class="summary-banner">
-        <span class="summary-label">Total Ringkasan:</span>
-        <span class="summary-value">{{ formatCurrency(totalJumlah) }}</span>
-        <span class="summary-count">({{ pagination.total }} transaksi)</span>
-      </div> -->
 
       <el-table v-loading="loading" :data="dataList" stripe border height="500" show-summary
         :summary-method="getSummaries" style="width: 100%" empty-text="Tidak ada data sxy report yang ditemukan">
-        <el-table-column prop="no_kwitansi" label="No Kwitansi" width="140" align="center" fixed="left" />
+        <el-table-column prop="no_kwitansi" label="No Kwitansi" width="110" align="center"
+          :fixed="!isMobile ? 'left' : false" />
 
-        <el-table-column prop="tanggal" label="Tanggal Transaksi" width="120" align="center">
+        <el-table-column prop="tanggal" label="Tanggal Transaksi" width="110" align="center">
           <template #default="{ row }">
             <span>{{ row.tanggal || '-' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="tanggal" label="Tanggal Transfer" width="120" align="center">
+        <el-table-column prop="tanggal" label="Tanggal Transfer" width="110" align="center">
           <template #default="{ row }">
             <span>{{ row.tanggal_transfer || '-' }}</span>
           </template>
@@ -116,7 +112,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="jumlah" label="Nominal" width="140" align="right">
+        <el-table-column prop="jumlah" label="Nominal" width="150" align="right">
           <template #default="{ row }">
             <span class="font-semibold text-success">{{ formatCurrency(row.jumlah) }}</span>
           </template>
@@ -185,6 +181,16 @@ const filters = reactive({
   fotang: ''
 })
 
+const hasActiveFilter = computed(() => {
+  return (
+    !!filters.donatur ||
+    !!filters.penggalang ||
+    !!filters.start_date ||
+    !!filters.end_date ||
+    !!filters.fotang
+  )
+})
+
 const dateRange = computed({
   get: () => {
     if (filters.start_date && filters.end_date) {
@@ -215,8 +221,13 @@ function getSummaries(param: { columns: any[]; data: any[] }) {
   const { columns } = param
   const sums: string[] = []
   columns.forEach((column, index) => {
-    if (index === 0) {
-      sums[index] = 'Total Ringkasan'
+    let seq = 0
+    if (isMobile.value && column.property === 'tipe_sumbangan') {
+      sums[index] = 'Total'
+      return
+    }
+    if (!isMobile.value && index === 0) {
+      sums[index] = 'Total'
       return
     }
     if (column.property === 'jumlah') {
@@ -295,6 +306,11 @@ function handlePageChange(val: number) {
 }
 
 async function handleDownloadExcel() {
+  if (!hasActiveFilter.value) {
+    ElMessage.warning('Setidaknya satu filter harus diisi untuk mendownload report')
+    return
+  }
+
   if (dataList.value.length === 0) {
     ElMessage.warning('Tidak ada data untuk di-download')
     return
@@ -303,7 +319,7 @@ async function handleDownloadExcel() {
   isDownloading.value = true
   const loadingInstance = ElLoading.service({
     lock: true,
-    text: 'Mendownload Report Excel, mohon tunggu...',
+    text: 'Download Report Excel ...',
     background: 'rgba(0, 0, 0, 0.7)'
   })
 

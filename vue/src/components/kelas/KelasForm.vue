@@ -11,7 +11,7 @@
         <el-col :xs="24" :sm="12">
           <el-form-item label="Kelas" prop="kode_kelas" :error="hasFieldError('kode_kelas') ? ' ' : undefined">
             <LookupSelect v-model="formData.kode_kelas" placeholder="Pilih Kelas..."
-              :fetch-api="kelasApi.getKelasLookup" :initial-option="formData.kelas_name" :clearable="false" />
+              :fetch-api="kelasApi.getKelasLookup" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('kode_kelas')" />
           </el-form-item>
         </el-col>
@@ -20,7 +20,7 @@
         <el-col :xs="24" :sm="12">
           <el-form-item label="Fotang" prop="kode_fotang" :error="hasFieldError('kode_fotang') ? ' ' : undefined">
             <LookupSelect v-model="formData.kode_fotang" placeholder="Pilih Fotang..."
-              :fetch-api="fotangApi.getFotangLookup" :initial-option="formData.fotang_name" :clearable="false" />
+              :fetch-api="fotangApi.getFotangLookup" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('kode_fotang')" />
           </el-form-item>
         </el-col>
@@ -33,7 +33,7 @@
             :error="hasFieldError('start_date') || hasFieldError('end_date') ? ' ' : undefined">
             <el-date-picker v-model="dateRange" type="daterange" range-separator="s/d" start-placeholder="Tanggal Mulai"
               end-placeholder="Tanggal Selesai" value-format="YYYY-MM-DD" style="width: 100%" :clearable="false"
-              unlink-panels />
+              unlink-panels :single-panel="isMobile" />
             <FieldErrors :errors="[...getFieldErrors('start_date'), ...getFieldErrors('end_date')]" />
           </el-form-item>
         </el-col>
@@ -54,7 +54,7 @@
           <el-form-item label="Batas Pendaftaran (Deadline)" prop="deadline"
             :error="hasFieldError('deadline') ? ' ' : undefined">
             <el-date-picker v-model="formData.deadline" type="date" placeholder="Pilih Tanggal Deadline"
-              value-format="YYYY-MM-DD" style="width: 100%" />
+              value-format="YYYY-MM-DD" style="width: 100%" :single-panel="isMobile" />
             <FieldErrors :errors="getFieldErrors('deadline')" />
           </el-form-item>
         </el-col>

@@ -3,13 +3,13 @@
     <el-collapse v-model="activeNames" class="custom-accordion" @change="handleAccordionChange">
       <el-collapse-item name="peserta">
         <template #title>
-          <div class="accordion-header" @click.stop>
+          <div class="accordion-header">
             <div class="header-title">
               <el-icon class="header-icon">
                 <UserFilled />
               </el-icon>
               <span>{{ isDesktop ? 'Daftar Peserta Kelas' : 'Peserta' }}</span>
-              <el-tag size="small" type="info" class="ml-2">{{ total }} Peserta</el-tag>
+              <el-tag v-if="isExpanded && !isMobile" size="small" type="info" class="ml-2">{{ total }} Peserta</el-tag>
             </div>
             <div class="header-actions" @click.stop>
               <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
@@ -127,7 +127,7 @@
         </el-form-item>
 
         <el-row :gutter="16">
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
               <el-input v-model="form.keterangan" placeholder="Keterangan tambahan" maxlength="200" />
               <FieldErrors :errors="getFieldErrors('keterangan')" />
@@ -669,6 +669,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-right: 0.75rem;
 }
 
 .font-mono {

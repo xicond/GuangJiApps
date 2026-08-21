@@ -202,7 +202,7 @@
               />
             </el-form-item>
           </el-col> -->
-          <el-col :span="12">
+          <el-col :md="12" :sm="24">
             <el-form-item label="Is Warehouse" prop="is_warehouse">
               <el-switch v-model="formData.is_warehouse" active-text="Ya" inactive-text="Tidak" />
             </el-form-item>

@@ -27,3 +27,13 @@ html:not(.dark) body {
   display: flex;
   flex-direction: column;
 }
+
+/* Global browser autofill overrides (iOS/Safari/Chrome) to dynamically adapt to Light/Dark theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--el-input-bg-color, var(--el-fill-color-blank)) inset !important;
+  -webkit-text-fill-color: var(--el-input-text-color, var(--el-text-color-primary)) !important;
+  caret-color: var(--el-input-text-color, var(--el-text-color-primary)) !important;
+}

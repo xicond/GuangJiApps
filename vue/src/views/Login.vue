@@ -212,4 +212,20 @@ const handleLogin = async () => {
 .login-button {
   width: 100%;
 }
+
+/* Menimpa background autofill iOS/Safari/Chrome agar mengikuti CSS Variables theme (Light/Dark mode) */
+:deep(input:-webkit-autofill),
+:deep(input:-webkit-autofill:hover),
+:deep(input:-webkit-autofill:focus),
+:deep(input:-webkit-autofill:active) {
+  /* Gunakan box-shadow inset dengan CSS Variable Element Plus agar otomatis ikuti Light/Dark mode */
+  -webkit-box-shadow: 0 0 0 1000px var(--el-input-bg-color, var(--el-fill-color-blank)) inset !important;
+
+  /* Sesuaikan warna teks & kursor secara dinamis sesuai variabel tema */
+  -webkit-text-fill-color: var(--el-input-text-color, var(--el-text-color-primary)) !important;
+  caret-color: var(--el-input-text-color, var(--el-text-color-primary)) !important;
+
+  /* Menjaga transisi warna */
+  /* transition: background-color 5000000s ease-in-out 0s; */
+}
 </style>

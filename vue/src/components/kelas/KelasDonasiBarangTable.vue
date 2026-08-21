@@ -3,13 +3,13 @@
     <el-collapse v-model="activeNames" class="custom-accordion" @change="handleAccordionChange">
       <el-collapse-item name="donasi_barang">
         <template #title>
-          <div class="accordion-header" @click.stop>
+          <div class="accordion-header">
             <div class="header-title">
               <el-icon class="header-icon">
                 <Box />
               </el-icon>
               <span>{{ isDesktop ? 'Daftar Donasi Barang Kelas' : isMobile ? 'D.Barang' : 'Donasi Barang' }}</span>
-              <el-tag size="small" type="info" class="ml-2">{{ total }} Barang</el-tag>
+              <el-tag v-if="isExpanded && !isMobile" size="small" type="info" class="ml-2">{{ total }} Barang</el-tag>
             </div>
             <div class="header-actions" @click.stop>
               <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
@@ -349,6 +349,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-right: 0.75rem;
 }
 
 .font-semibold {

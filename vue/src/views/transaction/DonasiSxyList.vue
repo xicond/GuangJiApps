@@ -94,7 +94,7 @@
         <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150" align="right">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-'
-            }}</span>
+              }}</span>
           </template>
         </el-table-column>
 
@@ -144,7 +144,7 @@
 
         <el-form-item label="Tanggal" prop="tanggal">
           <el-date-picker v-model="formData.tanggal" type="date" placeholder="Pilih tanggal" value-format="YYYY-MM-DD"
-            format="YYYY-MM-DD" style="width: 100%" />
+            format="YYYY-MM-DD" style="width: 100%" :single-panel="isMobile" />
         </el-form-item>
 
         <el-form-item label="Donatur" prop="donatur_id">
@@ -177,7 +177,7 @@
         <el-form-item label="Tanggal Transfer" prop="tanggal_transfer">
           <el-date-picker v-model="formData.tanggal_transfer" type="date"
             placeholder="Pilih tanggal transfer (opsional)" value-format="YYYY-MM-DD" format="YYYY-MM-DD"
-            style="width: 100%" />
+            style="width: 100%" :single-panel="isMobile" />
         </el-form-item>
 
         <el-form-item label="Atas Nama" prop="atas_nama">

@@ -9,19 +9,47 @@ export class DynamicNetworkCacheStrategy extends Strategy {
     private timeoutMs: number;
     private debounceMs: number;
     private debounceMap: Map<string, ReturnType<typeof setTimeout>>; // Diubah ke number (tipe setTimeout di browser/SW)
+    protected inFlightRequests: Map<string, Promise<Response>>;
 
     constructor(options: DynamicNetworkCacheStrategyOptions = {}) {
         super(options);
         this.timeoutMs = options.timeoutMs ?? 500;
         this.debounceMs = options.debounceMs ?? 5000;
         this.debounceMap = new Map<string, ReturnType<typeof setTimeout>>();
+        this.inFlightRequests = new Map<string, Promise<Response>>();
+    }
+
+    /**
+     * Executes network fetch with deduplication.
+     * If an identical GET/HEAD request is already in-flight, returns a clone of the existing promise.
+     */
+    protected fetchDeduplicated(request: Request, handler: StrategyHandler): Promise<Response> {
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+            return handler.fetch(request);
+        }
+
+        const key = `${request.method}:${request.url}`;
+
+        const existingPromise = this.inFlightRequests.get(key);
+        if (existingPromise) {
+            return existingPromise.then((response) => response.clone());
+        }
+
+        const fetchPromise = handler.fetch(request)
+            .finally(() => {
+                this.inFlightRequests.delete(key);
+            });
+
+        this.inFlightRequests.set(key, fetchPromise);
+
+        return fetchPromise.then((response) => response.clone());
     }
 
     protected async _handle(request: Request, handler: StrategyHandler): Promise<Response> {
         // console.log('[SW DynamicNetworkCacheStrategy] Intercepting:', request.method, request.url);
         // 1. Check cache and fetch network asynchronously in parallel without initial await
         const cachePromise: Promise<Response | undefined> = handler.cacheMatch(request).catch(() => undefined);
-        const networkPromise: Promise<Response> = handler.fetch(request);
+        const networkPromise: Promise<Response> = this.fetchDeduplicated(request, handler);
 
         // Attach non-blocking background cache update once network fetch completes successfully
         networkPromise.then((networkResponse) => {
@@ -109,7 +137,7 @@ export class DynamicNetworkCacheStrategy extends Strategy {
         const timerId = setTimeout(async () => {
             this.debounceMap.delete(url);
             try {
-                const networkResponse = await handler.fetch(request);
+                const networkResponse = await this.fetchDeduplicated(request, handler);
                 if (networkResponse && networkResponse.ok) {
                     await handler.cachePut(request, networkResponse.clone());
                 }

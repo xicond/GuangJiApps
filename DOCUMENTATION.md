@@ -1,5 +1,19 @@
 # Documentation - Completed Tasks
 
+## [Completed] `DynamicLowNetworkCacheStrategy` Implementation (`vue/src/strategies/dynamicnetworkcache.ts`)
+
+### Summary & Changes Made:
+- **`DynamicLowNetworkCacheStrategy`**: Created class inheriting `DynamicNetworkCacheStrategy` in [dynamicnetworkcache.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/strategies/dynamicnetworkcache.ts).
+- **Network Detection**: Automatically checks `navigator.connection` (`effectiveType <= 3g` e.g. `'slow-2g'`, `'2g'`, `'3g'` OR `saveData === true`). Falls back to standard `DynamicNetworkCacheStrategy` when network is fast.
+- **Cache-First Priority & Configurable 30m Debounce**:
+  - When low network mode is active: if cache is present, returns `cachedResponse` immediately.
+  - Background fetch for the same URL is throttled/debounced with a configurable window (default `lowNetworkDebounceMs = 30 * 60 * 1000`, 30 minutes).
+  - If cache is absent, fetches from network, updates cache (`handler.cachePut`), and returns the network response.
+- **Verification**: Executed `npm run type-check` (`vue-tsc --noEmit`), completing cleanly with 0 type errors.
+
+---
+
+
 ## [Completed] HTTPS Scheme Detection & Port 443 Logging (`gin/internal/api/router.go`)
 
 ### Summary & Changes Made:
@@ -384,3 +398,19 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 5. **Responsive Layout Tuning**:
    - Updated `.photo-preview-container` in [UmatPhotoUpload.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatPhotoUpload.vue) to `width: 100%`, `max-width: 210px`, and `aspect-ratio: 3 / 4` for responsive scaling across devices.
 - Verified with `npx vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Lazy Rendering Form Cards with `useIntersectionObserver` ([UmatForm.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatForm.vue))
+
+### Changes Made:
+1. **Intersection Observer Integration** ([UmatForm.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatForm.vue#L571-L615)):
+   - Imported `useIntersectionObserver` from `@vueuse/core`.
+   - Created template ref containers (`cardRef2`, `cardRef3`, `cardRef4`) and boolean visibility flags (`isCard2Visible`, `isCard3Visible`, `isCard4Visible`).
+   - Attached `useIntersectionObserver` with a `200px` root margin for smooth pre-rendering before entering the viewport, disconnecting each observer (`stop()`) once visible.
+2. **Lazy Card Templates**:
+   - Wrapped Card 2 (`Informasi Ciu Tao`), Card 3 (`Kontak & Fotang`), and Card 4 (`Kelas, Sidang Dharma, Dll`) with `v-if="isCardXVisible"`.
+   - Displayed an `<el-card>` skeleton placeholder when cards are not yet visible to prevent layout shift.
+3. **Form Submit & Edit Fallbacks**:
+   - Added `revealAllCards()` helper ensuring all card sections are immediately rendered on form submission (`handleSubmit`), initial data load (`watch props.initialData`), or validation errors (`watch props.fieldErrors`).
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.

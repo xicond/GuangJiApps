@@ -7,7 +7,7 @@
         <p class="page-subtitle">Daftar laporan master data Umat dan download file Excel</p>
       </div>
       <el-button type="success" size="large" :icon="Download" class="download-btn"
-        :disabled="dataList.length === 0 || loading || isDownloading" @click="handleDownloadExcel">
+        :disabled="dataList.length === 0 || loading || isDownloading || !hasActiveFilter" @click="handleDownloadExcel">
         Download Report Excel
       </el-button>
     </div>
@@ -80,7 +80,7 @@
             <el-form-item label="Rentang Tanggal Chiu Tao">
               <el-date-picker v-model="dateRange" type="daterange" range-separator="s/d" start-placeholder="Tgl Mulai"
                 end-placeholder="Tgl Selesai" value-format="YYYY-MM-DD" clearable style="width: 100%"
-                @change="onDateRangeChange" />
+                @change="onDateRangeChange" :single-panel="isMobile" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -388,7 +388,7 @@ import LookupSelect from '../../components/common/LookupSelect.vue'
 const breakpoints = useBreakpoints(breakpointsTailwind)
 
 // Subscribe to reactive states
-// const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
 const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 const dataList = shallowRef<UmatReportItem[]>([])
@@ -417,6 +417,24 @@ const filters = reactive({
   is_lulus_sd: '0',
   is_vege: '0',
   status_umat: ''
+})
+
+const hasActiveFilter = computed(() => {
+  return (
+    !!filters.fotang_aktif ||
+    !!filters.fotang_chiutao ||
+    !!filters.nama_mandarin.trim() ||
+    !!filters.start_date ||
+    !!filters.end_date ||
+    !!filters.nama_indo.trim() ||
+    !!filters.pengajak.trim() ||
+    !!filters.alias.trim() ||
+    filters.usia_dari != null ||
+    filters.usia_sampai != null ||
+    (filters.is_lulus_sd !== '0' && !!filters.is_lulus_sd) ||
+    (filters.is_vege !== '0' && !!filters.is_vege) ||
+    !!filters.status_umat
+  )
 })
 
 const dateRange = computed({
@@ -550,6 +568,11 @@ function handlePageChange(val: number) {
 }
 
 async function handleDownloadExcel() {
+  if (!hasActiveFilter.value) {
+    ElMessage.warning('Setidaknya satu filter harus diisi untuk mendownload report')
+    return
+  }
+
   if (dataList.value.length === 0) {
     ElMessage.warning('Tidak ada data untuk di-download')
     return
@@ -558,7 +581,7 @@ async function handleDownloadExcel() {
   isDownloading.value = true
   const loadingInstance = ElLoading.service({
     lock: true,
-    text: 'Mendownload Report Excel, mohon tunggu...',
+    text: 'Download Report Excel ...',
     background: 'rgba(0, 0, 0, 0.7)'
   })
 

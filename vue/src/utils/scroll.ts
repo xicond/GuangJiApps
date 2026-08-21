@@ -35,5 +35,5 @@ export function scrollToFormError(containerElement?: HTMLElement | null, offset 
     }
 
     window.scrollTo({ top: offset, behavior: 'smooth' })
-  }, 100)
+  }, 350)
 }

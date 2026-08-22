@@ -19,7 +19,7 @@ export interface User {
   username?: string
   name?: string
   role?: string
-  [key: string]: string|number|boolean|undefined
+  [key: string]: string | number | boolean | undefined
 }
 
 export interface LoginErrorResult extends Error {
@@ -31,12 +31,17 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string>(localStorage.getItem('token') || '')
-  const user = ref<User | null>(
-    localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null
-  )
-  const mainMenus = ref<MainMenuItem[]>(
-    localStorage.getItem('main_menu') ? JSON.parse(localStorage.getItem('main_menu')!) : []
-  )
+  const safeParse = <T>(raw: string | null, fallback: T): T => {
+    if (!raw) return fallback
+    try {
+      return JSON.parse(raw) as T
+    } catch {
+      return fallback
+    }
+  }
+
+  const user = ref<User | null>(safeParse<User | null>(localStorage.getItem('user')!, null))
+  const mainMenus = ref<MainMenuItem[]>(safeParse<MainMenuItem[]>(localStorage.getItem('main_menu')!, []))
 
   const isAuthenticated = computed(() => !!token.value)
 
@@ -52,7 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
     return mainMenus.value.some(
       (item) =>
         item.main_menu?.trim().toLowerCase() === parentMenuName.trim().toLowerCase() &&
-      item.sub_menu.some((subItem) => subItem.level2?.trim().toLowerCase() === subMenuName.trim().toLowerCase())
+        item.sub_menu.some((subItem) => subItem.level2?.trim().toLowerCase() === subMenuName.trim().toLowerCase())
     )
   }
 

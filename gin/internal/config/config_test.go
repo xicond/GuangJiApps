@@ -57,18 +57,12 @@ func TestPEMKeyLoading(t *testing.T) {
 		t.Errorf("expected *rsa.PublicKey type for verification key")
 	}
 
-	// 4. Test Raw Secret fallback
+	// 4. Test Raw Secret is rejected (PEM file or PEM content strictly required)
 	rawCfg := Config{
 		JWTSecret: "my-plain-secret-key-12345",
 	}
-	rawKey, rawMethod, err := rawCfg.GetJWTSigningKey()
-	if err != nil {
-		t.Fatalf("raw GetJWTSigningKey failed: %v", err)
-	}
-	if rawMethod.Alg() != "HS256" {
-		t.Errorf("expected signing method HS256 for raw secret, got %s", rawMethod.Alg())
-	}
-	if string(rawKey.([]byte)) != "my-plain-secret-key-12345" {
-		t.Errorf("expected raw secret bytes to match input string")
+	_, _, err = rawCfg.GetJWTSigningKey()
+	if err == nil {
+		t.Fatalf("expected GetJWTSigningKey to fail for plain non-PEM secret string, but it succeeded")
 	}
 }

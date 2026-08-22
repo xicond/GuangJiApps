@@ -2,8 +2,11 @@ package config
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -71,8 +74,8 @@ func (c Config) GetJWTRefreshVerificationKey() (interface{}, jwt.SigningMethod, 
 	return LoadJWTVerificationKey(c.RefreshSecret)
 }
 
-func LoadJWTSigningKey(secretOrPath string) (interface{}, jwt.SigningMethod, error) {
-	bytesData, err := getSecretBytes(secretOrPath)
+func LoadJWTSigningKey(path string) (interface{}, jwt.SigningMethod, error) {
+	bytesData, err := getSecretBytes(path)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -87,12 +90,11 @@ func LoadJWTSigningKey(secretOrPath string) (interface{}, jwt.SigningMethod, err
 		return ecKey, jwt.SigningMethodES256, nil
 	}
 
-	// 3. Fallback to HMAC secret bytes
-	return bytesData, jwt.SigningMethodHS256, nil
+	return nil, nil, errors.New("JWT key must be a valid RSA or ECDSA private key PEM file")
 }
 
-func LoadJWTVerificationKey(secretOrPath string) (interface{}, jwt.SigningMethod, error) {
-	bytesData, err := getSecretBytes(secretOrPath)
+func LoadJWTVerificationKey(path string) (interface{}, jwt.SigningMethod, error) {
+	bytesData, err := getSecretBytes(path)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -117,23 +119,59 @@ func LoadJWTVerificationKey(secretOrPath string) (interface{}, jwt.SigningMethod
 		return ecPubKey, jwt.SigningMethodES256, nil
 	}
 
-	// 5. Fallback to HMAC secret bytes
-	return bytesData, jwt.SigningMethodHS256, nil
+	return nil, nil, errors.New("JWT key must be a valid RSA or ECDSA public/private key PEM file")
 }
 
-func getSecretBytes(secretOrPath string) ([]byte, error) {
-	secretOrPath = strings.TrimSpace(secretOrPath)
-	if secretOrPath == "" {
-		return []byte("change-me"), nil
+func getSecretBytes(path string) ([]byte, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil, errors.New("jwt secret not configured")
 	}
 
-	// Check if secretOrPath points to an existing file on disk
-	if data, err := os.ReadFile(secretOrPath); err == nil {
-		return bytes.TrimSpace(data), nil
+	// 1. Check if path is raw PEM content string
+	if strings.HasPrefix(path, "-----BEGIN") {
+		return []byte(path), nil
 	}
 
-	// Otherwise treat secretOrPath as raw secret string / PEM content
-	return []byte(secretOrPath), nil
+	// Clean path and normalize slashes for cross-platform (Windows & Linux)
+	cleanPath := filepath.Clean(path)
+	slashPath := strings.ReplaceAll(path, "\\", "/")
+	slashPath = strings.TrimPrefix(slashPath, "./")
+
+	execDir := ""
+	if execPath, err := os.Executable(); err == nil {
+		execDir = filepath.Dir(execPath)
+	}
+
+	// 2. Candidate paths to attempt reading
+	candidates := []string{
+		path,
+		cleanPath,
+		slashPath,
+	}
+
+	if !filepath.IsAbs(cleanPath) {
+		candidates = append(candidates, filepath.Join(".", cleanPath))
+		if execDir != "" {
+			candidates = append(candidates, filepath.Join(execDir, cleanPath))
+			candidates = append(candidates, filepath.Join(execDir, "certs", filepath.Base(cleanPath)))
+		}
+		candidates = append(candidates, filepath.Join("gin", cleanPath))
+		candidates = append(candidates, filepath.Join("..", cleanPath))
+	}
+
+	searched := make([]string, 0, len(candidates))
+	for _, cand := range candidates {
+		if cand == "" {
+			continue
+		}
+		searched = append(searched, cand)
+		if data, err := os.ReadFile(cand); err == nil {
+			return bytes.TrimSpace(data), nil
+		}
+	}
+
+	return nil, fmt.Errorf("JWT RSA/ECDSA key PEM file not found at '%s'. Tried paths: %s", path, strings.Join(searched, ", "))
 }
 
 func NormalizeBaseURL(value string) string {

@@ -109,7 +109,7 @@
               <el-button type="primary" size="small" circle :icon="Edit" title="Edit Kelas"
                 @click="handleEdit(row.trx_id)" />
 
-              <el-button type="success" size="small" circle :icon="Download" title="Download Report Excel"
+              <el-button type="success" size="small" circle :icon="Download" title="Downloading Report Excel"
                 :loading="downloadingId === row.trx_id" @click="handleDownloadReport(row.trx_id)" />
 
               <el-popconfirm title="Apakah Anda yakin ingin menghapus data ini?" confirm-button-text="Ya, Hapus"
@@ -291,7 +291,7 @@ async function handleDownloadReport(id: string | number) {
   downloadingId.value = id
   const loadingInstance = ElLoading.service({
     lock: true,
-    text: 'Download Report Excel ...',
+    text: 'Downloading Report Excel ...',
     background: 'rgba(0, 0, 0, 0.7)'
   })
   try {

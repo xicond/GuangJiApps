@@ -7,42 +7,21 @@
         </div>
       </template>
 
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-position="top"
-        style="max-width: 480px; margin: 0 auto;"
-        @keyup.enter="handleSubmit"
-      >
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" style="max-width: 480px; margin: 0 auto;"
+        @keyup.enter="handleSubmit">
         <el-form-item label="Old Password" prop="oldPassword">
-          <el-input
-            v-model="form.oldPassword"
-            type="password"
-            show-password
-            placeholder="Enter current password"
-            :prefix-icon="Lock"
-          />
+          <el-input v-model="form.oldPassword" type="password" show-password placeholder="Enter current password"
+            :prefix-icon="Lock" />
         </el-form-item>
 
         <el-form-item label="New Password" prop="newPassword">
-          <el-input
-            v-model="form.newPassword"
-            type="password"
-            show-password
-            placeholder="Enter new password"
-            :prefix-icon="Key"
-          />
+          <el-input v-model="form.newPassword" type="password" show-password placeholder="Enter new password"
+            :prefix-icon="Key" />
         </el-form-item>
 
         <el-form-item label="Confirm New Password" prop="confirmPassword">
-          <el-input
-            v-model="form.confirmPassword"
-            type="password"
-            show-password
-            placeholder="Confirm new password"
-            :prefix-icon="Key"
-          />
+          <el-input v-model="form.confirmPassword" type="password" show-password placeholder="Confirm new password"
+            :prefix-icon="Key" />
         </el-form-item>
 
         <el-form-item style="margin-top: 2rem;">
@@ -103,7 +82,8 @@ const rules: FormRules = {
   ],
   newPassword: [
     { required: true, validator: validateNewPassword, trigger: 'blur' },
-    { min: 4, message: 'Password length should be at least 4 characters', trigger: 'blur' }
+    { min: 8, message: 'Password length should be at least 8 characters', trigger: 'blur' },
+    { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, message: 'Password must include uppercase, lowercase and a number', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, validator: validateConfirm, trigger: 'blur' }

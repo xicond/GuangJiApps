@@ -6,6 +6,7 @@
 dist/
 build/
 bin/
+strix_runs/
 
 # Go specific
 go.work.sum
@@ -19,6 +20,7 @@ dist/
 .nuxt/
 .output/
 .vite/
+.memix/
 *.log
 
 # Environment files

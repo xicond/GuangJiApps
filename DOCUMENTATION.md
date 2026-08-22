@@ -1,5 +1,31 @@
 # Documentation - Completed Tasks
 
+## [Completed] Excel Report Download Activation Condition (`vue/src/views/report/UmatReportList.vue` & `vue/src/views/report/SxyReportList.vue`)
+
+### Summary & Changes Made:
+- **`hasActiveFilter` Computed Property**: Added a `hasActiveFilter` computed property in [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue) and [SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue) that evaluates to `true` only when at least one filter field is active/filled.
+- **Button Status & Guard Check**: Updated the **Download Report Excel** button `:disabled` state to include `|| !hasActiveFilter`, ensuring the button is disabled when no filters are set. Added a guard check inside `handleDownloadExcel()` showing a warning message if triggered without active filters.
+- **Verification**: Executed `npm run type-check` (`vue-tsc --noEmit`), passing cleanly with 0 errors.
+
+---
+
+## [Completed] Service Worker Request Deduplication (`vue/src/strategies/dynamicnetworkcache.ts` & `vue/src/strategies/dynamiclownetworkcache.ts`)
+
+### Problem & Root Cause:
+When network conditions are slow, if a client cancels/aborts a fetch (e.g. component unmounting or user navigation/retry), the Service Worker strategy may still have an orphaned `fetch(request)` in-flight. When the client re-requests the same resource, the SW launched a duplicate network `fetch()`, causing redundant network traffic and wasted bandwidth.
+
+### Summary & Changes Made:
+- **`fetchDeduplicated` Method**: Implemented `protected fetchDeduplicated(request: Request, handler: StrategyHandler): Promise<Response>` on `DynamicNetworkCacheStrategy` in [dynamicnetworkcache.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/strategies/dynamicnetworkcache.ts).
+- **In-Flight Request Map**: Uses `protected inFlightRequests: Map<string, Promise<Response>>` to track active in-flight GET/HEAD requests by `${request.method}:${request.url}`.
+- **Promise Re-use & Response Cloning**:
+  - When an in-flight fetch promise exists for a request key, returns `existingPromise.then((response) => response.clone())`, allowing concurrent callers to receive independent response stream clones.
+  - Automatically cleans up key entries upon settlement via `.finally(() => { this.inFlightRequests.delete(key); })`.
+  - Non-GET/HEAD requests fall back directly to standard `handler.fetch(request)`.
+- **`DynamicLowNetworkCacheStrategy` Inheritance**: Updated [dynamiclownetworkcache.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/strategies/dynamiclownetworkcache.ts) to utilize `this.fetchDeduplicated(request, handler)` for both background updates and cache-miss network fetches, automatically extending deduplication benefits to low network strategy mode.
+- **Verification**: Verified via `npm run type-check` (`vue-tsc --noEmit`), passing cleanly with 0 type errors.
+
+---
+
 ## [Completed] `DynamicLowNetworkCacheStrategy` Implementation (`vue/src/strategies/dynamicnetworkcache.ts`)
 
 ### Summary & Changes Made:
@@ -414,3 +440,75 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 3. **Form Submit & Edit Fallbacks**:
    - Added `revealAllCards()` helper ensuring all card sections are immediately rendered on form submission (`handleSubmit`), initial data load (`watch props.initialData`), or validation errors (`watch props.fieldErrors`).
 - Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Accordion Header Action Margin Right Spacing
+
+### Changes Made:
+- Added `margin-right: 0.75rem;` to `.header-actions` across all 5 Kelas accordion table components to maintain clean spacing between action/refresh buttons and the Element Plus collapse expand arrow:
+  1. [KelasDonasiBarangTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiBarangTable.vue#L348-L353)
+  2. [KelasDonasiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiTable.vue#L357-L362)
+  3. [KelasPengabdiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPengabdiTable.vue#L711-L716)
+  4. [KelasPesertaTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPesertaTable.vue#L668-L673)
+  5. [KelasTopikTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasTopikTable.vue#L603-L608)
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Conditional Rendering of Accordion `<el-tag>` Counter on Expanded State
+
+### Changes Made:
+- Applied `v-if="isExpanded"` to `<el-tag>` total counter badges in accordion headers across all 5 Kelas table components so the counter is hidden when folded and displayed only when expanded:
+  1. [KelasDonasiBarangTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiBarangTable.vue#L12)
+  2. [KelasDonasiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiTable.vue#L12)
+  3. [KelasPengabdiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPengabdiTable.vue#L12)
+  4. [KelasPesertaTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPesertaTable.vue#L12)
+  5. [KelasTopikTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasTopikTable.vue#L12)
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Dynamic Theme-Aware Browser Autofill Styling ([Login.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/Login.vue) & [style.css](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/style.css))
+
+### Changes Made:
+1. **Dynamic CSS Variables for Autofill**:
+   - Replaced hardcoded `#141414` background and `#ffffff` text color in `-webkit-autofill` rules with Element Plus CSS variables:
+     - `-webkit-box-shadow: 0 0 0 1000px var(--el-input-bg-color, var(--el-fill-color-blank)) inset !important;`
+     - `-webkit-text-fill-color: var(--el-text-color-primary) !important;`
+     - `caret-color: var(--el-text-color-primary) !important;`
+2. **Vue Scoped Selector Deep Penetration & Global Fallback**:
+   - Used `:deep(input:-webkit-autofill)` in [Login.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/Login.vue#L216-L229) to pierce Element Plus shadow DOM structure (`.el-input__inner`).
+   - Added global autofill rule to [style.css](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/style.css#L31-L40) ensuring all form input autofills across Light and Dark themes dynamically adapt without hardcoded colors.
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Global CORS Allowed Headers Update ([router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go))
+
+### Changes Made:
+- Updated `corsConfig.AllowHeaders` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go#L176-L181) to globally include `User-Agent` and `X-Requested-With` headers alongside `Origin`, `Content-Length`, `Content-Type`, and `Authorization`:
+  ```go
+  corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "User-Agent", "X-Requested-With"}
+  ```
+- Verified compilation cleanly with `go build ./...`.
+
+
+
+
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Global CORS Allowed Headers Update ([router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go))
+
+### Changes Made:
+- Updated `corsConfig.AllowHeaders` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go#L176-L181) to globally include `User-Agent` and `X-Requested-With` headers alongside `Origin`, `Content-Length`, `Content-Type`, and `Authorization`:
+  ```go
+  corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "User-Agent", "X-Requested-With"}
+  ```
+- Verified compilation cleanly with `go build ./...`.
+
+
+
+

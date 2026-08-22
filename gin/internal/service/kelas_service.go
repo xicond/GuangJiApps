@@ -365,7 +365,7 @@ func (s *KelasService) Report(trxId string /* , subWhId string */, c *gin.Contex
 		} else {
 			schemeParts := strings.SplitN(baseURL, "://", 2)
 			if len(schemeParts) == 2 {
-				baseURL = fmt.Sprintf("%s://%s:%s@%s", schemeParts[0], url.QueryEscape(username), url.QueryEscape(password), schemeParts[1])
+				baseURL = fmt.Sprintf("%s://%s", schemeParts[0], schemeParts[1])
 			}
 		}
 	}

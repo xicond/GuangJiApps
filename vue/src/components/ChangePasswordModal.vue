@@ -88,7 +88,8 @@ const rules: FormRules = {
   ],
   newPassword: [
     { required: true, validator: validateNewPassword, trigger: 'blur' },
-    { min: 4, message: 'Password length should be at least 4 characters', trigger: 'blur' }
+    { min: 8, message: 'Password length should be at least 8 characters', trigger: 'blur' },
+    { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, message: 'Password must include uppercase, lowercase and a number', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, validator: validateConfirm, trigger: 'blur' }

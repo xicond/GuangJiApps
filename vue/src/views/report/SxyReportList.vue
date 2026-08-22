@@ -8,7 +8,7 @@
       </div>
       <el-button type="success" size="large" :icon="Download" class="download-btn"
         :disabled="dataList.length === 0 || loading || isDownloading || !hasActiveFilter" @click="handleDownloadExcel">
-        Download Report Excel
+        Downloading Report Excel
       </el-button>
     </div>
 
@@ -319,7 +319,7 @@ async function handleDownloadExcel() {
   isDownloading.value = true
   const loadingInstance = ElLoading.service({
     lock: true,
-    text: 'Download Report Excel ...',
+    text: 'Downloading Report Excel ...',
     background: 'rgba(0, 0, 0, 0.7)'
   })
 

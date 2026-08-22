@@ -30,12 +30,18 @@ func AuthMiddleware(cfg config.Config) gin.HandlerFunc {
 
 		tokenString := parts[1]
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			vKey, _, err := cfg.GetJWTVerificationKey()
+			vKey, method, err := cfg.GetJWTVerificationKey()
 			if err != nil {
 				return nil, err
 			}
+			if token.Method.Alg() != method.Alg() {
+				return nil, jwt.ErrSignatureInvalid
+			}
 			return vKey, nil
-		})
+		}, jwt.WithValidMethods([]string{
+			jwt.SigningMethodRS256.Alg(),
+			jwt.SigningMethodES256.Alg(),
+		}))
 
 		if err != nil || !token.Valid {
 			c.Header("Content-Type", "application/json")

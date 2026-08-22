@@ -18,6 +18,12 @@ func main() {
 	port := os.Getenv("PORT")
 
 	cfg := config.Load()
+	if _, _, err := cfg.GetJWTSigningKey(); err != nil {
+		log.Printf("[WARNING] JWT signing key load check: %v", err)
+	} else {
+		log.Printf("[INFO] JWT signing key loaded successfully")
+	}
+
 	db, err := database.Open(cfg.DatabaseDSN)
 	if err != nil {
 		log.Fatalf("database open failed: %v", err)

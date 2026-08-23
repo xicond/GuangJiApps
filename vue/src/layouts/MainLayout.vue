@@ -212,7 +212,8 @@ watch(
           showClose: false,
           onClose: () => {
             offlineNotificationHandle = null
-          }
+          },
+          position: 'top-right'
         })
       }
     } else {
@@ -229,15 +230,20 @@ const { speedMbps, lastTestCompletedAt } = useQuickStreamSpeedTest()
 let lastNotificationTime = 0
 const NOTIFY_THROTTLE_MS = 5000
 
+
+
 watch(lastTestCompletedAt, () => {
-  if (speedMbps.value !== null && speedMbps.value < 6) {
+
+
+  if (speedMbps.value !== null && speedMbps.value < 1.6) {
     const now = Date.now()
     if (now - lastNotificationTime >= NOTIFY_THROTTLE_MS) {
       lastNotificationTime = now
       ElNotification.warning({
         title: 'Slow Connection',
-        message: `Your internet speed is slow (${speedMbps.value == 0 ? '< 1 Mbps' : `${speedMbps.value} Mbps`}). Some processes will use cache.`,
-        duration: 7000
+        message: `Download speed is slow (${speedMbps.value == 0 ? '< 1 Mbps' : `${speedMbps.value} Mbps`}). Some processes will use cache.`,
+        duration: 7000,
+        position: 'top-right'
       })
     }
   }

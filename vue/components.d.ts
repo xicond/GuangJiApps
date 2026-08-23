@@ -53,6 +53,7 @@ declare module 'vue' {
     ElTable: typeof import('element-plus/es')['ElTable']
     ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
     ElTag: typeof import('element-plus/es')['ElTag']
+    ElTooltip: typeof import('element-plus/es')['ElTooltip']
     FieldErrors: typeof import('./src/components/common/FieldErrors.vue')['default']
     KelasDonasiBarangTable: typeof import('./src/components/kelas/KelasDonasiBarangTable.vue')['default']
     KelasDonasiTable: typeof import('./src/components/kelas/KelasDonasiTable.vue')['default']

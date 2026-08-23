@@ -109,7 +109,7 @@
               <el-button type="primary" size="small" circle :icon="Edit" title="Edit Kelas"
                 @click="handleEdit(row.trx_id)" />
 
-              <el-button type="success" size="small" circle :icon="Download" title="Downloading Report Excel"
+              <el-button type="success" size="small" circle :icon="Download" title="Download Report Excel"
                 :loading="downloadingId === row.trx_id" @click="handleDownloadReport(row.trx_id)" />
 
               <el-popconfirm title="Apakah Anda yakin ingin menghapus data ini?" confirm-button-text="Ya, Hapus"

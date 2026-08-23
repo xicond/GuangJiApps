@@ -13,8 +13,8 @@
         <el-icon class="upload-icon">
           <Picture />
         </el-icon>
-        <span class="upload-text">{{ getDeviceType() === 'desktop' ? 'Upload Foto (3:4)' : 'Upload / Ambil Foto (3:4)'
-          }}</span>
+        <span class="upload-text">{{ deviceType === 'desktop' ? 'Upload Foto (3:4)' : 'Upload / Ambil Foto (3:4)'
+        }}</span>
       </div>
     </div>
 
@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { Cropper } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 import { Picture, Upload, Camera, Delete, Check } from '@element-plus/icons-vue'
@@ -77,17 +77,32 @@ const emit = defineEmits<{
   (e: 'change', fileBlob: Blob | null): void
 }>()
 
-const getDeviceType = () => {
-  const ua = navigator.userAgent
 
-  if (/tablet|ipad|playbook|silk/i.test(ua)) {
+let deviceType: string = "";
+const getDeviceType = (): string => {
+  const ua = navigator.userAgent
+  const maxTouchPoints = navigator.maxTouchPoints || 0
+
+  // 1. Deteksi iPadOS modern (UA mengandung Macintosh/MacIntel, tapi mendukung multi-touch)
+  const isIPadOS = /Macintosh/i.test(ua) && maxTouchPoints > 1
+
+  // 2. Deteksi Tablet umum (Android tablet, Playbook, Silk, atau iPadOS)
+  if (/tablet|playbook|silk/i.test(ua) || isIPadOS) {
     return 'tablet'
   }
+
+  // 3. Deteksi Mobile (Android Phone, iPhone, iPod, dll)
   if (/mobi|android|iphone|ipod/i.test(ua)) {
     return 'mobile'
   }
+
+  // 4. Selebihnya dianggap Desktop (termasuk Mac asli yang maxTouchPoints-nya 0)
   return 'desktop'
 }
+
+onMounted(() => {
+  getDeviceType()
+})
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const previewUrl = ref<string>(props.initialUrl || '')

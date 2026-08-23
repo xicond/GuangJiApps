@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 	"strings" // WAJIB: Tambahkan import strings
 	"time"
@@ -51,7 +52,16 @@ func main() {
 
 	port = strings.TrimSpace(port)
 	log.Printf("starting gin server on :%s", port)
-	if err := router.Run(":" + port); err != nil {
+
+	srv := &http.Server{
+		Addr:              ":" + port,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       50 * time.Second,
+		WriteTimeout:      100 * time.Second,
+		// IdleTimeout:       300 * time.Second,
+	}
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }

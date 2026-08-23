@@ -771,7 +771,8 @@ function handleCreate() {
   ElNotification({
     title: 'Informasi',
     message: 'Tambah ${item.entity.toLowerCase()} baru',
-    type: 'info'
+    type: 'info',
+    position: 'top-right'
   })
 }
 
@@ -779,7 +780,8 @@ function handleEdit(id: ${item.pkType}) {
   ElNotification({
     title: 'Informasi',
     message: \`Edit ${item.entity.toLowerCase()} ID/Kode: \${id}\`,
-    type: 'info'
+    type: 'info',
+    position: 'top-right'
   })
 }
 
@@ -789,7 +791,8 @@ async function handleDelete(id: ${item.pkType}) {
     ElNotification({
       title: 'Berhasil',
       message: \`Data ${item.entity.toLowerCase()} \${id} berhasil dihapus\`,
-      type: 'success'
+      type: 'success',
+      position: 'top-right'
     })
     fetchData()
   } catch (err: any) {

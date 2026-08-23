@@ -10,7 +10,7 @@ const THROTTLE_MS = 5000
 export function useQuickStreamSpeedTest() {
     const measureSpeedInOneSecond = async (
         timeLimitMs = 300, // Batasi tepat 300ms
-        fileUrl = 'https://speed.cloudflare.com/__down?bytes=280000' // Gunakan file besar agar tidak habis duluan
+        fileUrl = 'https://speed.cloudflare.com/__down?bytes=580000' // Gunakan file besar agar tidak habis duluan
     ) => {
         const now = Date.now()
         if (isTesting.value || (now - lastTestTime < THROTTLE_MS)) {

@@ -6,10 +6,17 @@
         <h2 class="page-title">Laporan Sxy</h2>
         <p class="page-subtitle">Daftar laporan transaksi donasi SXY dan download file Excel</p>
       </div>
-      <el-button type="success" size="large" :icon="Download" class="download-btn"
-        :disabled="dataList.length === 0 || loading || isDownloading || !hasActiveFilter" @click="handleDownloadExcel">
-        Downloading Report Excel
-      </el-button>
+      <el-tooltip v-model:visible="isVisible" :trigger="''" content="Do fill filter first"
+        :disabled="!isDownloadTooltipActive" placement="bottom">
+        <span ref="triggerRef" class="inline-block cursor-pointer download-btn-wrapper" @mouseenter="onMouseEnter"
+          @mouseleave="onMouseLeave" @touchstart.prevent="onClick">
+          <el-button type="success" size="large" :icon="Download" class="download-btn"
+            :disabled="dataList.length === 0 || loading || isDownloading || !hasActiveFilter"
+            @click="handleDownloadExcel">
+            Download Report Excel
+          </el-button>
+        </span>
+      </el-tooltip>
     </div>
 
     <!-- Filter Card -->
@@ -144,12 +151,12 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
+import { onClickOutside, useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { ElMessage, ElNotification, ElLoading } from 'element-plus'
 import { Search, Refresh, Download } from '@element-plus/icons-vue'
 import donasiSxyApi from '../../api/donasiSxy'
 import fotangApi from '../../api/fotang'
-import umatApi from '../../api/umat'
+// import umatApi from '../../api/umat'
 import penggalangDanaApi from '../../api/penggalangDana'
 import type { SxyDonasiReportItem } from '../../types/donasiSxy'
 import LookupSelect from '../../components/common/LookupSelect.vue'
@@ -157,6 +164,63 @@ import sxyDonaturApi from '@/api/sxyDonatur'
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
 const breakpoints = useBreakpoints(breakpointsTailwind)
+
+let deviceType: string = ""
+const getDeviceType = (): string => {
+  const ua = navigator.userAgent
+  const maxTouchPoints = navigator.maxTouchPoints || 0
+
+  // 1. Deteksi iPadOS modern (UA mengandung Macintosh/MacIntel, tapi mendukung multi-touch)
+  const isIPadOS = /Macintosh/i.test(ua) && maxTouchPoints > 1
+
+  // 2. Deteksi Tablet umum (Android tablet, Playbook, Silk, atau iPadOS)
+  if (/tablet|playbook|silk/i.test(ua) || isIPadOS) {
+    return 'tablet'
+  }
+
+  // 3. Deteksi Mobile (Android Phone, iPhone, iPod, dll)
+  if (/mobi|android|iphone|ipod/i.test(ua)) {
+    // ElMessage.warning('Mobile detected')
+    return 'mobile'
+  }
+
+  // 4. Selebihnya dianggap Desktop (termasuk Mac asli yang maxTouchPoints-nya 0)
+  // ElMessage.warning('Desktop detected')
+  return 'desktop'
+}
+
+onMounted(() => {
+  getDeviceType()
+})
+
+// 1. Deteksi apakah device mendukung hover (Desktop dengan mouse/trackpad)
+const canHover = (): boolean => {
+  return isDesktop.value || (deviceType === 'desktop')
+}
+
+const isVisible = ref(false)
+const triggerRef = ref<HTMLElement | null>(null)
+
+// 2. Handlers untuk Desktop (Hover)
+const onMouseEnter = () => {
+  if (canHover()) isVisible.value = true
+}
+
+const onMouseLeave = () => {
+  if (canHover()) isVisible.value = false
+}
+
+// 3. Handler untuk Mobile / Touch (Click/Tap)
+const onClick = () => {
+  if (!canHover()) {
+    isVisible.value = !isVisible.value
+  }
+}
+
+// 4. Tutup otomatis saat area luar disentuh/diklik (Khusus Mobile)
+onClickOutside(triggerRef, () => {
+  if (!canHover()) isVisible.value = false
+})
 
 // Subscribe to reactive states
 const isMobile = breakpoints.smaller('md')   // True if width < 768px
@@ -189,6 +253,10 @@ const hasActiveFilter = computed(() => {
     !!filters.end_date ||
     !!filters.fotang
   )
+})
+
+const isDownloadTooltipActive = computed(() => {
+  return !hasActiveFilter.value && !isDownloading.value
 })
 
 const dateRange = computed({
@@ -466,6 +534,10 @@ onUnmounted(() => {
 
 .font-semibold {
   font-weight: 600;
+}
+
+.download-btn-wrapper {
+  display: inline-block;
 }
 
 .text-success {

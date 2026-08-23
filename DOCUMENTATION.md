@@ -509,6 +509,53 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
   ```
 - Verified compilation cleanly with `go build ./...`.
 
+---
+
+## [Completed] Programmatic `ElNotification` & `ElMessage` Global CSS Styles Import ([main.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/main.ts))
+
+### Changes Made:
+1. **Global CSS Imports for Programmatic APIs**:
+   - Added explicit imports for Element Plus programmatic feedback components in [main.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/main.ts#L6-L9):
+     - `import 'element-plus/es/components/notification/style/css'`
+     - `import 'element-plus/es/components/message/style/css'`
+     - `import 'element-plus/es/components/message-box/style/css'`
+     - `import 'element-plus/es/components/loading/style/css'`
+   - Resolves unstyled/invisible DOM elements when calling `ElNotification` or `ElMessage` from JavaScript/TypeScript code (bypassing `unplugin-vue-components` template scanner).
+2. **Lifecycle Hook Enclosure**:
+   - Enclosed `ElNotification.warning` in [ActivityList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/ActivityList.vue#L336-L342) inside `onMounted()` hook to prevent pre-mount evaluation issues.
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Configurable DNS Pre-cache & Pre-connect via Environment Variables
+
+### Changes Made:
+1. **Environment Configuration** ([.env.example](file:///Users/xicond/Workspace/www/GuangJiApps/vue/.env.example#L6-L8)):
+   - Added `VITE_DNS_PREFETCH` variable to `.env.example` supporting a comma-separated list of domains/origins for DNS prefetching and preconnecting (e.g. `VITE_DNS_PREFETCH=https://speed.cloudflare.com,https://www.guangji.id`).
+2. **Vite HTML Transformation Plugin** ([vite.config.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/vite.config.ts#L50-L80)):
+   - Implemented `dnsPrefetchPlugin` in Vite to read `env.VITE_DNS_PREFETCH`.
+   - When set, parses domains and transforms `%VITE_DNS_PREFETCH_TAGS%` placeholder in `index.html` into `<link rel="dns-prefetch" href="...">` and `<link rel="preconnect" href="..." crossorigin />` tags.
+   - When empty/not configured, cleanly removes `%VITE_DNS_PREFETCH_TAGS%` without rendering any pre-cache tags or extra whitespace.
+3. **HTML Placeholder** ([index.html](file:///Users/xicond/Workspace/www/GuangJiApps/vue/index.html#L8)):
+   - Added `%VITE_DNS_PREFETCH_TAGS%` placeholder inside `<head>` in `index.html`.
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+---
+
+## [Completed] Conditional Tooltip "Do fill filter first" on Report Excel Download Buttons ([SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue) & [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue))
+
+### Changes Made:
+1. **Conditional Tooltip Integration**:
+   - Wrapped the disabled "Download Report Excel" button in `<el-tooltip content="Do fill filter first" :disabled="!isDownloadTooltipActive" placement="top">` inside a `<span class="download-btn-wrapper">` element in both [SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue#L9-L17) and [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue#L9-L17).
+2. **Reactive Active Tooltip State**:
+   - Defined `isDownloadTooltipActive = computed(() => dataList.value.length > 0 && !hasActiveFilter.value)`.
+   - Tooltip displays "Do fill filter first" when data is shown in the table (`dataList.length > 0`) but no filter has been filled (`!hasActiveFilter`).
+   - Automatically hides when the user fills any filter or when no dataset is present.
+- Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+
+
+
 
 
 

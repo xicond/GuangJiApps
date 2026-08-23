@@ -47,7 +47,37 @@ function compressInPlacePlugin(): Plugin {
       }
 
       compressRecursive(distDir)
-      // console.log(`\x1b[36m[vite-plugin-compress-in-place]\x1b[0m Seamlessly compressed ${count} static assets in-place in dist/`)
+    }
+  }
+}
+
+function dnsPrefetchPlugin(dnsEnv?: string): Plugin {
+  return {
+    name: 'vite-plugin-dns-prefetch',
+    transformIndexHtml(html) {
+      const rawEnv = dnsEnv || ''
+      if (!rawEnv.trim()) {
+        return html.replace(/<!--\s*VITE_DNS_PREFETCH_TAGS\s*-->\r?\n?/g, '')
+      }
+      const domains = rawEnv
+        .split(',')
+        .map(d => d.trim())
+        .filter(Boolean)
+
+      if (domains.length === 0) {
+        return html.replace(/<!--\s*VITE_DNS_PREFETCH_TAGS\s*-->\r?\n?/g, '')
+      }
+
+      const tags = domains
+        .map(domain => {
+          const origin = domain.startsWith('http://') || domain.startsWith('https://') || domain.startsWith('//')
+            ? domain
+            : `//${domain}`
+          return `<link rel="dns-prefetch" href="${origin}" />\n    <link rel="preconnect" href="${origin}" crossorigin />`
+        })
+        .join('\n    ')
+
+      return html.replace(/<!--\s*VITE_DNS_PREFETCH_TAGS\s*-->/g, tags)
     }
   }
 }
@@ -60,6 +90,7 @@ export default defineConfig(({ mode }) => {
     base: env.VITE_BASE_URL || '/',
     plugins: [
       vue(),
+      dnsPrefetchPlugin(env.VITE_DNS_PREFETCH),
       AutoImport({
         resolvers: [ElementPlusResolver()],
       }),
@@ -131,7 +162,15 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,
-      host: true
+      host: true,
+      headers: {
+        'Document-Policy': 'js-profiling'
+      }
+    },
+    preview: {
+      headers: {
+        'Document-Policy': 'js-profiling'
+      }
     }
   }
 })

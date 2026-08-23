@@ -6,10 +6,17 @@
         <h2 class="page-title">Laporan Master Umat</h2>
         <p class="page-subtitle">Daftar laporan master data Umat dan download file Excel</p>
       </div>
-      <el-button type="success" size="large" :icon="Download" class="download-btn"
-        :disabled="dataList.length === 0 || loading || isDownloading || !hasActiveFilter" @click="handleDownloadExcel">
-        Downloading Report Excel
-      </el-button>
+      <el-tooltip v-model:visible="isVisible" :trigger="''" content="Do fill filter first"
+        :disabled="!isDownloadTooltipActive" placement="bottom">
+        <span ref="triggerRef" class="inline-block cursor-pointer download-btn-wrapper" @mouseenter="onMouseEnter"
+          @mouseleave="onMouseLeave" @touchstart.prevent="onClick">
+          <el-button type="success" size="large" :icon="Download" class="download-btn"
+            :disabled="dataList.length === 0 || loading || isDownloading || !hasActiveFilter"
+            @click="handleDownloadExcel">
+            Download Report Excel
+          </el-button>
+        </span>
+      </el-tooltip>
     </div>
 
     <!-- Filter Card -->
@@ -375,7 +382,7 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, reactive, computed, onMounted } from 'vue'
-import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
+import { onClickOutside, useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import { ElMessage, ElLoading } from 'element-plus'
 import { Search, Refresh, Download } from '@element-plus/icons-vue'
 import umatApi from '../../api/umat'
@@ -386,10 +393,68 @@ import LookupSelect from '../../components/common/LookupSelect.vue'
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
 const breakpoints = useBreakpoints(breakpointsTailwind)
+// const  { width } = useWindowSize()
 
 // Subscribe to reactive states
 const isMobile = breakpoints.smaller('md')   // True if width < 768px
 const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
+let deviceType: string = ""
+const getDeviceType = (): string => {
+  const ua = navigator.userAgent
+  const maxTouchPoints = navigator.maxTouchPoints || 0
+
+  // 1. Deteksi iPadOS modern (UA mengandung Macintosh/MacIntel, tapi mendukung multi-touch)
+  const isIPadOS = /Macintosh/i.test(ua) && maxTouchPoints > 1
+
+  // 2. Deteksi Tablet umum (Android tablet, Playbook, Silk, atau iPadOS)
+  if (/tablet|playbook|silk/i.test(ua) || isIPadOS) {
+    return 'tablet'
+  }
+
+  // 3. Deteksi Mobile (Android Phone, iPhone, iPod, dll)
+  if (/mobi|android|iphone|ipod/i.test(ua)) {
+    // ElMessage.warning('Mobile detected')
+    return 'mobile'
+  }
+
+  // 4. Selebihnya dianggap Desktop (termasuk Mac asli yang maxTouchPoints-nya 0)
+  // ElMessage.warning('Desktop detected')
+  return 'desktop'
+}
+
+onMounted(() => {
+  getDeviceType()
+})
+
+// 1. Deteksi apakah device mendukung hover (Desktop dengan mouse/trackpad)
+const canHover = (): boolean => {
+  return isDesktop.value || (deviceType === 'desktop')
+}
+
+const isVisible = ref(false)
+const triggerRef = ref<HTMLElement | null>(null)
+
+// 2. Handlers untuk Desktop (Hover)
+const onMouseEnter = () => {
+  if (canHover()) isVisible.value = true
+}
+
+const onMouseLeave = () => {
+  if (canHover()) isVisible.value = false
+}
+
+// 3. Handler untuk Mobile / Touch (Click/Tap)
+const onClick = () => {
+  if (!canHover()) {
+    isVisible.value = !isVisible.value
+  }
+}
+
+// 4. Tutup otomatis saat area luar disentuh/diklik (Khusus Mobile)
+onClickOutside(triggerRef, () => {
+  if (!canHover()) isVisible.value = false
+})
 
 const dataList = shallowRef<UmatReportItem[]>([])
 const loading = ref(false)
@@ -435,6 +500,10 @@ const hasActiveFilter = computed(() => {
     (filters.is_vege !== '0' && !!filters.is_vege) ||
     !!filters.status_umat
   )
+})
+
+const isDownloadTooltipActive = computed(() => {
+  return dataList.value.length > 0 && !hasActiveFilter.value && !isDownloading.value
 })
 
 const dateRange = computed({
@@ -725,5 +794,9 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.download-btn-wrapper {
+  display: inline-block;
 }
 </style>

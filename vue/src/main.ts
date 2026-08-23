@@ -3,6 +3,10 @@ import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 // import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
+import 'element-plus/es/components/notification/style/css'
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/message-box/style/css'
+import 'element-plus/es/components/loading/style/css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
@@ -28,7 +32,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     enabled: true,
 
     // Aktifkan debug log di console browser untuk melihat status Sentry
-    debug: true,
+    // debug: true,
 
     beforeSend(event) {
       // 1. Hapus informasi user / PII (username, email, IP) dari event Sentry

@@ -97,17 +97,16 @@ func validateTopikLookups(db *gorm.DB, payload *domain.KelasTopik) error {
 		details = make(map[string][]string)
 	)
 
-	wg.Add(len(checks))
 	for _, check := range checks {
-		go func(c lookupCheck) {
-			defer wg.Done()
+		c := check
+		wg.Go(func() {
 			sess := db.Session(&gorm.Session{})
 			if err := c.queryFn(sess); err != nil {
 				mu.Lock()
 				details[c.fieldName] = append(details[c.fieldName], err.Error())
 				mu.Unlock()
 			}
-		}(check)
+		})
 	}
 
 	wg.Wait()

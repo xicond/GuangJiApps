@@ -76,8 +76,8 @@
           <div class="pagination-container">
             <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
-              :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
-              :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
+              :layout="(!isMobile ? 'total, ->,' : (Math.ceil(total / pageSize) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
+              :pager-count="6" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
           </div>
         </div>
       </el-collapse-item>
@@ -93,11 +93,23 @@
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="140px" size="default" v-loading="submitting">
         <el-form-item label="Pengabdi (Umat)" prop="id_pengabdi"
           :error="hasFieldError('id_pengabdi') ? ' ' : undefined">
-          <el-select v-model="form.id_pengabdi" filterable remote reserve-keyword
+          <!-- Mobile view: searchable el-select dropdown -->
+          <el-select v-if="isMobile" v-model="form.id_pengabdi" filterable remote reserve-keyword
             placeholder="Ketik nama untuk mencari Umat..." :remote-method="searchUmat" :loading="loadingUmat"
             style="width: 100%">
             <el-option v-for="item in umatOptions" :key="item.id" :label="getUmatOptionLabel(item)" :value="item.id" />
           </el-select>
+
+          <!-- Desktop & Tablet view: custom popup dialog trigger -->
+          <div v-else class="desktop-umat-selector">
+            <el-input :model-value="selectedUmatLabel" placeholder="Pilih Umat..." readonly class="clickable-umat-input"
+              @click="openUmatPopup">
+              <template #append>
+                <el-button :icon="MoreFilled" title="Buka Pencarian Umat" @click="openUmatPopup">
+                </el-button>
+              </template>
+            </el-input>
+          </div>
           <FieldErrors :errors="getFieldErrors('id_pengabdi')" />
         </el-form-item>
 
@@ -204,13 +216,32 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- Custom Popup Dialog Selector for Umat (Desktop/Tablet) -->
+    <UmatPopupSelector v-model="umatPopupVisible" :fetch-api="umatApi.getUmats"
+      :fetch-fotang-api="lookupApi.getLookupFotang" :filter-name="{
+        namaindonesia: 'Nama Chiu Tao',
+        namamandarin: 'Nama Lain',
+        alias: 'Alias / Pin Yin'
+      }" :filter-fotang="{
+        fotang_chiutao: 'Fotang Ciu Tao'
+      }" :Columns="{
+        kode: 'Kode',
+        nama_indonesia: 'Nama Chiu Tao',
+        alias: 'Alias / Pin Yin',
+        nama_mandarin: 'Nama Lain',
+        fotang_aktif_desc: 'Fotang Aktif',
+        pengajak: 'Pengajak',
+        penanggung: 'Penanggung',
+        alamat: 'Alamat'
+      }" :multiple="false" @select="handleUmatSelected" :width="isMobile ? '90%' : '650px'" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
-import { Avatar, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Avatar, Refresh, Plus, Edit, Delete, MoreFilled } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import dayjs from 'dayjs'
 import { kelasApi } from '../../api/kelas'
@@ -218,6 +249,7 @@ import { umatApi } from '../../api/umat'
 import lookupApi from '../../api/lookup'
 import LookupSelect from '../common/LookupSelect.vue'
 import FieldErrors from '../common/FieldErrors.vue'
+import UmatPopupSelector from '../common/UmatPopupSelector.vue'
 import { clearLookupCache } from '../../utils/lookupCache'
 import type { KelasPengabdi } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
@@ -448,6 +480,31 @@ function getUmatOptionLabel(item: Umat): string {
   if (item.nama_mandarin) label += ` (${item.nama_mandarin})`
   if (item.alias) label += ` - ${item.alias}`
   return label
+}
+
+const umatPopupVisible = ref(false)
+
+const selectedUmatLabel = computed(() => {
+  if (!form.value.id_pengabdi) return ''
+  const found = umatOptions.value.find((u) => String(u.id) === String(form.value.id_pengabdi))
+  if (found) return getUmatOptionLabel(found)
+  return `ID #${form.value.id_pengabdi}`
+})
+
+function openUmatPopup() {
+  umatPopupVisible.value = true
+}
+
+function handleUmatSelected(selected: Umat) {
+  if (!selected) return
+  const exists = umatOptions.value.some((u) => u.id === selected.id)
+  if (!exists) {
+    umatOptions.value.push(selected)
+  }
+  form.value.id_pengabdi = selected.id
+  if (formRef.value) {
+    formRef.value.validateField('id_pengabdi').catch(() => { })
+  }
 }
 
 function handleAccordionChange(val: string[] | string) {
@@ -728,5 +785,23 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+.desktop-umat-selector {
+  width: 100%;
+}
+
+.clickable-umat-input :deep(.el-input__inner) {
+  cursor: pointer;
+}
+
+.clear-icon {
+  cursor: pointer;
+  color: var(--el-text-color-placeholder);
+  transition: color 0.2s;
+}
+
+.clear-icon:hover {
+  color: var(--el-text-color-primary);
 }
 </style>

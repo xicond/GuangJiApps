@@ -28,7 +28,7 @@ func NewKelasPesertaService(db *gorm.DB) *KelasPesertaService {
 	return &KelasPesertaService{db: db, resource: "kelas_peserta"}
 }
 
-func validatePesertaLookups(db *gorm.DB, payload *domain.KelasPeserta) error {
+func validatePesertaLookups(db *gorm.DB, payload *domain.KelasPesertaBulkRequest) error {
 	type lookupCheck struct {
 		fieldName string
 		queryFn   func(db *gorm.DB) error
@@ -54,16 +54,28 @@ func validatePesertaLookups(db *gorm.DB, payload *domain.KelasPeserta) error {
 	}
 
 	// 2. IdPeserta from Umat
-	if payload.IdPeserta != nil && *payload.IdPeserta != 0 {
+	if len(payload.IdPeserta) > 0 {
 		checks = append(checks, lookupCheck{
 			fieldName: "id_peserta",
 			queryFn: func(db *gorm.DB) error {
-				var count int64
-				if err := db.Model(&domain.Umat{}).Where("id = ?", *payload.IdPeserta).Count(&count).Error; err != nil {
+				var foundIds []int32
+				if err := db.Model(&domain.Umat{}).Where("id IN (?)", payload.IdPeserta).Pluck("id", &foundIds).Error; err != nil {
 					return err
 				}
-				if count == 0 {
-					return fmt.Errorf("id_peserta %d tidak ditemukan di Umat", *payload.IdPeserta)
+				foundMap := make(map[int32]bool, len(foundIds))
+				for _, fid := range foundIds {
+					foundMap[fid] = true
+				}
+				var missing []string
+				for _, id := range payload.IdPeserta {
+					if !foundMap[id] {
+						missing = append(missing, strconv.Itoa(int(id)))
+					}
+				}
+				if len(missing) == 1 {
+					return fmt.Errorf("id_peserta %s tidak ditemukan di Umat", missing[0])
+				} else if len(missing) > 1 {
+					return fmt.Errorf("id_peserta %s tidak ditemukan di Umat", strings.Join(missing, ", "))
 				}
 				return nil
 			},
@@ -100,17 +112,16 @@ func validatePesertaLookups(db *gorm.DB, payload *domain.KelasPeserta) error {
 		details = make(map[string][]string)
 	)
 
-	wg.Add(len(checks))
 	for _, check := range checks {
-		go func(c lookupCheck) {
-			defer wg.Done()
+		c := check
+		wg.Go(func() {
 			sess := db.Session(&gorm.Session{})
 			if err := c.queryFn(sess); err != nil {
 				mu.Lock()
 				details[c.fieldName] = append(details[c.fieldName], err.Error())
 				mu.Unlock()
 			}
-		}(check)
+		})
 	}
 
 	wg.Wait()
@@ -236,12 +247,114 @@ func (s *KelasPesertaService) List(id string, c *gin.Context, page int, limit in
 	return items, total, nil
 }
 
+func updateUmatSDPemula(tx *gorm.DB, idPeserta int32, trxId int32, detailId int32, lulus *bool, umat *domain.Umat, userID int32, now domain.DateTime) error {
+	if idPeserta == 0 || trxId == 0 {
+		return nil
+	}
+
+	var kelas domain.Kelas
+	if err := tx.Where("trxid = ?", trxId).First(&kelas).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	if kelas.KodeKelas == nil || strings.TrimSpace(*kelas.KodeKelas) != "004" {
+		return nil
+	}
+
+	umatUpdates := make(map[string]interface{})
+
+	// 1. Update Ikrar if provided in payload
+	if umat != nil {
+		umatUpdates["ikrar1"] = umat.Ikrar1
+		umatUpdates["ikrar2"] = umat.Ikrar2
+		umatUpdates["ikrar3"] = umat.Ikrar3
+		umatUpdates["ikrar4"] = umat.Ikrar4
+		umatUpdates["ikrar5"] = umat.Ikrar5
+		umatUpdates["ikrar6"] = umat.Ikrar6
+	}
+
+	// 2. Check if participant is passed (Lulus) for this class or any other active 004 class
+	isLulusCurrent := lulus != nil && *lulus
+
+	var otherPassCount int64
+
+	if !isLulusCurrent {
+		query := tx.Table("T_TRX_KELAS_PESERTA kp").
+			Joins("JOIN T_TRX_KELAS k ON k.trxid = kp.trxid").
+			Where("kp.idpeserta = ? AND kp.status = 1 AND kp.lulus = 1 AND k.kodekelas = '004'", idPeserta)
+		if detailId != 0 {
+			query = query.Where("kp.detailid != ?", detailId)
+		}
+		if err := query.Count(&otherPassCount).Error; err != nil {
+			return err
+		}
+	}
+
+	hasPassedSD3 := isLulusCurrent || (otherPassCount > 0)
+
+	var currentUmat domain.Umat
+	if err := tx.Select("id, statusumat").Where("id = ?", idPeserta).First(&currentUmat).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("umat %d not found", idPeserta)
+		}
+		return err
+	}
+
+	if hasPassedSD3 {
+		umatUpdates["sd3"] = true
+		if kelas.EndDate != nil {
+			umatUpdates["tanggalsd3"] = kelas.EndDate
+		}
+		if kelas.KodeFotang != nil {
+			umatUpdates["tempatsd3"] = kelas.KodeFotang
+		}
+		// Update statusumat to 001 (Pengabdi) if previous is 006 (Umat Baru) or nil/empty
+		if currentUmat.StatusUmat == nil || strings.TrimSpace(*currentUmat.StatusUmat) == "" || strings.TrimSpace(*currentUmat.StatusUmat) == "006" {
+			status001 := "001"
+			umatUpdates["statusumat"] = status001
+		}
+	} else {
+		umatUpdates["sd3"] = false
+		umatUpdates["tanggalsd3"] = nil
+		umatUpdates["tempatsd3"] = nil
+		// Revert statusumat to 006 (Umat Baru) if previous status is 001 (Pengabdi)
+		if currentUmat.StatusUmat != nil && strings.TrimSpace(*currentUmat.StatusUmat) == "001" {
+			status006 := "006"
+			umatUpdates["statusumat"] = status006
+		}
+	}
+
+	if len(umatUpdates) > 0 {
+		umatUpdates["modby"] = userID
+		umatUpdates["moddate"] = now
+		umatUpdates["modact"] = "U"
+
+		if err := tx.Model(&domain.Umat{}).Where("id = ?", idPeserta).Updates(umatUpdates).Error; err != nil {
+			return fmt.Errorf("failed to update umat for SD Pemula: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (s *KelasPesertaService) Create(payload domain.KelasPeserta, c *gin.Context) (domain.KelasPeserta, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.KelasPeserta{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	if err := validatePesertaLookups(s.db, &payload); err != nil {
+	var ids []int32
+	if payload.IdPeserta != nil && *payload.IdPeserta != 0 {
+		ids = []int32{*payload.IdPeserta}
+	}
+	bulkReq := domain.KelasPesertaBulkRequest{
+		TrxId:     payload.TrxId,
+		IdPeserta: ids,
+		TimKerja:  payload.TimKerja,
+	}
+	if err := validatePesertaLookups(s.db, &bulkReq); err != nil {
 		return domain.KelasPeserta{}, err
 	}
 
@@ -265,10 +378,134 @@ func (s *KelasPesertaService) Create(payload domain.KelasPeserta, c *gin.Context
 	payload.ModBy = &userID
 	payload.ModDate = &now
 
-	if err := s.db.Create(&payload).Error; err != nil {
-		return domain.KelasPeserta{}, fmt.Errorf("failed to create record: %w", err)
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		if payload.IdPeserta != nil && *payload.IdPeserta != 0 {
+			if err := updateUmatSDPemula(tx, *payload.IdPeserta, payload.TrxId, payload.DetailId, payload.Lulus, payload.Umat, userID, now); err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Omit("Umat", "Kelas").Create(&payload).Error; err != nil {
+			return fmt.Errorf("failed to create record: %w", err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return domain.KelasPeserta{}, err
 	}
+
+	if payload.IdPeserta != nil && *payload.IdPeserta != 0 {
+		var umat domain.Umat
+		if err := s.db.Where("id = ?", *payload.IdPeserta).Take(&umat).Error; err == nil {
+			payload.Umat = &umat
+		}
+	}
+
 	return payload, nil
+}
+
+func (s *KelasPesertaService) CreateBulk(payload domain.KelasPesertaBulkRequest, c *gin.Context) ([]domain.KelasPeserta, error) {
+	if err := ValidateStruct(payload); err != nil {
+		return nil, fmt.Errorf("Validation failed: %w", err)
+	}
+
+	// Deduplicate IdPeserta preserving order
+	uniqueIds := make([]int32, 0, len(payload.IdPeserta))
+	seen := make(map[int32]bool, len(payload.IdPeserta))
+	for _, id := range payload.IdPeserta {
+		if id > 0 && !seen[id] {
+			seen[id] = true
+			uniqueIds = append(uniqueIds, id)
+		}
+	}
+	if len(uniqueIds) == 0 {
+		return nil, &ValidationError{Details: map[string][]string{"id_peserta": {"id_peserta harus memiliki minimal 1 id valid"}}}
+	}
+	payload.IdPeserta = uniqueIds
+
+	if err := validatePesertaLookups(s.db, &payload); err != nil {
+		return nil, err
+	}
+
+	userID := getUserID(c)
+	statusTrue := true
+	modActI := "I"
+	now := domain.NowDateTime()
+	nowStr := time.Now().Format("2006-01-02 15:04:05")
+
+	results := make([]domain.KelasPeserta, 0, len(payload.IdPeserta))
+
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		for _, id := range payload.IdPeserta {
+			var genResult struct {
+				GeneratedId int32
+			}
+			errId := tx.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "KELASPESERTAID", nowStr, 1).Scan(&genResult).Error
+			if errId != nil {
+				return fmt.Errorf("failed to generate ID: %w", errId)
+			}
+
+			idCopy := id
+			item := domain.KelasPeserta{
+				DetailId:        genResult.GeneratedId,
+				TrxId:           payload.TrxId,
+				IdPeserta:       &idCopy,
+				Sumbangan:       payload.Sumbangan,
+				Barang:          payload.Barang,
+				TimKerja:        payload.TimKerja,
+				Keterangan:      payload.Keterangan,
+				Status:          &statusTrue,
+				ModAct:          &modActI,
+				ModBy:           &userID,
+				ModDate:         &now,
+				Lulus:           payload.Lulus,
+				KeteranganLulus: payload.KeteranganLulus,
+				Anak:            payload.Anak,
+				Suster:          payload.Suster,
+				Menginap:        payload.Menginap,
+				MakananPagi:     payload.MakananPagi,
+				MakananSiang:    payload.MakananSiang,
+				MakananMalam:    payload.MakananMalam,
+			}
+
+			if idCopy != 0 {
+				if err := updateUmatSDPemula(tx, idCopy, item.TrxId, item.DetailId, item.Lulus, nil, userID, now); err != nil {
+					return err
+				}
+			}
+
+			if err := tx.Omit("Umat", "Kelas").Create(&item).Error; err != nil {
+				return fmt.Errorf("failed to create record for id_peserta %d: %w", idCopy, err)
+			}
+
+			results = append(results, item)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(results) > 0 {
+		var umats []domain.Umat
+		if err := s.db.Where("id IN (?)", payload.IdPeserta).Find(&umats).Error; err == nil {
+			umatMap := make(map[int32]*domain.Umat, len(umats))
+			for i := range umats {
+				umatMap[umats[i].ID] = &umats[i]
+			}
+			for i := range results {
+				if results[i].IdPeserta != nil {
+					if u, ok := umatMap[*results[i].IdPeserta]; ok {
+						results[i].Umat = u
+					}
+				}
+			}
+		}
+	}
+
+	return results, nil
 }
 
 func (s *KelasPesertaService) Get(id string) (domain.KelasPeserta, error) {
@@ -277,7 +514,7 @@ func (s *KelasPesertaService) Get(id string) (domain.KelasPeserta, error) {
 		return domain.KelasPeserta{}, fmt.Errorf("invalid ID format: %w", err)
 	}
 	var item domain.KelasPeserta
-	if err := s.db.Where("detailid = ?", parsedInt).Take(&item).Error; err != nil {
+	if err := s.db.Preload("Umat").Where("detailid = ?", parsedInt).Take(&item).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return domain.KelasPeserta{}, fmt.Errorf("kelas peserta %s not found", id)
 		}
@@ -311,7 +548,16 @@ func (s *KelasPesertaService) Update(id string, payload domain.KelasPeserta, c *
 		targetVal.TimKerja = payload.TimKerja
 	}
 
-	if err := validatePesertaLookups(s.db, &targetVal); err != nil {
+	var ids []int32
+	if targetVal.IdPeserta != nil && *targetVal.IdPeserta != 0 {
+		ids = []int32{*targetVal.IdPeserta}
+	}
+	bulkReq := domain.KelasPesertaBulkRequest{
+		TrxId:     targetVal.TrxId,
+		IdPeserta: ids,
+		TimKerja:  targetVal.TimKerja,
+	}
+	if err := validatePesertaLookups(s.db, &bulkReq); err != nil {
 		return domain.KelasPeserta{}, err
 	}
 
@@ -366,9 +612,34 @@ func (s *KelasPesertaService) Update(id string, payload domain.KelasPeserta, c *
 	item.ModBy = &userID
 	item.ModDate = &now
 
-	if err := s.db.Save(&item).Error; err != nil {
-		return domain.KelasPeserta{}, fmt.Errorf("failed to update record: %w", err)
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		idPeserta := int32(0)
+		if item.IdPeserta != nil {
+			idPeserta = *item.IdPeserta
+		}
+		if idPeserta != 0 {
+			if err := updateUmatSDPemula(tx, idPeserta, item.TrxId, item.DetailId, item.Lulus, payload.Umat, userID, now); err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Omit("Umat", "Kelas").Save(&item).Error; err != nil {
+			return fmt.Errorf("failed to update record: %w", err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return domain.KelasPeserta{}, err
 	}
+
+	if item.IdPeserta != nil && *item.IdPeserta != 0 {
+		var umat domain.Umat
+		if err := s.db.Where("id = ?", *item.IdPeserta).Take(&umat).Error; err == nil {
+			item.Umat = &umat
+		}
+	}
+
 	return item, nil
 }
 
@@ -396,8 +667,138 @@ func (s *KelasPesertaService) Delete(id string, c *gin.Context) error {
 	item.ModBy = &userID
 	item.ModDate = &now
 
-	if err := s.db.Save(&item).Error; err != nil {
-		return fmt.Errorf("failed to delete record: %w", err)
-	}
-	return nil
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(&item).Error; err != nil {
+			return fmt.Errorf("failed to delete record: %w", err)
+		}
+		if item.IdPeserta != nil && *item.IdPeserta != 0 {
+			lulusFalse := false
+			if err := updateUmatSDPemula(tx, *item.IdPeserta, item.TrxId, item.DetailId, &lulusFalse, nil, userID, now); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
+
+func (s *KelasPesertaService) LoadPrevious(id string, c *gin.Context, page int, limit int) ([]domain.KelasPesertaPrevious, int64, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	trxID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return []domain.KelasPesertaPrevious{}, 0, fmt.Errorf("invalid ID format: %w", err)
+	}
+
+	var (
+		kodeKelas string
+		subWhId   int64
+		wg        sync.WaitGroup
+		errKelas  error
+	)
+
+	wg.Go(func() {
+		errKelas = s.db.Session(&gorm.Session{}).Model(&domain.Kelas{}).Where("trxid = ?", trxID).Pluck("kodekelas", &kodeKelas).Error
+	})
+	wg.Go(func() {
+		if c != nil {
+			_ = s.db.Session(&gorm.Session{}).Model(&domain.AdminMatrix{}).
+				Where("LOGINID = ?", getUserID(c)).
+				Limit(1).
+				Pluck("SUBWHID", &subWhId).Error
+		}
+	})
+	wg.Wait()
+
+	if errKelas != nil {
+		return []domain.KelasPesertaPrevious{}, 0, fmt.Errorf("database query error: %w", errKelas)
+	}
+	if kodeKelas == "" {
+		return []domain.KelasPesertaPrevious{}, 0, errors.New("kelas tidak ditemukan")
+	}
+
+	rows, err := s.db.Raw("EXEC [dbo].[SP_TRX_KELAS_GET_PESERTA_BY_CODE_AND_LEVEL] @TrxId = ?, @KodeKelas = ?, @SubWhId = ?",
+		trxID,
+		kodeKelas,
+		subWhId,
+	).Rows()
+	if err != nil {
+		return []domain.KelasPesertaPrevious{}, 0, fmt.Errorf("database query error: %w", err)
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return []domain.KelasPesertaPrevious{}, 0, fmt.Errorf("database error: %w", err)
+	}
+
+	all := make([]domain.KelasPesertaPrevious, 0, 64)
+	for rows.Next() {
+		var item domain.KelasPesertaPrevious
+		v := reflect.ValueOf(&item).Elem()
+		t := v.Type()
+
+		valuePtrs := make([]interface{}, len(cols))
+		for i, colName := range cols {
+			cleanCol := strings.ToLower(strings.TrimSpace(colName))
+			matched := false
+			for j := 0; j < t.NumField(); j++ {
+				field := t.Field(j)
+				gormTag := field.Tag.Get("gorm")
+
+				isColMatch := false
+				for _, part := range strings.Split(gormTag, ";") {
+					part = strings.TrimSpace(strings.ToLower(part))
+					if part == "column:"+cleanCol {
+						isColMatch = true
+						break
+					}
+				}
+
+				if isColMatch || strings.ToLower(field.Name) == cleanCol {
+					fieldVal := v.Field(j)
+					if fieldVal.Kind() == reflect.String {
+						valuePtrs[i] = &nullStringScanner{target: fieldVal.Addr().Interface().(*string)}
+					} else {
+						valuePtrs[i] = fieldVal.Addr().Interface()
+					}
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				var dummy interface{}
+				valuePtrs[i] = &dummy
+			}
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			continue
+		}
+		if item.Id == 0 && item.IdPeserta != 0 {
+			item.Id = item.IdPeserta
+		}
+		item.FotangAktif = strings.TrimSpace(item.FotangAktif)
+		item.FotangCiuTao = strings.TrimSpace(item.FotangCiuTao)
+		item.FotangAktifDesc = strings.TrimSpace(item.FotangAktifDesc)
+		item.FotangCiuTaoDesc = strings.TrimSpace(item.FotangCiuTaoDesc)
+		all = append(all, item)
+	}
+
+	total := int64(len(all))
+	start := (page - 1) * limit
+	if start >= len(all) {
+		return []domain.KelasPesertaPrevious{}, total, nil
+	}
+	end := start + limit
+	if end > len(all) {
+		end = len(all)
+	}
+
+	return all[start:end], total, nil
+}
+

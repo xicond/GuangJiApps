@@ -110,8 +110,8 @@
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange" @current-change="handlePageChange" />
+          :layout="(!isMobile ? 'total, ->,' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          :pager-count="6" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
@@ -119,25 +119,59 @@
     <el-dialog v-model="dialogVisible" :title="isEditing ? `Edit Topic #${editingCode}` : 'Tambah Topic Baru'"
       :width="isMobile ? '90%' : '560px'" destroy-on-close @closed="resetForm">
       <el-form ref="formRef" :model="formData" :rules="formRules" label-width="130px"
-        :label-position="isMobile ? 'top' : 'right'">
+        :label-position="isMobile ? 'top' : 'right'" :disabled="submitting">
         <el-form-item label="Kode Topik" prop="topic_code">
           <el-input v-model="formData.topic_code" placeholder="Masukkan kode topik (misal: TP01)"
             :disabled="isEditing" />
+          <FieldErrors :errors="fieldErrors.topic_code" />
         </el-form-item>
 
         <el-form-item label="Nama Topik" prop="topic_name">
-          <el-input v-model="formData.topic_name" placeholder="Masukkan nama topik" />
+          <el-autocomplete v-if="!isEditing" v-model="formData.topic_name" :fetch-suggestions="queryTopicSuggestions"
+            :trigger-on-focus="false" placeholder="Masukkan nama topik" clearable style="width: 100%"
+            @select="handleSelectSuggestion">
+            <template #default="{ item }">
+              <div class="topic-suggest-item">
+                <div class="topic-suggest-row">
+                  <span class="topic-suggest-name font-semibold">{{ item.topic_name }}</span>
+                  <el-tag size="small" type="info" class="font-mono">{{ item.topic_code }}</el-tag>
+                </div>
+                <div v-if="item.topic_category || item.description" class="topic-suggest-desc">
+                  <span v-if="item.topic_category" class="topic-suggest-cat">{{ item.topic_category }}</span>
+                  <span v-if="item.topic_category && item.description"> &bull; </span>
+                  <span v-if="item.description" class="topic-suggest-text">{{ item.description }}</span>
+                </div>
+              </div>
+            </template>
+          </el-autocomplete>
+          <el-input v-else v-model="formData.topic_name" placeholder="Masukkan nama topik" />
+
+          <div v-if="fieldErrors.topic_name?.length" class="field-errors-list">
+            <div v-for="(errMsg, idx) in fieldErrors.topic_name" :key="idx" class="field-error-item">
+              <span class="error-bullet">&bull;</span>
+              <span>
+                {{ errMsg }}<template v-if="duplicateTopicCode && errMsg.includes('sudah ada')">,
+                  <el-link type="primary" :underline="true" class="duplicate-edit-link"
+                    @click="handleEdit(duplicateTopicCode)">
+                    update here instead
+                  </el-link>
+                </template>
+              </span>
+            </div>
+          </div>
         </el-form-item>
 
         <el-form-item label="Kategori Topik" prop="topic_category">
           <LookupSelect v-model="formData.topic_category" placeholder="Pilih Kategori Topik..."
             :fetch-api="lookupApi.getLookupKategoriTopic" value-key="lookup_value" label-key="lookup_description"
             clearable auto-populate />
+          <FieldErrors :errors="fieldErrors.topic_category" />
         </el-form-item>
 
         <el-form-item label="Keterangan" prop="description">
           <el-input v-model="formData.description" type="textarea" :rows="3"
             placeholder="Masukkan keterangan tambahan..." />
+          <FieldErrors :errors="fieldErrors.description" />
         </el-form-item>
 
         <!-- <el-form-item label="Status" prop="status">
@@ -176,6 +210,8 @@ import { topicApi } from '../../api/topic'
 import { lookupApi } from '../../api/lookup'
 import type { Topic, TopicQueryParams } from '../../types/topic'
 import LookupSelect from '../../components/common/LookupSelect.vue'
+import FieldErrors from '../../components/common/FieldErrors.vue'
+import { scrollToFormError } from '../../utils/scroll'
 
 // Breakpoints layout calculation
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -210,6 +246,16 @@ const isEditing = ref(false)
 const editingCode = ref('')
 const submitting = ref(false)
 const formRef = ref<FormInstance | null>(null)
+const fieldErrors = ref<Record<string, string[]>>({})
+const duplicateTopicCode = ref('')
+
+interface TopicSuggestion {
+  value: string
+  topic_code: string
+  topic_name: string
+  topic_category?: string
+  description?: string
+}
 
 const formData = reactive<Partial<Topic>>({
   topic_code: '',
@@ -231,7 +277,53 @@ const formRules: FormRules = {
 }
 
 let currentAbortController: AbortController | null = null
+let suggestAbortController: AbortController | null = null
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+const queryTopicSuggestions = async (
+  queryString: string,
+  cb: (suggestions: TopicSuggestion[]) => void
+) => {
+  const trimmed = queryString ? queryString.trim() : ''
+  const words = trimmed.split(/\s+/).filter(Boolean)
+
+  if (words.length < 2) {
+    cb([])
+    return
+  }
+
+  if (suggestAbortController) {
+    suggestAbortController.abort()
+  }
+  suggestAbortController = new AbortController()
+
+  try {
+    const res = await topicApi.getTopics(
+      {
+        topic_name: trimmed,
+        limit: 10
+      },
+      suggestAbortController.signal
+    )
+    const items: TopicSuggestion[] = (res.data || []).map((t) => ({
+      value: t.topic_name,
+      topic_code: t.topic_code,
+      topic_name: t.topic_name,
+      topic_category: t.topic_category_info?.lookup_description || t.topic_category,
+      description: t.description
+    }))
+    cb(items)
+  } catch (err: unknown) {
+    if (err instanceof Error && (err.name === 'CanceledError' || err.name === 'AbortError')) return
+    cb([])
+  }
+}
+
+function handleSelectSuggestion(item: TopicSuggestion) {
+  if (item?.topic_code) {
+    handleEdit(item.topic_code)
+  }
+}
 
 async function fetchData() {
   if (currentAbortController) {
@@ -299,6 +391,8 @@ function resetForm() {
   // formData.status = true
   isEditing.value = false
   editingCode.value = ''
+  fieldErrors.value = {}
+  duplicateTopicCode.value = ''
   if (formRef.value) {
     formRef.value.resetFields()
   }
@@ -333,8 +427,6 @@ async function handleEdit(code: string) {
   }
 }
 
-import { scrollToFormError } from '../../utils/scroll'
-
 async function handleSubmit() {
   if (!formRef.value) return
 
@@ -345,13 +437,15 @@ async function handleSubmit() {
     return
   }
 
+  fieldErrors.value = {}
+  duplicateTopicCode.value = ''
   submitting.value = true
   try {
     const payload: Partial<Topic> = {
       topic_code: formData.topic_code?.trim(),
       topic_name: formData.topic_name?.trim(),
       topic_category: formData.topic_category || undefined,
-      description: formData.description?.trim() || undefined,
+      description: formData.description?.trim() || undefined
       // status: formData.status
     }
 
@@ -375,7 +469,42 @@ async function handleSubmit() {
     fetchData()
   } catch (err: unknown) {
     console.error('Failed to submit topic form:', err)
-    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
+    const errObj = err as {
+      response?: {
+        data?: {
+          error?: string
+          details?: Record<string, string[]>
+        }
+      }
+      message?: string
+    }
+
+    if (errObj.response?.data?.details) {
+      fieldErrors.value = errObj.response.data.details
+
+      const topicNameErrors = fieldErrors.value.topic_name || []
+      const isDuplicateError = topicNameErrors.some((msg) => msg.includes('sudah ada'))
+
+      if (isDuplicateError && formData.topic_name) {
+        try {
+          const searchRes = await topicApi.getTopics({
+            topic_name: formData.topic_name.trim(),
+            limit: 5
+          })
+          const matched =
+            searchRes.data?.find(
+              (t) => t.topic_name.trim().toLowerCase() === formData.topic_name!.trim().toLowerCase()
+            ) || searchRes.data?.[0]
+
+          if (matched) {
+            duplicateTopicCode.value = matched.topic_code
+          }
+        } catch (searchErr) {
+          console.warn('Failed to resolve duplicate topic code:', searchErr)
+        }
+      }
+    }
+
     ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal menyimpan data topic')
     scrollToFormError()
   } finally {
@@ -405,6 +534,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (currentAbortController) currentAbortController.abort()
+  if (suggestAbortController) suggestAbortController.abort()
   if (debounceTimer) clearTimeout(debounceTimer)
 })
 </script>
@@ -491,8 +621,6 @@ onUnmounted(() => {
 }
 
 .pagination-container {
-  display: flex;
-  justify-content: flex-end;
   margin-top: 1.25rem;
 }
 
@@ -500,5 +628,71 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+.topic-suggest-item {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  line-height: 1.3;
+}
+
+.topic-suggest-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.topic-suggest-name {
+  color: var(--el-text-color-primary);
+  font-size: 0.875rem;
+}
+
+.topic-suggest-desc {
+  font-size: 0.75rem;
+  color: var(--el-text-color-secondary);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topic-suggest-cat {
+  color: var(--el-color-primary);
+  font-weight: 500;
+}
+
+.topic-suggest-text {
+  color: var(--el-text-color-secondary);
+}
+
+.field-errors-list {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.field-error-item {
+  color: var(--el-color-danger, #f56c6c);
+  font-size: 0.75rem;
+  line-height: 1.25;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.error-bullet {
+  font-weight: bold;
+}
+
+.duplicate-edit-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: baseline;
+  text-decoration: underline;
+  margin-left: 4px;
 }
 </style>

@@ -94,7 +94,7 @@
         <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150" align="right">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-'
-              }}</span>
+            }}</span>
           </template>
         </el-table-column>
 
@@ -128,7 +128,7 @@
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'"
+          :layout="(!isMobile ? 'total, ->' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
@@ -581,8 +581,6 @@ onUnmounted(() => {
 }
 
 .pagination-container {
-  display: flex;
-  justify-content: flex-end;
   margin-top: 1.25rem;
 }
 

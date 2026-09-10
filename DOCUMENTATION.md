@@ -1,5 +1,402 @@
 # Documentation - Completed Tasks
 
+## [Completed] Vue: "Add From History" Feature in `KelasPesertaTable.vue`
+
+### Summary & Changes Made:
+- **Component UI & User Experience (`vue/src/components/kelas/KelasPesertaTable.vue`)**:
+  - Added button `"Add From History"` with `:icon="Timer"` beside `"Tambah Peserta"`.
+  - Added multi-select `UmatPopupSelector` dialog with `:multiple="true"`, bound to `historyPopupVisible`.
+  - Integrated with `fetchPreviousPesertaApi` calling `GET /v1/kelas/:id/peserta/load-previous`.
+  - In the Add/Edit/History dialog:
+    - Sets title to `"Add From History"` when in history mode.
+    - Displays selected participants as closable tags in a container (`selected-tags-container`), with single-click removal (`removeHistoryUmat`), count summary badge, and a button to reopen selection.
+    - Hides individual participant status lulus / keterangan lulus (only editable when editing an existing participant).
+    - In footer, updates submit button label dynamically to reflect selected participant count: `Simpan ({count} Peserta)`.
+    - Fully disables the form and buttons during submission with `v-loading="submitting"` and `:disabled="submitting"`, strictly executing `finally { submitting.value = false }`.
+    - Dispatches to `kelasApi.createKelasPesertaBulk` with array of `id_peserta` and shared logistics / ikrar data.
+- **API Client & TypeScript Types (`vue/src/api/kelas.ts`, `vue/src/types/kelas.ts`)**:
+  - Defined `KelasPesertaPrevious`, `KelasPesertaPreviousListResponse`, `KelasPesertaBulkPayload`, and `KelasPesertaBulkResponse`.
+  - Added typed API functions:
+    - `loadPreviousKelasPeserta(id: number | string, params?: Record<string, any>, signal?: AbortSignal)`
+    - `createKelasPesertaBulk(payload: KelasPesertaBulkPayload)`
+- **Verification**:
+  - TypeScript static type-checking passed cleanly: `npm run type-check` (`vue-tsc --noEmit`, exit code 0).
+  - Production build succeeded cleanly: `npm run build` (built in 15.17s, exit code 0).
+
+---
+
+## [Completed] Vue: Fix Multi-Page Selection in `UmatPopupSelector` & Full-Width Form Keterangan
+
+### Summary & Changes Made:
+- **Keterangan Input Full Width (`vue/src/components/kelas/KelasPesertaTable.vue`)**:
+  - Removed `<el-row>` and `<el-col :md="12" :sm="24">` wrapper around `<el-form-item label="Keterangan">`, allowing the keterangan input to span the full 100% width of the dialog form consistently with other items.
+- **Persistent Multi-Page Selection (`vue/src/components/common/UmatPopupSelector.vue`)**:
+  - Added `:row-key="getRowKey"` on `<el-table>` and `:reserve-selection="true"` on `<el-table-column type="selection">`.
+  - Added `getRowKey` computing consistent string identity (`row.id_peserta ?? row.id ?? row.kode`).
+  - Added `selected?: any[]` prop and `rowKey?: string | ((row: any) => string | number)` prop.
+  - In `handleSelectionChange`, properly preserved selected items belonging to off-page records when pagination data updates.
+  - In `fetchData`, re-synchronized checkboxes for rows on the active page matching existing selections via `tableRef.value.toggleRowSelection(row, true)`.
+  - In `action-toolbar`, displayed the real-time cumulative count indicator (`{{ selectedMultipleRows.length }} data terpilih`) so users have clear visibility across all pages.
+  - In dialog footer, updated the confirm button label to `Pilih ({count})` reflecting the total selected across all pages.
+  - Bound `:selected="selectedHistoryUmats"` from `KelasPesertaTable.vue` so reopening the selector restores previous selections.
+- **Tag Ellipsis & Truncation (`vue/src/components/kelas/KelasPesertaTable.vue`)**:
+  - Set `max-width: 60px` with `overflow: hidden; text-overflow: ellipsis; white-space: nowrap;` on `.selected-tags-container :deep(.el-tag)` and `.el-tag__content`.
+  - Added `:title` tooltip on each `<el-tag>` to preserve full readability on hover.
+- **Verification**:
+  - `npm run type-check` (`vue-tsc --noEmit`): **Passed (0 errors)**.
+  - `npm run build`: **Production build succeeded cleanly (15.79s)**.
+
+---
+
+## [Completed] General JSON Parse & Payload Error Handler (`ParseJSONError`)
+
+### Summary & Changes Made:
+- **Router Implementation (`gin/internal/api/router.go`)**:
+  - Implemented `ParseJSONError(err error) map[string]string`:
+    - Handles syntax corruption errors (`*json.SyntaxError`, `io.ErrUnexpectedEOF`) returning user-friendly `"Format payload JSON tidak valid atau rusak."` under key `"general"`.
+    - Handles empty payloads (`io.EOF`, `"EOF"`) returning `"Payload request tidak boleh kosong."` under key `"general"`.
+    - Handles specific field type mismatches (`*json.UnmarshalTypeError`), mapping custom messages for `idpeserta` / `id_peserta`, and dynamic fallback `"Field '{field}' memiliki tipe data yang tidak sesuai."` for any other field.
+    - Gracefully handles formatted struct validation or unstructured data errors.
+  - Integrated with `FormatValidationError(err)`:
+    - Converts parsed JSON error map into `map[string][]string` for client contracts (`details: Record<string, string[]>`).
+  - Integrated with `respondValidationError(c, err)`:
+    - Sanitizes the top-level `"error"` message, completely preventing Go internal error text (like `invalid character '...'`, `unexpected EOF`, `cannot unmarshal string into Go struct field ...`) from leaking to users.
+- **Unit & Integration Tests (`gin/internal/api/router_test.go`)**:
+  - Added unit test `TestParseJSONError` checking `*json.SyntaxError`, `*json.UnmarshalTypeError`, and `nil`.
+  - Added API route-level tests in `TestKelasPeserta_PayloadTypeValidation`:
+    - Verified syntax errors (`{"id_peserta": `) return status 400 with `"Format payload JSON tidak valid atau rusak."`.
+    - Verified empty payloads (`""`) return status 400 with `"Payload request tidak boleh kosong."`.
+- **Verification**:
+  - Unit tests passed: `go test -v -count=1 ./internal/api -run "TestParseJSONError|TestKelasPeserta_PayloadTypeValidation"`.
+
+---
+
+## [Completed] Custom JSON Unmarshaling Breakdown for `KelasPeserta` and `KelasPesertaBulkRequest`
+
+### Summary & Changes Made:
+- **Domain Models (`gin/internal/domain/legacy_models.go`)**:
+  - Implemented `func (p *KelasPeserta) UnmarshalJSON(data []byte) error`:
+    - Enforces that `id_peserta` (or `idpeserta`) must be a single umat value (number or string representation of integer).
+    - If an array is passed (e.g., `{"id_peserta": [101, 102]}`), it explicitly fails with `idpeserta: idpeserta should be single value of umat` instead of leaking internal Go `"cannot unmarshal"` error messages.
+    - Accurately parses valid integer or numeric string values into `p.IdPeserta` without error.
+  - Implemented `func (p *KelasPesertaBulkRequest) UnmarshalJSON(data []byte) error`:
+    - Enforces that `id_peserta` (or `idpeserta`) must be a JSON array.
+    - If a single value (string, integer, object, etc.) is passed (e.g., `{"id_peserta": 101}` or `{"id_peserta": "101"}`), it explicitly fails with `idpeserta: idpeserta must array` instead of default Go unmarshal errors.
+    - Flexible support for decoding `[]int32` or string arrays `[]string` of IDs into `p.IdPeserta`.
+- **API Error Formatting Integration (`gin/internal/api/router.go`)**:
+  - The errors returned (`idpeserta: idpeserta must array` and `idpeserta: idpeserta should be single value of umat`) seamlessly plug into `FormatValidationError(err)`.
+  - Produces clean structured responses:
+    - For bulk endpoint type mismatch:
+      ```json
+      {
+        "error": "idpeserta: idpeserta must array",
+        "details": {
+          "idpeserta": ["idpeserta must array"]
+        }
+      }
+      ```
+    - For single participant create/update endpoint type mismatch:
+      ```json
+      {
+        "error": "idpeserta: idpeserta should be single value of umat",
+        "details": {
+          "idpeserta": ["idpeserta should be single value of umat"]
+        }
+      }
+      ```
+- **Postman Collection (`gin/postman/apps-gin.postman_collection.json`)**:
+  - Added `400 Bad Request - IdPeserta Should Be Single Value` under `Kelas Peserta - Create`.
+  - Added `400 Bad Request - IdPeserta Must Array` under `Kelas Peserta - Create Bulk`.
+- **Unit & Integration Tests (`gin/internal/service/kelas_peserta_service_test.go`, `gin/internal/api/router_test.go`)**:
+  - Updated `TestKelasPeserta_PayloadTypeValidation` in `kelas_peserta_service_test.go` to assert exact error strings `idpeserta should be single value of umat` and `idpeserta must array`.
+  - Updated `TestKelasPeserta_PayloadTypeValidation` in `router_test.go` to assert the parsed JSON `details` map has `details["idpeserta"]` containing the exact error messages.
+- **Verification**:
+  - `go test -v ./internal/service -run "TestKelasPeserta"` passed.
+  - `go test -v -count=1 ./internal/api -run "TestKelasPeserta_PayloadTypeValidation"` passed.
+  - Docker container built and restarted successfully.
+
+---
+
+## [Completed] Endpoint `POST /v1/kelas/:id/peserta/bulk` & `CreateBulk` Implementation
+
+### Summary & Changes Made:
+- **Domain Model (`gin/internal/domain/legacy_models.go`)**:
+  - Added `KelasPesertaBulkRequest` struct supporting `IdPeserta []int32` with `validate:"required,min=1"` alongside all shared participant properties (`sumbangan`, `barang`, `tim_kerja`, `keterangan`, `status`, `lulus`, `keterangan_lulus`, `anak`, `suster`, `menginap`, `makanan_pagi`, `makanan_siang`, `makanan_malam`).
+- **Service Implementation (`gin/internal/service/kelas_peserta_service.go`)**:
+  - Consolidated validation into a single `validatePesertaLookups` function accepting `*domain.KelasPesertaBulkRequest` (removed redundant single validator). Callers `Create` and `Update` transform their single-item payload (`IdPeserta *int32`) into bulk request (`[]int32{*p.IdPeserta}`).
+  - Validates `trx_id` in `Kelas`, batch lookups `id_peserta` in `Umat` (`id IN (?)`), and checks `tim_kerja` in `AppLookup` concurrently using `wg.Go` and separate GORM sessions.
+  - Implemented `func (s *KelasPesertaService) CreateBulk(payload domain.KelasPesertaBulkRequest, c *gin.Context) ([]domain.KelasPeserta, error)`:
+    - Deduplicates `IdPeserta` preserving order.
+    - Uses a single database transaction (`s.db.Transaction`) to generate IDs via `SP_APP_GenerateId`, update SD Pemula records (`updateUmatSDPemula`), and insert each participant into `T_TRX_KELAS_PESERTA`.
+    - Batch preloads `Umat` details for all created participants before returning.
+- **API Routing (`gin/internal/api/router.go`)**:
+  - Registered `protected.POST("/kelas/:id/peserta/bulk", ...)` handling path parameter `:id` binding and JSON deserialization into `KelasPesertaBulkRequest`.
+- **Postman Collection (`gin/postman/apps-gin.postman_collection.json`)**:
+  - Added `Kelas Peserta - Create Bulk` under `Kelas` folder with array payload, test script assertions (status 201, `KelasPeserta` resource, array return), sample success response (`201 Created`), and validation error response (`400 Bad Request`).
+- **Unit & Integration Tests (`gin/internal/service/kelas_peserta_service_test.go`, `gin/internal/api/router_test.go`, `gin/tests/e2e/transactions_e2e_test.go`)**:
+  - Added `TestKelasPesertaService_CreateBulk` covering validation of empty arrays, invalid foreign keys, and successful multi-record insertion with verified generated `detail_id` and rollback cleanup.
+  - Added `TestKelasPeserta_PayloadTypeValidation` in `kelas_peserta_service_test.go` and `router_test.go`:
+    - Tests that passing an array payload `{"id_peserta": [101, 102]}` to single `POST /v1/kelas/:id/peserta` returns `400 Bad Request` with unmarshal validation error.
+    - Tests that passing a single number payload `{"id_peserta": 101}` to bulk `POST /v1/kelas/:id/peserta/bulk` returns `400 Bad Request` with unmarshal validation error.
+  - Updated E2E acceptance tests in `transactions_e2e_test.go` verifying both payload type mismatch error cases.
+- **Verification**:
+  - Docker container built and deployed successfully (`docker compose build gin && docker compose up -d gin`).
+  - Unit tests passed: `go test -v ./internal/service -run "TestKelasPeserta"` (PASS) and `go test -v ./internal/api -run "TestKelasPeserta_PayloadTypeValidation"` (PASS).
+  - Verified live endpoint with cURL: 400 on empty list, 400 on non-existent `id_peserta`, 400 on array payload for single create, 400 on single payload for bulk create, and 201 Created on valid insertion.
+
+---
+
+## [Completed] Endpoint `GET /v1/kelas/:id/peserta/load-previous` & SP Integration (`SP_TRX_KELAS_GET_PESERTA_BY_CODE_AND_LEVEL`)
+
+### Summary & Changes Made:
+- **Domain Model (`gin/internal/domain/legacy_models.go`)**:
+  - Created `KelasPesertaPrevious` struct mapping output fields from `SP_TRX_KELAS_GET_PESERTA_BY_CODE_AND_LEVEL`:
+    `id_peserta`, `id`, `kode`, `nama_indonesia`, `nama_mandarin`, `alias`, `marga`, `alamat`, `fotang_aktif`, `fotang_aktif_desc`, `fotang_ciu_tao`, `fotang_ciu_tao_desc`, `pengajak`, `penanggung`.
+- **Service Implementation (`gin/internal/service/kelas_peserta_service.go`)**:
+  - Implemented `func (s *KelasPesertaService) LoadPrevious(id string, c *gin.Context, page int, limit int) ([]domain.KelasPesertaPrevious, int64, error)`.
+  - Executed queries for `kodeKelas` (from `T_TRX_KELAS`) and `subWhId` (from `T_WH_USER_MATRIX_MST` / `AdminMatrix`) concurrently using `wg.Go` and separate GORM sessions (`s.db.Session(&gorm.Session{})`) with connection pooling.
+  - Calls `EXEC [dbo].[SP_TRX_KELAS_GET_PESERTA_BY_CODE_AND_LEVEL] @TrxId = ?, @KodeKelas = ?, @SubWhId = ?`.
+  - Removed in-memory filters (`namaindonesia`, `namamandarin`, `alias`, `fotangaktif`, `fotangciutao`) since the stored procedure does not facilitate filtering, keeping code lightweight with minimal GC overhead.
+  - Applies pagination (`page`, `limit`) with slice pre-allocation.
+- **API Routing (`gin/internal/api/router.go`)**:
+  - Registered `protected.GET("/kelas/:id/peserta/load-previous", ...)` before detail routes to prevent routing conflicts.
+- **Stored Procedure Update (`dbo.SP_TRX_KELAS_GET_PESERTA_BY_CODE_AND_LEVEL.StoredProcedure.sql`)**:
+  - Updated to return `fotangaktif`, `FotangAktifDesc`, `fotangciutao`, and `FotangCiuTaoDesc`.
+  - Supported `@SubWhId = 0` (`@SubWhId = 0 or b.fotangaktif = @SubWhId`) allowing global admins to query past participants across all fotang.
+- **Postman Collection (`gin/postman/apps-gin.postman_collection.json`)**:
+  - Added and cleaned `Kelas - Peserta Load Previous` under `Kelas` folder with pagination query parameters (`page`, `limit`), test assertions (status 200, array schema, pagination meta), and sample mock response.
+- **Unit & Acceptance Testing (`gin/internal/service/kelas_peserta_service_test.go` & `gin/tests/e2e/transactions_e2e_test.go`)**:
+  - Added unit test `TestKelasPesertaService_LoadPrevious` verifying invalid format, non-existent class, valid class, and pagination limits.
+  - Added E2E acceptance test in `TestKelas_EndToEnd` verifying `GET /v1/kelas/:id/peserta/load-previous` with pagination.
+- **Verification**:
+  - Verified Docker container compilation with `docker compose build gin`.
+  - Verified unit test with `go test -v ./internal/service -run "TestKelasPesertaService"` (PASS).
+  - Verified acceptance tests with `go test -v -count=1 ./tests/e2e -run "TestKelas_EndToEnd"` (PASS).
+
+---
+
+## [Completed] Responsive Umat Selector & Decoupled `UmatPopupSelector.vue` Dialog
+
+### Summary & Changes Made:
+- **Decoupled Reusable Dialog Component (`vue/src/components/common/UmatPopupSelector.vue`)**:
+  - Implemented an API-free, fully property-controlled dialog selector for Umat.
+  - Receives `fetchApi` function prop handling pagination, page size, and dynamic query filtering.
+  - Dynamically configurable text filters via `:filterName` (default: `namaindonesia`, `namamandarin`, `alias`; can be set to `false`/`null` or custom mappings).
+  - Dynamically configurable Fotang dropdown filter via `:filterFotang` (supports `fetchFotangApi` and `fotangOptions` props; can be set to `false`/`null`).
+  - Dynamically configurable columns via `:Columns` / `:columns` prop with customizable widths and alignments.
+  - Supports both single selection (`multiple: false`) with radio button, row click, double-click instant selection, and multi-selection (`multiple: true`) with checkboxes.
+  - Emits `@select` and `@onselect` feedback upon confirmation or double-click selection.
+  - Includes responsive search form, "Add Content" primary button, data counter tag, empty state, and full Element Plus pagination controls.
+- **Responsive Umat Selector in `KelasPengabdiTable.vue`, `KelasPesertaTable.vue`, & `UmatForm.vue`**:
+  - Maintained `<el-select>` / `<LookupSelect>` remote search dropdown exclusively on mobile viewports (`isMobile: width < 768px`).
+  - Created custom popup dialog trigger with readonly input and `...` ellipsis append button on desktop and tablet viewports (`!isMobile: width >= 768px`).
+  - Integrated `UmatPopupSelector` with `umatApi.getUmats` and `lookupApi.getLookupFotang`.
+  - In `UmatForm.vue`: Added dual Fotang filters (`fotang_chiutao` / Fotang Chiu Tao and `fotang_aktif` / Fotang Aktif) alongside the 3 name filters (`namaindonesia`, `namamandarin`, `alias`) for both Pengajak and Penanggung selectors with dynamic dialog title (`Popup Pengajak` / `Popup Penanggung`).
+  - In `umat.ts`: Forwarded all filter parameters in `getUmats`.
+  - In `umat_service.go`: Whitelisted `fotang_aktif`, `fotangaktif`, `fotang_chiutao`, and `fotangciutao` in query filter rules.
+  - Automatically syncs selected Umat display label with `form.id_pengabdi`, `form.id_peserta`, `formData.pengajak`, `formData.penanggung`, `umatOptions`, Ikrar 1-6 updates for Suai Sing Pan, and form validation.
+- **Verification**:
+  - Verified with `vue-tsc --noEmit` (`npm run type-check` exited with code 0).
+  - Verified with `docker compose build gin` (exited with code 0).
+
+---
+
+## [Completed] End-to-End (E2E) Acceptance Testing in Go (`gin/tests/e2e/`)
+
+### Summary & Changes Made:
+- **E2E Test Architecture & Factory Layer (`gin/tests/e2e/`)**:
+  - Implemented modular, fast E2E test framework using `github.com/gavv/httpexpect/v2` and `github.com/stretchr/testify`.
+  - Built automated JWT authentication workflow using `admin` / `password`, dynamic token extraction, and cached authentication helper (`getAuthenticatedExpect(t)`).
+  - Built fake factory payload generators in `factory/` (`admin_factory.go`, `master_factory.go`, `transaction_factory.go`) providing valid (HTTP 200/201) and invalid (HTTP 400 validation error) models with realistic randomized data.
+- **Test Suites Across All API Endpoints**:
+  - `auth_e2e_test.go`: Tests Ping (`/ping`), Login (`POST /login` with 200 OK, 400 bad JSON, 401 invalid credentials), and Change Password (`PATCH /change-password` with 400).
+  - `lookup_e2e_test.go`: Tests all 14 lookup endpoints for HTTP 200 OK and validates unauthenticated rejection (HTTP 401 Unauthorized).
+  - `admin_mgmt_e2e_test.go`: Tests Department (`GET /v1/departments`), Admins CRUD (`/v1/admins`), Admin Groups CRUD (`/v1/admin-groups`), Group Menu Mappings CRUD (`/v1/group-menus`), and Admin Sub Warehouses CRUD (`/v1/admin-sub-warehouses`).
+  - `master_data_e2e_test.go`: Tests Umat CRUD & Reports (`/v1/umats`), Topics CRUD (`/v1/topic`), Kelas Master CRUD (`/v1/kelas-master`), Activity CRUD (`/v1/activities`), Tim Kerja CRUD & Lookups (`/v1/tim-kerja`), Tahun Ciu Tao CRUD (`/v1/tahun-ciu-tao`), Penggalang Dana CRUD (`/v1/penggalang-dana`), SXY Donatur CRUD (`/v1/sxy-donatur`), and Fotang Lookups (`/v1/fotang/lookup`).
+  - `transactions_e2e_test.go`: Tests Kelas CRUD (`/v1/kelas`), nested sub-resources (Peserta, Pengabdi, Topik, Kendaraan, Donasi, Donasi Barang, Pengeluaran, Musik, Absensi), SSRS Report generation, and Donasi SXY CRUD (`/v1/donasi-sxy`) with SSRS Excel export (`/v1/donasi-sxy/report/excel`).
+- **Status Code & Validation Criteria**:
+  - All GET and DELETE endpoints asserted for HTTP 200 OK.
+  - All POST and PATCH endpoints tested with fake factory data for both HTTP 200/201 (success) and HTTP 400 (validation failure).
+- **Backend Fixes & Database Adaptations**:
+  - Resolved SQL Server datetime out-of-range errors on zero timestamps (`0001-01-01`) by modifying `DateOnly.Value()` and `DateTime.Value()` in `legacy_models.go` to return formatted date strings or `nil`.
+  - Added association omission (`Omit("AdminGroup", "Department")`) and non-zero partial updates in `AdminService` to prevent foreign key errors.
+  - Fixed parameter count discrepancies for SQL Server stored procedures `SP_BUS_RPT_UMAT` (13 parameters) and `SP_SXY_RPT_TRANSAKSI` (5 parameters).
+  - Updated router handlers to support dual path & query parameter lookups for `tahun-ciu-tao`, `activity`, and `tim-kerja`.
+- **Verification & Stored Procedure Pagination Updates**:
+  - Validated `/v1/umats/report` (`SP_BUS_RPT_UMAT`) with 15 parameters returning paginated rows with `meta.page`, `meta.limit`, and `meta.total` (`total = 19503`).
+  - Validated `/v1/donasi-sxy/report` (`SP_SXY_RPT_TRANSAKSI`) with 7 parameters returning paginated rows with `meta.page`, `meta.limit`, `meta.total` (`total = 45239`), and `meta.total_jumlah`.
+  - Updated E2E test suites in `gin/tests/e2e/` (`master_data_e2e_test.go` and `transactions_e2e_test.go`) to strictly assert `meta.total > 0` on list and report responses.
+  - Rebuilt Docker `gin_app` container (`docker compose up -d --build gin`) and ran full E2E test suite (`go test -v ./tests/e2e/...`), verifying all test suites passing with 100% success (`PASS` in 92.8s).
+
+---
+
+## [Completed] User Acceptance Tests (UAT) & Sample Mock Responses for All 117 Endpoints (`gin/postman/apps-gin.postman_collection.json`)
+
+### Summary & Changes Made:
+- **Login Credentials & Dynamic Token Authentication**:
+  - Updated Login endpoint credentials in [`apps-gin.postman_collection.json`](file:///Users/xicond/Workspace/www/GuangJiApps/gin/postman/apps-gin.postman_collection.json) to `admin` / `password`.
+  - Added UAT test script in Login endpoint to verify HTTP 200 OK, token presence, and automatically extract and set `authToken` in Postman collection variables (`pm.collectionVariables.set("authToken", jsonData.token)`).
+- **Comprehensive User Acceptance Test (UAT) Scripts**:
+  - Configured automated test scripts (`event` with `listen: "test"`) across all 117 endpoints covering:
+    - **Status Code Validation**: Verifies HTTP 200 OK for GET/PATCH/DELETE, and HTTP 201 Created or 200 OK for POST.
+    - **Latency SLA**: Ensures API response time is within SLA thresholds (< 2000ms for queries, < 3000ms for mutations).
+    - **Schema & Structure**: Asserts JSON response structures, checking `data` array/object, pagination `meta` (`page`, `limit`, `total`), and message properties.
+    - **Excel Exports**: Validates `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` and `Content-Disposition: attachment; filename=...`.
+- **Sample Output Examples (Saved Responses)**:
+  - **GET Endpoints (65 requests)**: Added realistic HTTP 200 OK response examples with domain model payloads.
+  - **POST, PATCH, DELETE Endpoints (52 requests)**: Added dual response examples for each endpoint:
+    - **Success (HTTP 200 OK / 201 Created)**: Domain-accurate payload structure with created/updated data or deletion confirmation.
+    - **Error (HTTP 400 Bad Request)**: Validation error payload matching the backend's `{"error": "...", "details": {...}}` contract.
+- **Verification**:
+  - Automated verification confirmed 117 of 117 endpoints configured with test scripts.
+  - Confirmed 0 missing test scripts and 0 missing sample responses.
+
+---
+
+## [Completed] Docker Daemon Recovery & Unresponsive Socket Fix
+
+
+### Summary & Changes Made:
+- **Diagnosed Docker Failure**:
+  - Found `docker info` hanging indefinitely and throwing `permission denied while trying to connect to the docker API at unix:///Users/xicond/.docker/run/docker.sock`.
+  - Investigated process table and discovered stale Docker Desktop background helper processes (`com.docker.backend`, `com.docker.virtualization`, `docker-agent`) had hung since Sep 3 while the main `Docker.app` was inactive, leaving an unresponsive domain socket.
+- **Process Cleanup & Service Relaunch**:
+  - Terminated hung CLI and background processes (`kill -9`, `killall -9`).
+  - Relaunched Docker Desktop cleanly via `/Applications/Docker.app`.
+  - Monitored startup until socket listener initialized and responded.
+- **Automated Recovery Script (`fix-docker.sh`)**:
+  - Created executable script [`fix-docker.sh`](file:///Users/xicond/Workspace/www/GuangJiApps/fix-docker.sh) to automatically terminate hung processes, restart Docker Desktop, wait for daemon readiness up to 60s, and display running containers.
+- **Verification**:
+  - `docker info` responds instantly with Docker Engine version `29.7.2`.
+  - `docker ps` verified all workspace containers (`gin_app`, `redis_app`, `mssql_server`, `vue_dev`) are running and healthy.
+
+---
+
+## [Completed] Master Data Kelas Service & Vue Integration (`gin/internal/service/kelas_master_service.go`, `gin/internal/api/router.go`, `vue/src/views/master-data/KelasMasterList.vue`, `vue/src/layouts/MainLayout.vue`, `vue/src/router/index.ts`)
+
+### Summary & Changes Made:
+- **Backend Service `KelasMasterService` (`gin/internal/service/kelas_master_service.go`)**:
+  - Targets `T_APP_LOOKUP` with `CategoryId = 'B_KELASKHUSUS'`.
+  - **Automated LookupValue and LookupId Generation**: Evaluates existing numeric `LookupValue` records in the database, determines the maximum integer, and auto-generates the next sequential 3-digit zero-padded value (e.g. `023`) and LookupId (`B_KELASKHUSUS023`) if not supplied by the client.
+  - **Uniqueness Validation**: `validateDescription` ensures `LookupDescription` is non-empty, max 150 characters, and unique among active records (`Status = true` / `1`) within category `B_KELASKHUSUS`.
+  - **Combined Validation**: `validateKelasMaster` runs `ValidateStruct` and `validateDescription` together, consolidating all errors into a single `*ValidationError` for simultaneous delivery to the frontend.
+  - **Concurrent Queries**: `List` runs `Count` and `Find` concurrently via `sync.WaitGroup` on separate GORM sessions for high performance.
+  - **CRUD Operations**: Full support for `List`, `Get`, `Create`, `Update` (with duplicate check excluding self), and `Delete` (soft delete `Status = false`, `ModAct = 'D'`).
+  - **Unit Testing**: Added unit tests in `kelas_master_service_test.go` covering auto-number generation, duplicate name detection, combined struct validation, update rules, and delete behavior. Verified passing (`0.31s`).
+- **Gin Router & Postman**:
+  - Registered routes in `router.go`: `GET /v1/kelas-masters` (list with ETag caching), `GET /v1/kelas-master` (item by ID or list fallback), `GET /v1/kelas-masters/:id`, `POST /v1/kelas-master`, `PATCH /v1/kelas-master`, and `DELETE /v1/kelas-master`.
+  - Invalidates Redis lookup cache `lookup:B_KELASKHUSUS` upon create/update/delete.
+  - Added 5 requests to Postman collection `apps-gin.postman_collection.json`.
+- **Vue Frontend (`KelasMasterList.vue`, `kelasMasterApi`, `types/kelasMaster`)**:
+  - Created TypeScript definitions in `vue/src/types/kelasMaster.ts` and API client in `vue/src/api/kelasMaster.ts`.
+  - Created full management view `KelasMasterList.vue` with filter by `lookup_value`, `lookup_description`, and `status`, pagination, and responsive layout.
+  - **Auto-Suggest**: On create, typing 2 or more words in `LookupDescription` (`el-autocomplete`) queries existing kelas. Selecting an existing class switches to the edit modal for that record.
+  - **Duplicate Link**: If backend rejects with duplicate name, shows `"..., update here instead"` linking directly to edit mode for the existing record.
+  - **Automated Kode Kelas**: Input for `LookupValue` is optional with clear helper hints; empty values auto-generate on save.
+  - **Submitting Lock**: Page & form inputs are disabled during submission (`:disabled="submitting"`), wrapped with `try ... finally { submitting.value = false }`.
+- **Route & Menu Isolation & Permission Guard**:
+  - Mounted `/master-data/kelas` in `vue/src/router/index.ts` with `name: 'master-kelas'` and explicit `activeMenu: '/master-data/kelas'`.
+  - Added menu item under Master Data in `vue/src/layouts/MainLayout.vue` (`v-if="hasSubMenu('Master Data', 'Kelas')" index="/master-data/kelas"`).
+  - Explicit index paths prevent any active menu CSS conflicts with `/transaction/kelas`.
+  - Added fallback in `authStore.hasSubMenu` (`vue/src/stores/auth.ts`) so that if `Master Data -> Kelas` is not yet populated in the database table `T_Login_Menu`, it automatically permits navigation as long as the user has access to `Master Data`, resolving the issue where `router.beforeEach` previously blocked navigation and redirected to `/dashboard`.
+- **Verification**:
+  - Unit tests passed: `TestKelasMasterService` (0.31s).
+  - TypeScript type-check passed: `npm run type-check` (`vue-tsc --noEmit`) with 0 errors.
+  - Windows binary compiled: `docker compose run --rm gin-build` (`server.exe`) with 0 errors.
+
+---
+
+## [Completed] Combined Struct & Duplicate Validation with Descriptive Clues (`gin/internal/api/router.go`, `gin/internal/service/topic_service.go`, `gin/internal/api/router_test.go`)
+
+### Summary & Changes Made:
+- **Direct JSON Decoding on Topic Endpoints in `router.go`**:
+  - Replaced Gin's `c.ShouldBindJSON(&payload)` with `json.NewDecoder(c.Request.Body).Decode(&payload)` on both `POST /topic` and `PATCH /topic`.
+  - Previously, Gin's default struct validator was short-circuiting on struct validation tags before `topicService.Create` or `topicService.Update` was reached, discarding the duplicate name check.
+  - With direct decoding, `validateTopic` runs inside the service and executes both `ValidateStruct` and `validateTopicName`, successfully bundling struct validation errors and duplicate name errors into a single combined response.
+- **Descriptive Validation Clues in `respondValidationError`**:
+  - Changed `respondValidationError` in `router.go` from static `"error": "Invalid Input"` to `errMsg := err.Error()`.
+  - Now, HTTP 400 Bad Request responses explicitly include the human-readable validation error string (e.g. `"topic_name: Nama topik '...' sudah ada"`) alongside the structured `details` map.
+- **Field Preservation on Partial Update**:
+  - In `TopicService.Update`, preserved existing `TopicName` and `TopicCategory` when they are omitted (or empty) in `PATCH` requests, preventing accidental field wipes.
+- **Verification & Testing**:
+  - Added unit test cases `TestValidationErrorReturns400` and `TestCombinedValidationErrors` in `router_test.go`.
+  - Rebuilt and started the `gin` container (`docker compose up -d --build gin`).
+  - Tested live against the running backend with `admin` authentication:
+    1. Struct error + duplicate name: Returned HTTP 400 with both `topic_category`, `topic_code`, and `topic_name` in `details` and in `error`.
+    2. Struct valid + duplicate name: Returned HTTP 400 with `topic_name: Nama topik '...' sudah ada` in `error` and `details`.
+    3. Update with unchanged name: Successfully preserved name and updated description.
+  - Verified Windows compilation with `docker compose run --rm gin-build`.
+  - Verified Vue type-check and client build with `npm run type-check` and `npm run build:client`.
+
+- **IIS `httpErrors` PassThrough Configuration (`gin/dist/web.config`)**:
+  - Changed `<httpErrors existingResponse="Replace">` to `<httpErrors existingResponse="PassThrough">`.
+  - In IIS, `existingResponse="Replace"` intercepts and replaces *all* HTTP error responses (including 400 Bad Request, 422, and 500) generated by `httpPlatformHandler`/Gin with generic IIS error pages, stripping the JSON body.
+  - Setting `existingResponse="PassThrough"` instructs IIS to leave application error response bodies intact so clients receive the JSON error details and messages.
+
+---
+
+
+
+### Summary & Changes Made:
+- **Auto-Suggest on Create Dialog (`el-autocomplete`)**:
+  - Replaced `<el-input>` for `topic_name` in create mode with `<el-autocomplete>`.
+  - Configured suggestions to trigger when input contains 2 or more words (`split(/\s+/).filter(Boolean).length >= 2`).
+  - Added request cancellation via `AbortController` (`suggestAbortController`) to avoid redundant requests.
+  - Selecting an item from the suggestions dropdown immediately triggers `handleEdit(item.topic_code)` to switch the dialog into edit mode for that topic.
+- **Duplicate Topic Name Error Link**:
+  - On form submission (`handleSubmit`), captures backend `details.topic_name` validation error.
+  - If a duplicate name error is detected (containing `"sudah ada"`), queries existing topic by name to retrieve its `topic_code`.
+  - Appends an inline link `", update here instead"` next to the error message that opens the edit dialog for that existing topic (`handleEdit(duplicateTopicCode)`).
+- **Form Submission Guard**:
+  - Added `:disabled="submitting"` to `<el-form>` to disable all inputs during save.
+  - Handled `finally { submitting.value = false }`.
+- **Verification**:
+  - Verified TypeScript types with `npm run type-check` (`vue-tsc --noEmit`), passing with 0 errors.
+  - Verified production build with `npm run build:client`, passing with 0 errors.
+
+---
+
+## [Completed] Topic Name Uniqueness Validation & Combined Struct Validation (`gin/internal/service/topic_service.go`, `gin/internal/service/topic_service_test.go`)
+
+### Summary & Changes Made:
+- **`validateTopic` Helper with Combined Error Reporting**: Implemented `validateTopic(payload domain.Topic, excludeCode string) error` on `TopicService` in [topic_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/topic_service.go).
+  - Executes struct validation (`ValidateStruct`) and uniqueness check (`validateTopicName`) together.
+  - Aggregates all validation error details (e.g. `topic_category`, `topic_name`, `description`, etc.) into a unified `Details map[string][]string`.
+  - Returns a single combined `*ValidationError`, ensuring all validation failures are delivered simultaneously.
+- **`validateTopicName` Helper**: Added `validateTopicName(topicName string, excludeCode string) error` method to `TopicService` in [topic_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/topic_service.go).
+  - Queries `T_BUS_TOPIC` for records where `TopicName = ?` and `Status = true`.
+  - When `excludeCode` is provided, filters `TopicCode <> excludeCode` to allow updating an existing record without self-conflict.
+  - Returns structured `*ValidationError` with key `topic_name` (`"Nama topik '<name>' sudah ada"`).
+- **Create Endpoint Validation**:
+  - Validates struct tags and uniqueness together on `Create`. Rejects duplicate active topic names alongside any field constraints.
+- **Update Endpoint Validation**:
+  - Sets `payload.TopicCode = id` when missing so struct validation passes cleanly.
+  - If `topic_name` is unchanged, duplicate validation passes for its own record. If changed, verifies no other active record uses the new name.
+  - Delivers any struct validation errors and duplicate name errors combined.
+- **Verification**:
+  - Added unit test cases in [topic_service_test.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/topic_service_test.go) verifying duplicate rejection on create, update keeping current name, update to duplicate name, update to a new unique name, and multi-error combined delivery on both create and update.
+  - Verified with `docker compose run --rm gin-build /bin/sh -c "go test -v ./internal/service -run TestTopicService"` (**PASS**) and compiled server binary with `docker compose run --rm gin-build` (**PASS**).
+
+---
+
+## [Completed] JWT Claims Redis Caching & User Token Eviction (`gin/internal/service/auth_service.go`, `gin/internal/api/middleware/auth.go`, `gin/internal/api/middleware/auth_test.go`)
+
+### Summary & Changes Made:
+- **`CacheJWTToken` Implementation**: Added `CacheJWTToken(userID int32, tokenString string)` method to `AuthService` in [auth_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/auth_service.go).
+  - Automatically called before successful return from `Login`.
+  - Calculates Redis TTL based on token expiration minus 200ms (`exp - 200ms`).
+  - Serializes all JWT claims as JSON and stores under `jwt:token:<token_string>`.
+- **Active User Token Eviction**:
+  - Tracks user's active tokens under Redis set `jwt:user:<userID>:tokens`.
+  - When the same user logs in again, all previously cached tokens for that user are evicted (`DEL` on token keys and set key) before caching the new token.
+- **Bypass Signature Parsing in Middleware**:
+  - Updated `AuthMiddleware` in [auth.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/middleware/auth.go).
+  - Checks Redis for `jwt:token:<token_string>`. On cache hit, deserializes claims, sets `userID` context key (`c.Set("userID", claims["sub"])`), and calls `c.Next()` immediately (skipping signature parsing & verification).
+  - Falls back to standard `jwt.Parse` validation if cache miss occurs or if Redis is unavailable.
+- **Verification**: Added unit test `TestAuthMiddleware_Unauthorized` in [auth_test.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/middleware/auth_test.go) and verified `go test -v ./internal/api/middleware` and `./internal/config`, passing cleanly with 0 errors.
+
+---
+
 ## [Completed] Excel Report Download Activation Condition (`vue/src/views/report/UmatReportList.vue` & `vue/src/views/report/SxyReportList.vue`)
 
 ### Summary & Changes Made:

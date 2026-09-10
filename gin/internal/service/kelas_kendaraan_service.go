@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -61,23 +62,46 @@ func (s *KelasKendaraanService) Create(payload domain.KelasKendaraan, c *gin.Con
 		return domain.KelasKendaraan{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	var genResult struct {
-		GeneratedId int32
-	}
+	var (
+		genResult struct {
+			GeneratedId int32
+		}
+		subWhVal string
+		errId    error
+		wg       sync.WaitGroup
+	)
+
+	userID := getUserID(c)
 	nowStr := time.Now().Format("2006-01-02 15:04:05")
-	errId := s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "KELASKENDARAANID", nowStr, 1).Scan(&genResult).Error
+
+	wg.Go(func() {
+		errId = s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "KELASKENDARAANID", nowStr, 1).Scan(&genResult).Error
+	})
+
+	wg.Go(func() {
+		row := s.db.Model(&domain.AdminMatrix{}).
+			Where("LOGINID = ?", userID).
+			Select("SUBWHID").
+			Row()
+		if row != nil {
+			_ = row.Scan(&subWhVal)
+		}
+	})
+
+	wg.Wait()
+
 	if errId != nil {
 		return domain.KelasKendaraan{}, fmt.Errorf("failed to generate ID: %w", errId)
 	}
 
 	payload.DetailId = genResult.GeneratedId
 
-	userID := getUserID(c)
 	statusTrue := true
 	modActI := "I"
 	now := domain.NowDateTime()
 
 	payload.Status = &statusTrue
+	payload.Fotang = &subWhVal
 	payload.ModAct = &modActI
 	payload.ModBy = &userID
 	payload.ModDate = &now
@@ -129,9 +153,9 @@ func (s *KelasKendaraanService) Update(id string, payload domain.KelasKendaraan,
 	if payload.TipeKendaraan != nil {
 		item.TipeKendaraan = payload.TipeKendaraan
 	}
-	if payload.Fotang != nil {
+	/* if payload.Fotang != nil {
 		item.Fotang = payload.Fotang
-	}
+	} */
 	if payload.Hari != nil {
 		item.Hari = payload.Hari
 	}

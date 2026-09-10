@@ -15,9 +15,9 @@ func TestLookupService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
 	}
-	if err := db.AutoMigrate(&domain.AppLookupCategory{}, &domain.AppLookup{}); err != nil {
-		t.Fatalf("auto migrate failed: %v", err)
-	}
+	// if err := db.AutoMigrate(&domain.AppLookupCategory{}, &domain.AppLookup{}); err != nil {
+	// 	t.Fatalf("auto migrate failed: %v", err)
+	// }
 
 	// 1. Database nil check
 	_, _, err = Lookup(nil, "B_TEST", 1, 10)

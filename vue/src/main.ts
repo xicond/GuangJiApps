@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp /* createVaporApp, vaporInteropPlugin, type VaporComponent */ } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 // import 'element-plus/dist/index.css'
@@ -14,7 +14,8 @@ import './style.css'
 import { initPwaUpdate } from './utils/pwaUpdate'
 import * as Sentry from "@sentry/vue";
 
-const app = createApp(App)
+const app = createApp(App /* as unknown as VaporComponent */)
+// app.use(vaporInteropPlugin)
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)

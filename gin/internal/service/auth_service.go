@@ -1,8 +1,10 @@
 package service
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	"guangjiapps/gin/internal/config"
+	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -126,9 +129,7 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 	)
 
 	// Fetch user details from T_Login_Mst concurrently
-	wgUser.Add(1)
-	go func() {
-		defer wgUser.Done()
+	wgUser.Go(func() {
 		err := executeWithRetry(func() error {
 			return s.db.Table("T_Login_Mst").
 				Select("LoginId, DepartmentId, GroupId, Username, ImgUrl, LastLogin, IsWarehouse, GroupId").
@@ -142,7 +143,7 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 				userErr = fmt.Errorf("database error: %w", err)
 			}
 		}
-	}()
+	})
 
 	wgUser.Wait()
 
@@ -183,11 +184,10 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 		// Coroutine loop: for each main menu item, fetch sub-menus via SP_Login_View_Mapping_Group
 		if len(mainMenus) > 0 {
 			var wgSubMenu sync.WaitGroup
-			wgSubMenu.Add(len(mainMenus))
 
 			for i := range mainMenus {
-				go func(idx int) {
-					defer wgSubMenu.Done()
+				idx := i
+				wgSubMenu.Go(func() {
 					parentID := mainMenus[idx].MenuID
 
 					rows, err := s.db.Raw("EXEC [dbo].[SP_Login_View_Mapping_Group] @ParentId = ?, @groupid = ?", parentID, result.GroupId).Rows()
@@ -250,7 +250,7 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 						}
 					}
 					mainMenus[idx].SubMenu = subMenus
-				}(i)
+				})
 			}
 
 			wgSubMenu.Wait()
@@ -264,7 +264,70 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 
 	user.Password = ""
 	// user.GroupId = nil
+	s.CacheJWTToken(user.ID, token)
 	return user, token, mainMenus, nil
+}
+
+func (s *AuthService) CacheJWTToken(userID int32, tokenString string) {
+	if tokenString == "" {
+		return
+	}
+	rdb := database.GetRedisClient(s.cfg)
+	if rdb == nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	var claims jwt.MapClaims
+	_, _, err := jwt.NewParser().ParseUnverified(tokenString, &claims)
+	if err != nil {
+		claims = jwt.MapClaims{
+			"sub": userID,
+			"exp": time.Now().Add(24 * time.Hour).Unix(),
+		}
+	}
+
+	expVal, ok := claims["exp"]
+	if !ok {
+		return
+	}
+
+	var expUnix int64
+	switch v := expVal.(type) {
+	case float64:
+		expUnix = int64(v)
+	case int64:
+		expUnix = v
+	case json.Number:
+		expUnix, _ = v.Int64()
+	default:
+		expUnix = time.Now().Add(24 * time.Hour).Unix()
+	}
+
+	expTime := time.Unix(expUnix, 0)
+	ttl := time.Until(expTime) - 200*time.Millisecond
+	if ttl <= 0 {
+		return
+	}
+
+	userTokensKey := fmt.Sprintf("jwt:user:%d:tokens", userID)
+	oldTokenKeys, err := rdb.SMembers(ctx, userTokensKey).Result()
+	if err == nil && len(oldTokenKeys) > 0 {
+		rdb.Del(ctx, oldTokenKeys...)
+	}
+	rdb.Del(ctx, userTokensKey)
+
+	tokenKey := fmt.Sprintf("jwt:token:%s", tokenString)
+	claimsBytes, err := json.Marshal(claims)
+	if err != nil {
+		return
+	}
+
+	rdb.Set(ctx, tokenKey, claimsBytes, ttl)
+	rdb.SAdd(ctx, userTokensKey, tokenKey)
+	rdb.Expire(ctx, userTokensKey, ttl)
 }
 
 func toInt(val interface{}) int {

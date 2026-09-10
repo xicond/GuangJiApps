@@ -11,7 +11,10 @@
               <span>{{ isDesktop ? 'Daftar Peserta Kelas' : 'Peserta' }}</span>
               <el-tag v-if="isExpanded && !isMobile" size="small" type="info" class="ml-2">{{ total }} Peserta</el-tag>
             </div>
-            <div class="header-actions" @click.stop>
+            <div class="header-actions">
+              <el-button type="success" size="small" :icon="Timer" @click.stop="openHistoryDialog">
+                {{ isMobile ? '' : 'Add From History' }}
+              </el-button>
               <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
                 {{ isMobile ? '' : 'Tambah Peserta' }}
               </el-button>
@@ -58,17 +61,15 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="Status Ikrar" min-width="180" align="center">
+            <el-table-column v-if="isSuaiSingPan" label="Ikrar Yg Dipilih" min-width="240" align="center">
               <template #default="{ row }">
-                <div class="ikrar-tags">
-                  <el-tag v-if="row.ikrar1" size="small" type="success">I-1</el-tag>
-                  <el-tag v-if="row.ikrar2" size="small" type="success">I-2</el-tag>
-                  <el-tag v-if="row.ikrar3" size="small" type="success">I-3</el-tag>
-                  <el-tag v-if="row.ikrar4" size="small" type="success">I-4</el-tag>
-                  <el-tag v-if="row.ikrar5" size="small" type="success">I-5</el-tag>
-                  <el-tag v-if="row.ikrar6" size="small" type="success">I-6</el-tag>
-                  <span v-if="!row.ikrar1 && !row.ikrar2 && !row.ikrar3 && !row.ikrar4 && !row.ikrar5 && !row.ikrar6"
-                    class="no-ikrar">-</span>
+                <div class="ikrar-checkboxes-cell">
+                  <el-checkbox :model-value="Boolean(row.ikrar1)" disabled title="Ikrar 1 (重聖輕凡)">1</el-checkbox>
+                  <el-checkbox :model-value="Boolean(row.ikrar2)" disabled title="Ikrar 2 (財法雙施)">2</el-checkbox>
+                  <el-checkbox :model-value="Boolean(row.ikrar3)" disabled title="Ikrar 3 (清口茹素)">3</el-checkbox>
+                  <el-checkbox :model-value="Boolean(row.ikrar4)" disabled title="Ikrar 4 (捨身辦道)">4</el-checkbox>
+                  <el-checkbox :model-value="Boolean(row.ikrar5)" disabled title="Ikrar 5 (開設佛堂)">5</el-checkbox>
+                  <el-checkbox :model-value="Boolean(row.ikrar6)" disabled title="Ikrar 6 (開荒下種)">6</el-checkbox>
                 </div>
               </template>
             </el-table-column>
@@ -90,50 +91,101 @@
           <div class="pagination-container">
             <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
               :page-sizes="[10, 20, 50, 100]"
-              :layout="'total, ' + (isDesktop ? ', jumper' : '') + ', prev, pager, next' + (isDesktop ? ', jumper' : '')"
-              :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
+              :layout="(!isMobile ? 'total, ->,' : (Math.ceil(total / pageSize) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
+              :pager-count="6" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
           </div>
         </div>
       </el-collapse-item>
     </el-collapse>
 
-    <!-- Dialog Popup Add / Edit Peserta -->
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? 'Tambah Peserta' : 'Edit Peserta'"
-      :width="isMobile ? '90%' : '600px'" destroy-on-close>
+    <!-- Dialog Popup Add / Edit / History Peserta -->
+    <el-dialog v-model="dialogVisible"
+      :title="dialogMode === 'add' ? 'Tambah Peserta' : (dialogMode === 'history' ? 'Add From History' : 'Edit Peserta')"
+      :width="isMobile ? '90%' : '650px'" destroy-on-close>
       <el-alert v-if="Object.keys(dialogFieldErrors).length > 0" type="error" show-icon title="Invalid Inputs"
         description="Terdapat kesalahan pengisian form. Silahkan periksa pesan kesalahan berwarna merah di bawah."
         class="mb-4" />
 
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="140px" size="default" v-loading="submitting">
         <el-form-item label="Peserta (Umat)" prop="id_peserta" :error="hasFieldError('id_peserta') ? ' ' : undefined">
-          <el-select v-model="form.id_peserta" filterable remote reserve-keyword
+          <!-- History Mode: Multi-select UmatPopupSelector trigger -->
+          <div v-if="dialogMode === 'history'" class="history-umat-selector">
+            <div class="history-tags-wrapper">
+              <template v-if="selectedHistoryUmats.length > 0">
+                <div class="selected-tags-container" @click="openHistoryPopup">
+                  <el-tag v-for="item in selectedHistoryUmats" :key="item.id_peserta || item.id" closable size="small"
+                    class="mr-1 mb-1" :title="item.nama_indonesia || item.kode || `ID #${item.id_peserta || item.id}`"
+                    @close.stop="removeHistoryUmat(item.id_peserta || item.id)">
+                    {{ item.nama_indonesia || item.kode || `ID #${item.id_peserta || item.id}` }}
+                  </el-tag>
+                </div>
+                <div class="history-tags-summary">
+                  <el-tag type="success" size="small">{{ selectedHistoryUmats.length }} Peserta</el-tag>
+                  <el-button size="small" text type="primary" :icon="MoreFilled" class="ml-2" @click="openHistoryPopup">
+                    {{ selectedHistoryUmats.length ? "Ubah" : "Pilih" }}
+                  </el-button>
+                </div>
+              </template>
+              <template v-else>
+                <el-input placeholder="Klik di sini untuk memilih peserta dari riwayat kelas..." readonly
+                  class="clickable-umat-input" @click="openHistoryPopup">
+                  <template #append>
+                    <el-button :icon="MoreFilled" title="Buka Riwayat Peserta" @click="openHistoryPopup" />
+                  </template>
+                </el-input>
+              </template>
+            </div>
+            <FieldErrors :errors="getFieldErrors('id_peserta')" />
+          </div>
+
+          <!-- Add / Edit Single Mode: Mobile view searchable el-select dropdown -->
+          <el-select v-else-if="isMobile" v-model="form.id_peserta" filterable remote reserve-keyword
             placeholder="Ketik nama untuk mencari Umat..." :remote-method="searchUmat" :loading="loadingUmat"
-            style="width: 100%">
+            style="width: 100%" @change="handleUmatSelectChange">
             <el-option v-for="item in umatOptions" :key="item.id" :label="getUmatOptionLabel(item)" :value="item.id" />
           </el-select>
-          <FieldErrors :errors="getFieldErrors('id_peserta')" />
+
+          <!-- Add / Edit Single Mode: Desktop & Tablet view custom popup dialog trigger -->
+          <div v-else class="desktop-umat-selector">
+            <el-input :model-value="selectedUmatLabel" placeholder="Pilih Umat..." readonly class="clickable-umat-input"
+              @click="openUmatPopup">
+              <template #append>
+                <el-button :icon="MoreFilled" title="Buka Pencarian Umat" @click="openUmatPopup">
+                </el-button>
+              </template>
+            </el-input>
+          </div>
+          <FieldErrors v-if="dialogMode !== 'history'" :errors="getFieldErrors('id_peserta')" />
         </el-form-item>
 
-        <el-form-item v-if="dialogMode !== 'add'" label="Status Lulus"
+        <!-- Ikrar Checkboxes (Only when KodeKelas == '004') -->
+        <el-form-item v-if="isSuaiSingPan" label="Ikrar Yg Dipilih">
+          <div class="ikrar-dialog-checkbox-group">
+            <el-checkbox v-model="form.ikrar_1" label="Ikrar 1 (重聖輕凡)" />
+            <el-checkbox v-model="form.ikrar_2" label="Ikrar 2 (財法雙施)" />
+            <el-checkbox v-model="form.ikrar_3" label="Ikrar 3 (清口茹素)" />
+            <el-checkbox v-model="form.ikrar_4" label="Ikrar 4 (捨身辦道)" />
+            <el-checkbox v-model="form.ikrar_5" label="Ikrar 5 (開設佛堂)" />
+            <el-checkbox v-model="form.ikrar_6" label="Ikrar 6 (開荒下種)" />
+          </div>
+        </el-form-item>
+
+        <el-form-item v-if="dialogMode === 'edit'" label="Status Lulus"
           :error="hasFieldError('lulus') ? ' ' : undefined">
           <el-switch v-model="form.lulus" active-text="Lulus" inactive-text="Belum Lulus" />
           <FieldErrors :errors="getFieldErrors('lulus')" />
         </el-form-item>
 
-        <el-form-item v-if="dialogMode !== 'add'" label="Keterangan Lulus"
+        <el-form-item v-if="dialogMode === 'edit'" label="Keterangan Lulus"
           :error="hasFieldError('keterangan_lulus') ? ' ' : undefined">
           <el-input v-model="form.keterangan_lulus" placeholder="Catatan / keterangan kelulusan" maxlength="200" />
           <FieldErrors :errors="getFieldErrors('keterangan_lulus')" />
         </el-form-item>
 
-        <el-row :gutter="16">
-          <el-col :md="12" :sm="24">
-            <el-form-item label="Keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
-              <el-input v-model="form.keterangan" placeholder="Keterangan tambahan" maxlength="200" />
-              <FieldErrors :errors="getFieldErrors('keterangan')" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <el-form-item label="Keterangan" :error="hasFieldError('keterangan') ? ' ' : undefined">
+          <el-input v-model="form.keterangan" placeholder="Keterangan tambahan" maxlength="200" />
+          <FieldErrors :errors="getFieldErrors('keterangan')" />
+        </el-form-item>
 
         <!-- Logistik Optional Fields (Multiply by Number of Days) -->
         <el-divider content-position="left">Data Logistik / Kehadiran ({{ daysCount }} Hari)</el-divider>
@@ -189,28 +241,65 @@
       <template #footer>
         <el-button :disabled="submitting" @click="dialogVisible = false">Batal</el-button>
         <el-button type="primary" :loading="submitting" :disabled="submitting" @click="submitForm">
-          {{ dialogMode === 'add' ? 'Simpan' : 'Perbarui' }}
+          {{ dialogMode === 'add' ? 'Simpan' : (dialogMode === 'history' ? `Simpan` : 'Perbarui') }}
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- Custom Popup Dialog Selector for Umat (Desktop/Tablet) -->
+    <UmatPopupSelector v-model="umatPopupVisible" :fetch-api="umatApi.getUmats"
+      :fetch-fotang-api="lookupApi.getLookupFotang" :filter-name="{
+        namaindonesia: 'Nama Chiu Tao',
+        namamandarin: 'Nama Lain',
+        alias: 'Alias / Pin Yin'
+      }" :filter-fotang="{
+        fotang_chiutao: 'Fotang Ciu Tao'
+      }" :Columns="{
+        kode: 'Kode',
+        nama_indonesia: 'Nama Chiu Tao',
+        alias: 'Alias / Pin Yin',
+        nama_mandarin: 'Nama Lain',
+        fotang_aktif_desc: 'Fotang Aktif',
+        pengajak: 'Pengajak',
+        penanggung: 'Penanggung',
+        alamat: 'Alamat'
+      }" :multiple="false" @select="handleUmatSelected" :width="isMobile ? '90%' : '650px'" />
+
+    <!-- Custom Popup Dialog Selector for History Peserta (Multiple Selection) -->
+    <UmatPopupSelector v-model="historyPopupVisible" title="Pilih Peserta Dari Riwayat Kelas Sebelumnya"
+      :fetch-api="fetchPreviousPesertaApi" :selected="selectedHistoryUmats" :Columns="{
+        kode: 'Kode',
+        nama_indonesia: 'Nama Chiu Tao',
+        nama_mandarin: 'Nama Lain',
+        alias: 'Alias / Pin Yin',
+        fotang_aktif_desc: 'Fotang Aktif',
+        fotang_ciu_tao_desc: 'Fotang Ciu Tao',
+        pengajak: 'Pengajak',
+        penanggung: 'Penanggung',
+        alamat: 'Alamat'
+      }" :width="isMobile ? '90%' : '650px'" :filter-name="false" :filter-fotang="false" :multiple="true"
+      @select="handleHistorySelected" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
-import { UserFilled, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { UserFilled, Refresh, Plus, Edit, Delete, MoreFilled, Timer } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import dayjs from 'dayjs'
 import { kelasApi } from '../../api/kelas'
 import { umatApi } from '../../api/umat'
+import lookupApi from '../../api/lookup'
 import FieldErrors from '../common/FieldErrors.vue'
-import type { KelasPeserta } from '../../types/kelas'
+import UmatPopupSelector from '../common/UmatPopupSelector.vue'
+import type { KelasPeserta, KelasPesertaPrevious, KelasPesertaBulkPayload } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
 import { scrollToFormError } from '../../utils/scroll'
 
 const props = defineProps<{
   kelasId: string | number
+  kodeKelas?: string
   startDate?: string
   endDate?: string
 }>()
@@ -234,11 +323,19 @@ const pageSize = ref(10)
 const total = ref(0)
 let abortController: AbortController | null = null
 
-const kelasDetail = ref<{ start_date?: string; end_date?: string } | null>(null)
+const kelasDetail = ref<{ start_date?: string; end_date?: string; kode_kelas?: string } | null>(null)
+
+const currentKodeKelas = computed(() => {
+  return props.kodeKelas || kelasDetail.value?.kode_kelas || ''
+})
+
+const isSuaiSingPan = computed(() => {
+  return currentKodeKelas.value === '004'
+})
 
 async function fetchKelasDetail() {
   if (!props.kelasId) return
-  if (props.startDate && props.endDate) return
+  if (props.startDate && props.endDate && props.kodeKelas) return
   if (kelasDetail.value) return
   try {
     const res = await kelasApi.getKelasById(props.kelasId)
@@ -337,10 +434,13 @@ watch(daysCount, (newCount) => {
 
 // Dialog state
 const dialogVisible = ref(false)
-const dialogMode = ref<'add' | 'edit'>('add')
+const dialogMode = ref<'add' | 'edit' | 'history'>('add')
 const submitting = ref(false)
 const formRef = ref<FormInstance>()
 const dialogFieldErrors = ref<Record<string, string[]>>({})
+
+const historyPopupVisible = ref(false)
+const selectedHistoryUmats = ref<KelasPesertaPrevious[]>([])
 
 function getFieldErrors(fieldName: string): string[] {
   return dialogFieldErrors.value[fieldName] || []
@@ -353,13 +453,19 @@ function hasFieldError(fieldName: string): boolean {
 interface PesertaFormState {
   detail_id?: number | string
   trx_id?: number | string
-  id_peserta?: number | string
+  id_peserta?: number | string | (number | string)[]
   lulus: boolean
   keterangan_lulus: string
   sumbangan?: number
   barang: string
   tim_kerja: string
   keterangan: string
+  ikrar_1: boolean
+  ikrar_2: boolean
+  ikrar_3: boolean
+  ikrar_4: boolean
+  ikrar_5: boolean
+  ikrar_6: boolean
 }
 
 const form = ref<PesertaFormState>({
@@ -368,12 +474,32 @@ const form = ref<PesertaFormState>({
   sumbangan: 0,
   barang: '',
   tim_kerja: '',
-  keterangan: ''
+  keterangan: '',
+  ikrar_1: false,
+  ikrar_2: false,
+  ikrar_3: false,
+  ikrar_4: false,
+  ikrar_5: false,
+  ikrar_6: false
 })
 
 const formRules: FormRules = {
   id_peserta: [
-    { required: true, message: 'Peserta (Umat) wajib dipilih', trigger: 'change' }
+    {
+      validator: (_rule: any, value: any, callback: any) => {
+        if (dialogMode.value === 'history') {
+          if (!Array.isArray(value) || value.length === 0) {
+            return callback(new Error('Minimal satu peserta dari riwayat wajib dipilih'))
+          }
+          return callback()
+        }
+        if (!value) {
+          return callback(new Error('Peserta (Umat) wajib dipilih'))
+        }
+        return callback()
+      },
+      trigger: 'change'
+    }
   ]
 }
 
@@ -397,6 +523,25 @@ async function searchUmat(query: string) {
   }
 }
 
+async function handleUmatSelectChange(val: number | string | undefined) {
+  if (!val) return
+  if (isSuaiSingPan.value) {
+    try {
+      const res = await umatApi.getUmatById(val)
+      if (res.data) {
+        form.value.ikrar_1 = Boolean(res.data.ikrar_1)
+        form.value.ikrar_2 = Boolean(res.data.ikrar_2)
+        form.value.ikrar_3 = Boolean(res.data.ikrar_3)
+        form.value.ikrar_4 = Boolean(res.data.ikrar_4)
+        form.value.ikrar_5 = Boolean(res.data.ikrar_5)
+        form.value.ikrar_6 = Boolean(res.data.ikrar_6)
+      }
+    } catch (err) {
+      console.error('Error loading selected umat ikrar:', err)
+    }
+  }
+}
+
 function getUmatOptionLabel(item: Umat): string {
   const parts = []
   if (item.nama_indonesia) parts.push(item.nama_indonesia)
@@ -404,6 +549,32 @@ function getUmatOptionLabel(item: Umat): string {
   if (item.nama_mandarin) parts.push(item.nama_mandarin)
   const names = parts.join(' / ')
   return names ? `${names} (${item.kode || item.id || ''})` : String(item.kode || item.id || '')
+}
+
+const umatPopupVisible = ref(false)
+
+const selectedUmatLabel = computed(() => {
+  if (!form.value.id_peserta) return ''
+  const found = umatOptions.value.find((u) => String(u.id) === String(form.value.id_peserta))
+  if (found) return getUmatOptionLabel(found)
+  return `ID #${form.value.id_peserta}`
+})
+
+function openUmatPopup() {
+  umatPopupVisible.value = true
+}
+
+function handleUmatSelected(selected: Umat) {
+  if (!selected) return
+  const exists = umatOptions.value.some((u) => u.id === selected.id)
+  if (!exists) {
+    umatOptions.value.push(selected)
+  }
+  form.value.id_peserta = selected.id
+  handleUmatSelectChange(selected.id)
+  if (formRef.value) {
+    formRef.value.validateField('id_peserta').catch(() => { })
+  }
 }
 
 // Accordion change listener: fetch data ONLY when expanded
@@ -453,13 +624,20 @@ function handleCurrentChange(newPage: number) {
 function openAddDialog() {
   dialogMode.value = 'add'
   dialogFieldErrors.value = {}
+  selectedHistoryUmats.value = []
   form.value = {
     lulus: false,
     keterangan_lulus: '',
     sumbangan: 0,
     barang: '',
     tim_kerja: '',
-    keterangan: ''
+    keterangan: '',
+    ikrar_1: false,
+    ikrar_2: false,
+    ikrar_3: false,
+    ikrar_4: false,
+    ikrar_5: false,
+    ikrar_6: false
   }
 
   const count = daysCount.value
@@ -474,10 +652,75 @@ function openAddDialog() {
   dialogVisible.value = true
 }
 
+// Open Dialog in Add From History Mode
+function openHistoryDialog() {
+  dialogMode.value = 'history'
+  dialogFieldErrors.value = {}
+  selectedHistoryUmats.value = []
+  form.value = {
+    lulus: false,
+    keterangan_lulus: '',
+    sumbangan: 0,
+    barang: '',
+    tim_kerja: '',
+    keterangan: '',
+    id_peserta: [],
+    ikrar_1: false,
+    ikrar_2: false,
+    ikrar_3: false,
+    ikrar_4: false,
+    ikrar_5: false,
+    ikrar_6: false
+  }
+
+  const count = daysCount.value
+  anakDays.value = new Array(count).fill(0)
+  susterDays.value = new Array(count).fill(0)
+  menginapDays.value = new Array(count).fill(false)
+  makananPagiDays.value = new Array(count).fill(false)
+  makananSiangDays.value = new Array(count).fill(false)
+  makananMalamDays.value = new Array(count).fill(false)
+
+  dialogVisible.value = true
+  historyPopupVisible.value = true
+}
+
+function openHistoryPopup() {
+  historyPopupVisible.value = true
+}
+
+function handleHistorySelected(rows: KelasPesertaPrevious[] | KelasPesertaPrevious) {
+  const list = Array.isArray(rows) ? rows : rows ? [rows] : []
+  selectedHistoryUmats.value = list
+  form.value.id_peserta = list.map((r) => r.id_peserta || (r.id as number))
+  if (formRef.value) {
+    formRef.value.validateField('id_peserta').catch(() => { })
+  }
+}
+
+function removeHistoryUmat(id: number | string | undefined) {
+  if (!id) return
+  selectedHistoryUmats.value = selectedHistoryUmats.value.filter(
+    (u) => (u.id_peserta || u.id) !== id
+  )
+  form.value.id_peserta = selectedHistoryUmats.value.map((u) => u.id_peserta || (u.id as number))
+  if (formRef.value) {
+    formRef.value.validateField('id_peserta').catch(() => { })
+  }
+}
+
+async function fetchPreviousPesertaApi(params: Record<string, any>, signal?: AbortSignal) {
+  if (!props.kelasId) {
+    return { data: [], meta: { total: 0, page: 1, limit: 10 } }
+  }
+  return await kelasApi.loadPreviousKelasPeserta(props.kelasId, params, signal)
+}
+
 // Open Dialog in Edit Mode
 function openEditDialog(row: KelasPeserta) {
   dialogMode.value = 'edit'
   dialogFieldErrors.value = {}
+  selectedHistoryUmats.value = []
   const rawIdPeserta = row.id_peserta ? Number(row.id_peserta) : undefined
 
   form.value = {
@@ -489,7 +732,13 @@ function openEditDialog(row: KelasPeserta) {
     sumbangan: row.sumbangan || 0,
     barang: row.barang || '',
     tim_kerja: row.tim_kerja || '',
-    keterangan: row.keterangan || ''
+    keterangan: row.keterangan || '',
+    ikrar_1: Boolean(row.ikrar1 ?? row.umat?.ikrar_1),
+    ikrar_2: Boolean(row.ikrar2 ?? row.umat?.ikrar_2),
+    ikrar_3: Boolean(row.ikrar3 ?? row.umat?.ikrar_3),
+    ikrar_4: Boolean(row.ikrar4 ?? row.umat?.ikrar_4),
+    ikrar_5: Boolean(row.ikrar5 ?? row.umat?.ikrar_5),
+    ikrar_6: Boolean(row.ikrar6 ?? row.umat?.ikrar_6)
   }
 
   const count = daysCount.value
@@ -512,7 +761,7 @@ function openEditDialog(row: KelasPeserta) {
   dialogVisible.value = true
 }
 
-// Submit Create or Edit Form
+// Submit Create, Bulk or Edit Form
 async function submitForm() {
   if (!formRef.value || submitting.value) return
   submitting.value = true
@@ -524,31 +773,83 @@ async function submitForm() {
     }
     dialogFieldErrors.value = {}
 
-    const payload: Partial<KelasPeserta> = {
-      trx_id: props.kelasId ? Number(props.kelasId) : undefined,
-      id_peserta: form.value.id_peserta ? Number(form.value.id_peserta) : undefined,
-      lulus: form.value.lulus,
-      keterangan_lulus: form.value.keterangan_lulus,
-      sumbangan: form.value.sumbangan,
-      barang: form.value.barang,
-      tim_kerja: form.value.tim_kerja,
-      keterangan: form.value.keterangan,
-      anak: anakDays.value.map(v => v || 0).join(','),
-      suster: susterDays.value.map(v => v || 0).join(','),
-      menginap: menginapDays.value.map(v => v ? '1' : '0').join(','),
-      makanan_pagi: makananPagiDays.value.map(v => v ? '1' : '0').join(','),
-      makanan_siang: makananSiangDays.value.map(v => v ? '1' : '0').join(','),
-      makanan_malam: makananMalamDays.value.map(v => v ? '1' : '0').join(',')
-    }
+    if (dialogMode.value === 'history') {
+      const idList = (Array.isArray(form.value.id_peserta) ? form.value.id_peserta : [form.value.id_peserta])
+        .map((v) => Number(v))
+        .filter((v) => !isNaN(v) && v > 0)
 
-    if (dialogMode.value === 'add') {
-      await kelasApi.createKelasPeserta(payload)
-      ElMessage.success('Peserta kelas berhasil ditambahkan')
+      if (idList.length === 0) {
+        dialogFieldErrors.value = { id_peserta: ['Minimal satu peserta dari riwayat wajib dipilih'] }
+        ElMessage.warning('Pilih minimal satu peserta dari riwayat kelas')
+        return
+      }
+
+      const payloadBulk: KelasPesertaBulkPayload = {
+        trx_id: Number(props.kelasId),
+        id_peserta: idList,
+        sumbangan: form.value.sumbangan || undefined,
+        barang: form.value.barang || undefined,
+        tim_kerja: form.value.tim_kerja || undefined,
+        keterangan: form.value.keterangan || undefined,
+        anak: anakDays.value.map((v) => v || 0).join(','),
+        suster: susterDays.value.map((v) => v || 0).join(','),
+        menginap: menginapDays.value.map((v) => (v ? '1' : '0')).join(','),
+        makanan_pagi: makananPagiDays.value.map((v) => (v ? '1' : '0')).join(','),
+        makanan_siang: makananSiangDays.value.map((v) => (v ? '1' : '0')).join(','),
+        makanan_malam: makananMalamDays.value.map((v) => (v ? '1' : '0')).join(',')
+      }
+
+      if (isSuaiSingPan.value) {
+        payloadBulk.umat = {
+          ikrar_1: form.value.ikrar_1,
+          ikrar_2: form.value.ikrar_2,
+          ikrar_3: form.value.ikrar_3,
+          ikrar_4: form.value.ikrar_4,
+          ikrar_5: form.value.ikrar_5,
+          ikrar_6: form.value.ikrar_6
+        }
+      }
+
+      await kelasApi.createKelasPesertaBulk(payloadBulk)
+      ElMessage.success(`${idList.length} peserta dari riwayat berhasil ditambahkan`)
     } else {
-      const detailId = form.value.detail_id
-      if (!detailId) return
-      await kelasApi.updateKelasPeserta(detailId, payload)
-      ElMessage.success('Data peserta kelas berhasil diperbarui')
+      const payload: Partial<KelasPeserta> = {
+        trx_id: props.kelasId ? Number(props.kelasId) : undefined,
+        id_peserta: form.value.id_peserta ? Number(form.value.id_peserta) : undefined,
+        lulus: form.value.lulus,
+        keterangan_lulus: form.value.keterangan_lulus,
+        sumbangan: form.value.sumbangan,
+        barang: form.value.barang,
+        tim_kerja: form.value.tim_kerja,
+        keterangan: form.value.keterangan,
+        anak: anakDays.value.map((v) => v || 0).join(','),
+        suster: susterDays.value.map((v) => v || 0).join(','),
+        menginap: menginapDays.value.map((v) => (v ? '1' : '0')).join(','),
+        makanan_pagi: makananPagiDays.value.map((v) => (v ? '1' : '0')).join(','),
+        makanan_siang: makananSiangDays.value.map((v) => (v ? '1' : '0')).join(','),
+        makanan_malam: makananMalamDays.value.map((v) => (v ? '1' : '0')).join(',')
+      }
+
+      if (isSuaiSingPan.value) {
+        payload.umat = {
+          ikrar_1: form.value.ikrar_1,
+          ikrar_2: form.value.ikrar_2,
+          ikrar_3: form.value.ikrar_3,
+          ikrar_4: form.value.ikrar_4,
+          ikrar_5: form.value.ikrar_5,
+          ikrar_6: form.value.ikrar_6
+        }
+      }
+
+      if (dialogMode.value === 'add') {
+        await kelasApi.createKelasPeserta(payload)
+        ElMessage.success('Peserta kelas berhasil ditambahkan')
+      } else {
+        const detailId = form.value.detail_id
+        if (!detailId) return
+        await kelasApi.updateKelasPeserta(detailId, payload)
+        ElMessage.success('Data peserta kelas berhasil diperbarui')
+      }
     }
 
     dialogVisible.value = false
@@ -686,6 +987,26 @@ onUnmounted(() => {
   margin-top: 2px;
 }
 
+.ikrar-checkboxes-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+}
+
+:deep(.ikrar-checkboxes-cell .el-checkbox) {
+  margin-right: 0;
+  height: auto;
+}
+
+.ikrar-dialog-checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px 16px;
+  width: 100%;
+}
+
 .ikrar-tags {
   display: flex;
   flex-wrap: wrap;
@@ -701,5 +1022,54 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+.desktop-umat-selector {
+  width: 100%;
+}
+
+.clickable-umat-input :deep(.el-input__inner) {
+  cursor: pointer;
+}
+
+.history-umat-selector {
+  width: 100%;
+}
+
+.history-tags-wrapper {
+  width: 100%;
+}
+
+.selected-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 6px;
+  background-color: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-base);
+  min-height: 32px;
+  max-height: 140px;
+  overflow-y: auto;
+  align-items: center;
+  cursor: pointer;
+}
+
+.selected-tags-container :deep(.el-tag) {
+  max-width: 85px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.selected-tags-container :deep(.el-tag .el-tag__content) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-tags-summary {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
 }
 </style>

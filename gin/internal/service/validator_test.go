@@ -86,6 +86,32 @@ func TestValidateStruct(t *testing.T) {
 		}
 	})
 
+	t.Run("validation success on empty string pointer email (*string = &\"\")", func(t *testing.T) {
+		emptyEmail := ""
+		payload := domain.Umat{
+			NamaIndonesia: "Test Umat",
+			JenisKelamin:  "001",
+			Email:         &emptyEmail,
+		}
+		err := ValidateStruct(payload)
+		if err != nil {
+			t.Errorf("expected no validation error for empty string email pointer, got: %v", err)
+		}
+	})
+
+	t.Run("validation success on valid email format", func(t *testing.T) {
+		validEmail := "user@example.com"
+		payload := domain.Umat{
+			NamaIndonesia: "Test Umat",
+			JenisKelamin:  "001",
+			Email:         &validEmail,
+		}
+		err := ValidateStruct(payload)
+		if err != nil {
+			t.Errorf("expected no validation error for valid email, got: %v", err)
+		}
+	})
+
 	t.Run("validation failure on negative amount gte=0", func(t *testing.T) {
 		payload := domain.DonasiSxy{
 			NoKwitansi: "KW001",

@@ -68,17 +68,13 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 		wg       sync.WaitGroup
 	)
 
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 			countErr = fmt.Errorf("database count error: %w", err)
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).
 			Limit(limit).
 			Offset(offset).
@@ -90,7 +86,7 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 				findErr = fmt.Errorf("database error: %w", err)
 			}
 		}
-	}()
+	})
 
 	wg.Wait()
 
@@ -109,9 +105,6 @@ func (s *AdminGroupService) Create(payload domain.AdminGroup, c *gin.Context) (d
 		return domain.AdminGroup{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	var maxID int32
-	s.db.Table("T_Login_Group").Select("ISNULL(MAX(GroupId), 0)").Row().Scan(&maxID)
-	payload.GroupId = maxID + 1
 
 	if err := s.db.Create(&payload).Error; err != nil {
 		return domain.AdminGroup{}, fmt.Errorf("failed to create record: %w", err)

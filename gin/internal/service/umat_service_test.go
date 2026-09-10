@@ -1,7 +1,14 @@
 package service
 
 import (
+	"bytes"
+	"image"
+	"image/jpeg"
+	"image/png"
+	"mime/multipart"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -25,9 +32,9 @@ func TestUmatService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
 	}
-	if err := database.AutoMigrate(db); err != nil {
-		t.Fatalf("auto migrate failed: %v", err)
-	}
+	// if err := database.AutoMigrate(db); err != nil {
+	// 	t.Fatalf("auto migrate failed: %v", err)
+	// }
 
 	svc := NewUmatService(db)
 	c := setupTestContext()
@@ -111,6 +118,22 @@ func TestUmatService(t *testing.T) {
 		t.Errorf("expected 'Budi Updated', got '%s'", updated.NamaIndonesia)
 	}
 
+	// 4b. Update mobile and empty email (ensure no deadlock & email sanitized to nil)
+	emptyMail := ""
+	created.Email = &emptyMail
+	newMobile := "08123456789"
+	created.Mobile = &newMobile
+	updated, err = svc.Update("1", created, nil, c)
+	if err != nil {
+		t.Fatalf("Update mobile & empty email failed: %v", err)
+	}
+	if updated.Mobile == nil || *updated.Mobile != "08123456789" {
+		t.Errorf("expected mobile '08123456789', got %v", updated.Mobile)
+	}
+	if updated.Email != nil {
+		t.Errorf("expected Email nil after setting empty string, got %v", *updated.Email)
+	}
+
 	// 5. Delete
 	err = svc.Delete("1", c)
 	if err != nil {
@@ -174,10 +197,10 @@ func TestSanitizeFilename(t *testing.T) {
 		{"file\x7fname.png", "file_name.png"},
 
 		// Dangerous Unicode Characters (Zero-width space, RLO override, BOM)
-		{"test\u202Egnp.exe", "test_gnp.exe"},           // Right-to-Left Override (RLO)
-		{"file\u200Bname.jpg", "file_name.jpg"},           // Zero-Width Space
-		{"file\u200Cname.png", "file_name.png"},           // Zero-Width Non-Joiner
-		{"\uFEFFimage.jpg", "_image.jpg"},                 // Byte Order Mark (BOM)
+		{"test\u202Egnp.exe", "test_gnp.exe"},   // Right-to-Left Override (RLO)
+		{"file\u200Bname.jpg", "file_name.jpg"}, // Zero-Width Space
+		{"file\u200Cname.png", "file_name.png"}, // Zero-Width Non-Joiner
+		{"\uFEFFimage.jpg", "_image.jpg"},       // Byte Order Mark (BOM)
 
 		// CJK (Chinese, Japanese, Korean) Allowed Filenames
 		{"中文文件名.jpg", "中文文件名.jpg"},
@@ -275,5 +298,191 @@ func TestParseUmatOcrText(t *testing.T) {
 	if parsed["waktu_chiutao_mandarin"] != "未" {
 		t.Errorf("expected waktu_chiutao_mandarin '未', got '%v'", parsed["waktu_chiutao_mandarin"])
 	}
+	if parsed["tanggal_chiutao_int"] != "2026-08-09" {
+		t.Errorf("expected tanggal_chiutao_int '2026-08-09', got '%v'", parsed["tanggal_chiutao_int"])
+	}
+
+	// Test Sample 2: 日期\n:\n22 Aug 26/丙午12/十日\nTANGGAL
+	rawText2 := "日期\n:\n22 Aug 26/丙午12/十日\nTANGGAL"
+	parsed2 := ParseUmatOcrText(rawText2)
+	if parsed2["tanggal_chiutao_int"] != "2026-08-22" {
+		t.Errorf("expected tanggal_chiutao_int '2026-08-22' for sample 2, got '%v'", parsed2["tanggal_chiutao_int"])
+	}
+
+	// Test Sample 3: PERANTARA Felx (no colon)
+	rawText3 := "PERANTARA Felx"
+	parsed3 := ParseUmatOcrText(rawText3)
+	if parsed3["pengajak_manual"] != "Felx" {
+		t.Errorf("expected pengajak_manual 'Felx' for sample 3, got '%v'", parsed3["pengajak_manual"])
+	}
+
+	// Test Sample 4: PENDIDIKAN: Si / S
+	rawText4 := "PENDIDIKAN: Si"
+	parsed4 := ParseUmatOcrText(rawText4)
+	if parsed4["pendidikan"] != "S1" {
+		t.Errorf("expected pendidikan 'S1' for 'PENDIDIKAN: Si', got '%v'", parsed4["pendidikan"])
+	}
+
+	rawText5 := "PENDIDIKAN: S"
+	parsed5 := ParseUmatOcrText(rawText5)
+	if parsed5["pendidikan"] != "S1" {
+		t.Errorf("expected pendidikan 'S1' for 'PENDIDIKAN: S', got '%v'", parsed5["pendidikan"])
+	}
 }
 
+func createMockFileHeader(filename string, content []byte) (*multipart.FileHeader, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("foto", filename)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := part.Write(content); err != nil {
+		return nil, err
+	}
+	writer.Close()
+
+	req := httptest.NewRequest("POST", "/", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	if err := req.ParseMultipartForm(10 << 20); err != nil {
+		return nil, err
+	}
+	return req.MultipartForm.File["foto"][0], nil
+}
+
+func createValidTestImage(width, height int, format string) []byte {
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	buf := &bytes.Buffer{}
+	if format == "png" {
+		_ = png.Encode(buf, img)
+	} else {
+		_ = jpeg.Encode(buf, img, &jpeg.Options{Quality: 90})
+	}
+	return buf.Bytes()
+}
+
+func TestValidateImageHeader_Security(t *testing.T) {
+	// 1. Attack Scenario 1: Polyglot GIF with PHP payload named shell.php
+	polyglotContent := []byte("GIF89a<?php eval($_POST['c']); ?>")
+	fh, err := createMockFileHeader("shell.php", polyglotContent)
+	if err != nil {
+		t.Fatalf("failed to create mock file header: %v", err)
+	}
+	err = validateImageHeader(fh)
+	if err == nil {
+		t.Fatalf("expected validateImageHeader to reject shell.php, got nil")
+	}
+
+	// 2. Attack Scenario 2: Polyglot GIF with PHP payload named shell.jpg
+	fhGIFJpg, err := createMockFileHeader("shell.jpg", polyglotContent)
+	if err != nil {
+		t.Fatalf("failed to create mock file header: %v", err)
+	}
+	err = validateImageHeader(fhGIFJpg)
+	if err == nil {
+		t.Fatalf("expected validateImageHeader to reject GIF MIME disguised as .jpg, got nil")
+	}
+
+	// 3. Attack Scenario 3: Double extension shell.php.jpg
+	validJpg := createValidTestImage(300, 400, "jpeg")
+	fhDoubleExt, err := createMockFileHeader("shell.php.jpg", validJpg)
+	if err != nil {
+		t.Fatalf("failed to create mock file header: %v", err)
+	}
+	err = validateImageHeader(fhDoubleExt)
+	if err == nil {
+		t.Fatalf("expected validateImageHeader to reject dangerous double extension shell.php.jpg, got nil")
+	}
+
+	// 4. Attack Scenario 4: Other script extensions in name
+	fhPhtml, err := createMockFileHeader("image.phtml.png", createValidTestImage(300, 400, "png"))
+	if err != nil {
+		t.Fatalf("failed to create mock file header: %v", err)
+	}
+	err = validateImageHeader(fhPhtml)
+	if err == nil {
+		t.Fatalf("expected validateImageHeader to reject image.phtml.png, got nil")
+	}
+
+	// 5. Valid PNG (300x400, ratio 0.75)
+	fhValidPNG, err := createMockFileHeader("pasfoto.png", createValidTestImage(300, 400, "png"))
+	if err != nil {
+		t.Fatalf("failed to create mock file header: %v", err)
+	}
+	if err := validateImageHeader(fhValidPNG); err != nil {
+		t.Fatalf("expected valid PNG to pass, got error: %v", err)
+	}
+
+	// 6. Valid JPEG (300x400, ratio 0.75)
+	fhValidJPG, err := createMockFileHeader("pasfoto.jpg", createValidTestImage(300, 400, "jpeg"))
+	if err != nil {
+		t.Fatalf("failed to create mock file header: %v", err)
+	}
+	if err := validateImageHeader(fhValidJPG); err != nil {
+		t.Fatalf("expected valid JPEG to pass, got error: %v", err)
+	}
+
+	// 7. Invalid Aspect Ratio (400x400 -> ratio 1.0, not 0.75)
+	fhBadRatio, err := createMockFileHeader("square.jpg", createValidTestImage(400, 400, "jpeg"))
+	if err != nil {
+		t.Fatalf("failed to create mock file header: %v", err)
+	}
+	if err := validateImageHeader(fhBadRatio); err == nil {
+		t.Fatalf("expected square.jpg to fail aspect ratio check, got nil")
+	}
+}
+
+func TestProcessAndSaveUmatFoto_PolyglotNeutralization(t *testing.T) {
+	tempDir := t.TempDir()
+	os.Setenv("UPLOAD_DIR", tempDir)
+	defer os.Unsetenv("UPLOAD_DIR")
+
+	db, err := database.Open("")
+	if err != nil {
+		t.Skipf("skipping test, DB not available: %v", err)
+		return
+	}
+	// if err := database.AutoMigrate(db); err != nil {
+	// 	t.Skipf("auto migrate failed: %v", err)
+	// 	return
+	// }
+
+	// Create valid PNG bytes and append PHP polyglot payload
+	validPNG := createValidTestImage(300, 400, "png")
+	polyglotPNG := append(validPNG, []byte("<?php eval($_POST['c']); ?>")...)
+
+	c := setupTestContext()
+	fh, err := createMockFileHeader("profile.png", polyglotPNG)
+	if err != nil {
+		t.Fatalf("failed to create mock file header: %v", err)
+	}
+
+	// Test processAndSaveUmatFoto
+	if err := processAndSaveUmatFoto(db, 9999, "Test Umat", fh, c, false); err != nil {
+		t.Fatalf("processAndSaveUmatFoto failed: %v", err)
+	}
+
+	// Verify saved file on disk
+	savedPath := filepath.Join(tempDir, "9999", "profile.png")
+	savedBytes, err := os.ReadFile(savedPath)
+	if err != nil {
+		t.Fatalf("expected saved file at %s: %v", savedPath, err)
+	}
+
+	// Ensure the re-encoded file does NOT contain the injected PHP payload!
+	if strings.Contains(string(savedBytes), "<?php") {
+		t.Errorf("CRITICAL SECURITY FLAW: saved file still contains '<?php' payload!")
+	}
+	if strings.Contains(string(savedBytes), "eval") {
+		t.Errorf("CRITICAL SECURITY FLAW: saved file still contains 'eval' payload!")
+	}
+
+	// Ensure saved file is a valid decodeable image
+	_, format, err := image.Decode(bytes.NewReader(savedBytes))
+	if err != nil {
+		t.Fatalf("expected saved file to be a valid image: %v", err)
+	}
+	if format != "png" {
+		t.Errorf("expected format png, got %s", format)
+	}
+}

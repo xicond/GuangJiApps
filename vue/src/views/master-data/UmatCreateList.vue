@@ -126,7 +126,7 @@
 import { ref, onUnmounted } from 'vue'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage, ElNotification, ElLoading } from 'element-plus'
 import { Back, Picture, CopyDocument, Check } from '@element-plus/icons-vue'
 import UmatForm from '../../components/umat/UmatForm.vue'
 import { umatApi } from '../../api/umat'
@@ -170,6 +170,7 @@ interface ParsedUmatData {
   alias?: string
   usia?: number
   tanggal_lahir?: string
+  tanggal_chiutao_int?: string
   pendidikan?: string
   jenis_kelamin?: string
   alamat?: string
@@ -179,6 +180,8 @@ interface ParsedUmatData {
   tcs?: string
   uang_pahala?: number
   waktu_chiutao_mandarin?: string
+  fotang_aktif?: string
+  fotang_chiutao?: string
 }
 
 const router = useRouter()
@@ -246,6 +249,12 @@ async function handleOcrFileSelected(event: Event) {
   // Generate temporary preview URL
   ocrPreviewUrl.value = URL.createObjectURL(file)
 
+  const loadingInstance = ElLoading.service({
+    lock: true,
+    text: 'Mengenali teks gambar (OCR)...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  })
+
   try {
     const res = await umatApi.ocrUmat(file)
     const payload = res.data as { parsed_umat?: ParsedUmatData; ocr_raw?: OcrResultData }
@@ -293,6 +302,7 @@ async function handleOcrFileSelected(event: Event) {
       ElMessage.error(errorObj.response?.data?.error || errorObj.message || 'Gagal memproses OCR gambar')
     }
   } finally {
+    loadingInstance.close()
     ocrLoading.value = false
     submitting.value = false
     if (target) {
@@ -303,12 +313,28 @@ async function handleOcrFileSelected(event: Event) {
 
 function applyOcrToForm() {
   if (!ocrParsedUmat.value) return
+  const data = { ...ocrParsedUmat.value }
+
+  // Map gender string to option code for el-select
+  if (data.jenis_kelamin) {
+    const jkUpper = String(data.jenis_kelamin).toUpperCase()
+    if (jkUpper === 'PRIA' || jkUpper === 'LAKI-LAKI' || jkUpper === 'L' || jkUpper === '001') {
+      data.jenis_kelamin = '001'
+    } else if (jkUpper === 'WANITA' || jkUpper === 'PEREMPUAN' || jkUpper === 'P' || jkUpper === 'W' || jkUpper === '002') {
+      data.jenis_kelamin = '002'
+    } else if (jkUpper === 'ANAK PRIA' || jkUpper === '003') {
+      data.jenis_kelamin = '003'
+    } else if (jkUpper === 'ANAK WANITA' || jkUpper === '004') {
+      data.jenis_kelamin = '004'
+    }
+  }
+
   formInitialData.value = {
     ...formInitialData.value,
-    ...ocrParsedUmat.value
+    ...data
   }
   ocrDialogVisible.value = false
-  ElMessage.success('Data hasil OCR berhasil dimasukkan ke dalam form!')
+  ElMessage.success('Data hasil OCR berhasil diterapkan ke Form!')
 }
 
 async function copyOcrText() {

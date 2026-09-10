@@ -284,10 +284,9 @@ func validateKelasLookups(db *gorm.DB, kodeKelas *string, kodeFotang *string, le
 		details = make(map[string][]string)
 	)
 
-	wg.Add(len(activeChecks))
 	for _, check := range activeChecks {
-		go func(c lookupCheck) {
-			defer wg.Done()
+		c := check
+		wg.Go(func() {
 			var count int64
 			if err := db.Session(&gorm.Session{}).Model(&domain.AppLookup{}).
 				Where("CategoryId = ? AND (LookupValue = ? OR LookupId = ?)", c.categoryID, c.val, c.val).
@@ -302,7 +301,7 @@ func validateKelasLookups(db *gorm.DB, kodeKelas *string, kodeFotang *string, le
 				details[c.fieldName] = append(details[c.fieldName], fmt.Sprintf("field %s nilai '%s' tidak valid", c.categoryID, c.val))
 				mu.Unlock()
 			}
-		}(check)
+		})
 	}
 
 	wg.Wait()

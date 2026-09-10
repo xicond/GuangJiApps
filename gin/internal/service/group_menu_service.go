@@ -69,17 +69,13 @@ func (s *GroupMenuService) List(page int, filters map[string]string, limit int) 
 		wg       sync.WaitGroup
 	)
 
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 			countErr = fmt.Errorf("database count error: %w", err)
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).
 			Limit(limit).
 			Offset(offset).
@@ -91,7 +87,7 @@ func (s *GroupMenuService) List(page int, filters map[string]string, limit int) 
 				findErr = fmt.Errorf("database error: %w", err)
 			}
 		}
-	}()
+	})
 
 	wg.Wait()
 
@@ -110,9 +106,6 @@ func (s *GroupMenuService) Create(payload domain.GroupMenuMapping, c *gin.Contex
 		return domain.GroupMenuMapping{}, fmt.Errorf("Validation failed: %w", err)
 	}
 
-	var maxID int32
-	s.db.Table("T_Login_Menu").Select("ISNULL(MAX(MenuId), 0)").Row().Scan(&maxID)
-	payload.MenuId = maxID + 1
 
 	if payload.Sequence == 0 {
 		payload.Sequence = 1

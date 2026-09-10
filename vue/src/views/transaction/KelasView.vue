@@ -9,11 +9,7 @@
       </div>
 
       <div class="header-actions">
-        <el-button
-          type="primary"
-          :icon="Edit"
-          @click="handleEdit"
-        >
+        <el-button type="primary" :icon="Edit" @click="handleEdit">
           Edit Kelas
         </el-button>
       </div>
@@ -29,7 +25,8 @@
       <el-card shadow="never" class="detail-card">
         <el-descriptions title="Informasi Kelas" :column="isMobile ? 1 : 2" border>
           <el-descriptions-item label="Nama Kelas">
-            <span class="font-semibold">{{ kelasData.kelas_name?.lookup_description || kelasData.kode_kelas || '-' }}</span>
+            <span class="font-semibold">{{ kelasData.kelas_name?.lookup_description || kelasData.kode_kelas || '-'
+            }}</span>
           </el-descriptions-item>
 
           <el-descriptions-item label="Fotang">
@@ -78,11 +75,14 @@
       </el-card>
 
       <!-- Sub-model Lists -->
-      <KelasPesertaTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
+      <KelasPesertaTable :kelas-id="kelasId" :kode-kelas="kelasData?.kode_kelas" :start-date="kelasData?.start_date"
+        :end-date="kelasData?.end_date" />
       <KelasPengabdiTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
       <KelasTopikTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
+      <KelasKendaraanTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
       <KelasDonasiTable :kelas-id="kelasId" />
       <KelasDonasiBarangTable :kelas-id="kelasId" />
+      <!-- <KelasPengeluaranTable :kelas-id="kelasId" /> -->
     </template>
   </div>
 </template>
@@ -98,6 +98,8 @@ import KelasPengabdiTable from '../../components/kelas/KelasPengabdiTable.vue'
 import KelasTopikTable from '../../components/kelas/KelasTopikTable.vue'
 import KelasDonasiTable from '../../components/kelas/KelasDonasiTable.vue'
 import KelasDonasiBarangTable from '../../components/kelas/KelasDonasiBarangTable.vue'
+import KelasKendaraanTable from '../../components/kelas/KelasKendaraanTable.vue'
+import KelasPengeluaranTable from '../../components/kelas/KelasPengeluaranTable.vue'
 import { kelasApi } from '../../api/kelas'
 import type { Kelas } from '../../types/kelas'
 

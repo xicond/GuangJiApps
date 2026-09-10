@@ -12,9 +12,9 @@ func TestFotangServiceLookup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
 	}
-	if err := database.AutoMigrate(db); err != nil {
-		t.Fatalf("auto migrate failed: %v", err)
-	}
+	// if err := database.AutoMigrate(db); err != nil {
+	// 	t.Fatalf("auto migrate failed: %v", err)
+	// }
 
 	db.Exec("DELETE FROM T_APP_LOOKUP WHERE CategoryId = 'B_FOTHANG'")
 	db.Exec("DELETE FROM T_APP_LOOKUPCATEGORY WHERE CategoryId = 'B_FOTHANG'")

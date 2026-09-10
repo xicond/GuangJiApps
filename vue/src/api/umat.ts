@@ -22,13 +22,12 @@ export const umatApi = {
       limit: params.limit || 10
     }
 
-    if (params.alias) cleanParams.alias = params.alias
-    if (params.namaindonesia) cleanParams.namaindonesia = params.namaindonesia
-    if (params.lookup_description) cleanParams.lookup_description = params.lookup_description
-    if (params.namamandarin) cleanParams.namamandarin = params.namamandarin
-    if (params.tahunchiutaomandarin) {
-      cleanParams.tahunchiutaomandarin = params.tahunchiutaomandarin
-    }
+    Object.keys(params).forEach((key) => {
+      const val = (params as any)[key]
+      if (val !== undefined && val !== null && val !== '') {
+        cleanParams[key] = val
+      }
+    })
 
     const response = await apiClient.get<UmatListResponse>('/v1/umats', {
       params: cleanParams,

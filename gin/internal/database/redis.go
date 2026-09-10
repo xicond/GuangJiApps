@@ -45,3 +45,15 @@ func GetRedisClient(cfg config.Config) *redis.Client {
 	})
 	return redisClient
 }
+
+// CloseRedisClient closes the singleton Redis client connection if initialized.
+func CloseRedisClient() {
+	if redisClient != nil {
+		if err := redisClient.Close(); err != nil {
+			log.Printf("[Redis] Error closing Redis client: %v", err)
+		} else {
+			log.Println("[Redis] Client connection closed")
+		}
+		redisClient = nil
+	}
+}

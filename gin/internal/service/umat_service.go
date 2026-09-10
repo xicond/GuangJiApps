@@ -9,9 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	_ "image/gif"
 	"image/jpeg"
-	_ "image/png"
+	"image/png"
 	"io"
 	"log"
 	"math"
@@ -22,7 +21,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -106,10 +104,9 @@ func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 		details = make(map[string][]string)
 	)
 
-	wg.Add(len(activeChecks))
 	for _, check := range activeChecks {
-		go func(c lookupCheck) {
-			defer wg.Done()
+		c := check
+		wg.Go(func() {
 			var count int64
 			if err := db.Session(&gorm.Session{}).Model(&domain.AppLookup{}).
 				Where("CategoryId = ? AND (LookupValue = ? OR LookupId = ?) AND Status = ?", c.categoryID, c.val, c.val, true).
@@ -124,7 +121,7 @@ func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 				details[c.fieldName] = append(details[c.fieldName], fmt.Sprintf("field %s nilai '%s' tidak valid", c.categoryID, c.val))
 				mu.Unlock()
 			}
-		}(check)
+		})
 	}
 
 	wg.Wait()
@@ -189,8 +186,12 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 		"alias":                {Column: "alias", IsLike: true},
 		"lookup_description":   {Column: "namaindonesia", IsLike: true},
 		"namaindonesia":        {Column: "namaindonesia", IsLike: true},
-		"namamandarin":         {Column: "namamandarin", IsLike: true},          // Tahun menggunakan exact match (=)
-		"tahunchiutaomandarin": {Column: "tahunchiutaomandarin", IsLike: false}, // Tahun menggunakan exact match (=)
+		"namamandarin":         {Column: "namamandarin", IsLike: true},
+		"tahunchiutaomandarin": {Column: "tahunchiutaomandarin", IsLike: false},
+		"fotang_aktif":         {Column: "fotangaktif", IsLike: false},
+		// "fotangaktif":          {Column: "fotangaktif", IsLike: false},
+		"fotang_chiutao": {Column: "fotangciutao", IsLike: false},
+		// "fotangciutao":         {Column: "fotangciutao", IsLike: false},
 	}
 
 	for field, value := range filters {
@@ -217,19 +218,15 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 		wg       sync.WaitGroup
 	)
 
-	wg.Add(2)
-
 	// Goroutine 1: Concurrent Count query
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 			countErr = fmt.Errorf("database count error: %w", err)
 		}
-	}()
+	})
 
 	// Goroutine 2: Concurrent Find items query
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).
 			Preload("JenisKelaminInfo", "CategoryId = ? AND Status = ?", "B_JENISKELAMIN", true).
 			Limit(limit).
@@ -242,7 +239,7 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 				findErr = fmt.Errorf("database error: %w", err)
 			}
 		}
-	}()
+	})
 
 	wg.Wait()
 
@@ -347,53 +344,82 @@ func validateImageHeader(fileHeader *multipart.FileHeader) error {
 
 	var errorsList []string
 
-	// 1. File size check (< 8MB)
+	// 1. File size check (< 8MB, > 0)
 	maxSize := int64(8 * 1024 * 1024)
-	if fileHeader.Size > maxSize {
+	if fileHeader.Size <= 0 {
+		errorsList = append(errorsList, "File gambar kosong")
+	} else if fileHeader.Size > maxSize {
 		errorsList = append(errorsList, "Ukuran file tidak boleh melebihi 8MB")
 	}
 
-	// 2. Open file & decode config for type, resolution, and aspect ratio
+	// 2. Strict file extension whitelisting & dangerous script extension detection
+	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+	if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
+		errorsList = append(errorsList, "Ekstensi file harus berupa .jpg, .jpeg, atau .png")
+	}
+
+	lowerFilename := strings.ToLower(fileHeader.Filename)
+	dangerousExts := []string{
+		".php", ".phtml", ".php3", ".php4", ".php5", ".phps", ".pht", ".phar",
+		".asp", ".aspx", ".ashx", ".asmx", ".cer", ".asa",
+		".jsp", ".jspx", ".cgi", ".pl", ".py", ".sh", ".bash",
+		".exe", ".bat", ".cmd", ".com", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh",
+		".htaccess", ".config", ".svg", ".html", ".htm", ".shtml",
+	}
+	for _, dExt := range dangerousExts {
+		if strings.Contains(lowerFilename, dExt) {
+			errorsList = append(errorsList, "Nama file terdeteksi mengandung ekstensi berbahaya atau tidak diizinkan")
+			break
+		}
+	}
+
+	// 3. Open file & verify MIME type + full image decode (anti-polyglot check)
 	src, err := fileHeader.Open()
 	if err != nil {
 		errorsList = append(errorsList, "Gagal membuka file gambar")
 	} else {
 		defer src.Close()
 
-		// Read first 512 bytes for MIME type check
+		// Read first 512 bytes for MIME type check (strictly image/jpeg or image/png)
 		buffer := make([]byte, 512)
 		n, _ := src.Read(buffer)
 		contentType := http.DetectContentType(buffer[:n])
-		if !strings.HasPrefix(contentType, "image/") {
-			errorsList = append(errorsList, "File harus berupa gambar (JPEG, PNG)")
+		if contentType != "image/jpeg" && contentType != "image/png" {
+			errorsList = append(errorsList, "Tipe MIME file harus berupa image/jpeg atau image/png")
 			return NewValidationError(map[string][]string{
 				"foto": errorsList,
 			})
 		}
 
-		// Reset file pointer to beginning for image.DecodeConfig
+		// Reset file pointer to beginning for full image decoding
 		if _, err := src.Seek(0, io.SeekStart); err != nil {
 			errorsList = append(errorsList, "Gagal memproses file gambar")
 		} else {
-			cfg, format, decodeErr := image.DecodeConfig(src)
+			// Fully decode image into memory to guarantee genuine pixel structure and reject polyglots
+			img, format, decodeErr := image.Decode(src)
 			if decodeErr != nil {
-				errorsList = append(errorsList, "Format file gambar tidak dapat dibaca (harus berupa gambar JPEG, PNG)")
+				errorsList = append(errorsList, "Format file gambar tidak dapat dibaca atau rusak (harus berupa JPEG atau PNG yang valid)")
 			} else {
-				if !slices.Contains([]string{"image/jpeg", "image/png"}, format) {
-					errorsList = append(errorsList, "Format file gambar tidak didukung (harus berupa gambar JPEG, PNG)")
-				}
-				// Resolution bounds: width 150..2000, height 200..4000
-				if cfg.Width < 150 || cfg.Width > 3000 {
-					errorsList = append(errorsList, fmt.Sprintf("Lebar gambar (%dpx) harus di antara 150 hingga 3000 piksel", cfg.Width))
-				}
-				if cfg.Height < 200 || cfg.Height > 4000 {
-					errorsList = append(errorsList, fmt.Sprintf("Tinggi gambar (%dpx) harus di antara 200 hingga 4000 piksel", cfg.Height))
-				}
+				if format != "jpeg" && format != "png" {
+					errorsList = append(errorsList, "Format file gambar tidak didukung (harus berupa JPEG atau PNG)")
+				} else {
+					bounds := img.Bounds()
+					width := bounds.Dx()
+					height := bounds.Dy()
 
-				// Aspect ratio 3:4 (ratio = 0.75)
-				ratio := float64(cfg.Width) / float64(cfg.Height)
-				if math.Abs(ratio-0.75) > 0.03 {
-					errorsList = append(errorsList, fmt.Sprintf("Rasio gambar (saat ini %.2f) harus 3:4 (lebar : tinggi)", ratio))
+					// Resolution bounds: width 150..3000, height 200..4000
+					if width < 150 || width > 3000 {
+						errorsList = append(errorsList, fmt.Sprintf("Lebar gambar (%dpx) harus di antara 150 hingga 3000 piksel", width))
+					}
+					if height < 200 || height > 4000 {
+						errorsList = append(errorsList, fmt.Sprintf("Tinggi gambar (%dpx) harus di antara 200 hingga 4000 piksel", height))
+					}
+
+					// Aspect ratio 3:4 (ratio = 0.75)
+					ratio := float64(width) / float64(height)
+					if math.Abs(ratio-0.75) > 0.03 {
+						errorsList = append(errorsList, fmt.Sprintf("Rasio gambar (saat ini %.2f) harus 3:4 (lebar : tinggi)", ratio))
+					}
 				}
 			}
 		}
@@ -423,23 +449,62 @@ func processAndSaveUmatFoto(db *gorm.DB, umatID int32, namaIndo string, fileHead
 		return fmt.Errorf("gagal membuat direktori upload: %w", err)
 	}
 
-	safeFileName := sanitizeFilename(fileHeader.Filename)
-	dstPath := filepath.Join(targetDir, safeFileName)
-
 	src, err := fileHeader.Open()
 	if err != nil {
 		return fmt.Errorf("gagal membuka file upload: %w", err)
 	}
 	defer src.Close()
 
+	// 1. Decode image into memory to strip polyglots, script tags, EXIF payloads, or malformed chunks
+	img, format, err := image.Decode(src)
+	if err != nil {
+		return fmt.Errorf("gagal membaca data gambar: %w", err)
+	}
+
+	// 2. Select canonical extension and encoder based strictly on verified decoded image format
+	var (
+		ext        string
+		encodeFunc func(io.Writer) error
+	)
+	switch format {
+	case "png":
+		ext = ".png"
+		encodeFunc = func(w io.Writer) error {
+			return png.Encode(w, img)
+		}
+	case "jpeg":
+		ext = ".jpg"
+		encodeFunc = func(w io.Writer) error {
+			return jpeg.Encode(w, img, &jpeg.Options{Quality: 90})
+		}
+	default:
+		return fmt.Errorf("format gambar tidak didukung: %s", format)
+	}
+
+	// 3. Sanitize filename base name and strictly enforce canonical extension (never trust raw extension)
+	rawBase := filepath.Base(fileHeader.Filename)
+	if idx := strings.LastIndex(rawBase, "."); idx != -1 {
+		rawBase = rawBase[:idx]
+	}
+	cleanBase := sanitizeFilename(rawBase)
+	cleanBase = strings.Trim(cleanBase, " ._")
+	cleanBase = strings.ReplaceAll(cleanBase, ".", "_")
+	if cleanBase == "" {
+		cleanBase = fmt.Sprintf("foto_%d_%s", umatID, time.Now().Format("20060102150405"))
+	}
+	safeFileName := cleanBase + ext
+	dstPath := filepath.Join(targetDir, safeFileName)
+
 	out, err := os.Create(dstPath)
 	if err != nil {
-		return fmt.Errorf("gagal menyimpan file ke disk: %w", err)
+		return fmt.Errorf("gagal membuat file di disk: %w", err)
 	}
 	defer out.Close()
 
-	if _, err := io.Copy(out, src); err != nil {
-		return fmt.Errorf("gagal menulis file ke disk: %w", err)
+	// 4. Re-encode image from raw pixel memory (NEVER use raw io.Copy) to neutralize any polyglot payload
+	if err := encodeFunc(out); err != nil {
+		_ = os.Remove(dstPath)
+		return fmt.Errorf("gagal meng-encode dan menyimpan gambar: %w", err)
 	}
 
 	docFileStr := docPathStr + "/" + safeFileName
@@ -496,6 +561,10 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 		}
 	}
 
+	if payload.Email != nil && strings.TrimSpace(*payload.Email) == "" {
+		payload.Email = nil
+	}
+
 	if err := ValidateStruct(payload); err != nil {
 		return domain.Umat{}, fmt.Errorf("Validation failed: %w", err)
 	}
@@ -526,26 +595,14 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 	needPenanggung := (payload.Penanggung != nil && string(*payload.Penanggung) != "") && (payload.PenanggungManual == nil || *payload.PenanggungManual == "")
 	needPengajak := (payload.Pengajak != nil && string(*payload.Pengajak) != "") && (payload.PengajakManual == nil || *payload.PengajakManual == "")
 
-	tasksCount := 2
-	if needPenanggung {
-		tasksCount++
-	}
-	if needPengajak {
-		tasksCount++
-	}
-
-	wg.Add(tasksCount)
-
 	// Goroutine 1: Execute SP_APP_GenerateId concurrently
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		nowStr := time.Now().Format("2006-01-02 15:04:05")
 		errId = s.db.Raw("EXEC SP_APP_GenerateId ?, ?, ?", "UMAT", nowStr, 1).Scan(&genResult).Error
-	}()
+	})
 
 	// Goroutine 2: Execute SubWhInfo query concurrently
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		subQuery := s.db.Table("T_WH_USER_MATRIX_MST AS A").
 			Select("1").
 			Where("A.LOGINID = ?", userID).
@@ -556,12 +613,11 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 			Where("EXISTS (?)", subQuery).
 			Limit(1).
 			Scan(&subWhResult).Error
-	}()
+	})
 
 	// Goroutine 3: Lookup Penanggung concurrently if needed
 	if needPenanggung {
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			var temp []domain.Umat
 			if err := s.db.Where("id = ?", *payload.Penanggung).Limit(1).Find(&temp).Select("namaindonesia, namamandarin, alias").Error; err != nil {
 				errPenanggung = fmt.Errorf("Penanggung %s not found: %w", *payload.Penanggung, err)
@@ -577,13 +633,12 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 				}
 				payload.PenanggungManual = &pn
 			}
-		}()
+		})
 	}
 
 	// Goroutine 4: Lookup Pengajak concurrently if needed
 	if needPengajak {
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			var temp []domain.Umat
 			if err := s.db.Where("id = ?", *payload.Pengajak).Limit(1).Find(&temp).Select("namaindonesia, namamandarin, alias").Error; err != nil {
 				errPengajak = fmt.Errorf("Pengajak %s not found: %w", *payload.Pengajak, err)
@@ -599,7 +654,7 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 				}
 				payload.PengajakManual = &pn
 			}
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -665,6 +720,10 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 		}
 	}
 
+	if payload.Email != nil && strings.TrimSpace(*payload.Email) == "" {
+		payload.Email = nil
+	}
+
 	if err := ValidateStruct(payload); err != nil {
 		return domain.Umat{}, fmt.Errorf("Validation failed: %w", err)
 	}
@@ -680,21 +739,13 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 	}
 	userIDInt32 := int32(parsedInt)
 
-	var (
-		item          domain.Umat
-		errFetchItem  error
-		errPenanggung error
-		errPengajak   error
-		wg            sync.WaitGroup
-	)
-
-	// Goroutine 1: Fetch existing item using .Take() to avoid default sorting bugs
+	var item domain.Umat
+	// Fetch existing item using .Take() to avoid default sorting bugs
 	if err := s.db.Where("id = ?", userIDInt32).Take(&item).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			errFetchItem = fmt.Errorf("umat %s not found", id)
-		} else {
-			errFetchItem = err
+			return domain.Umat{}, fmt.Errorf("umat %s not found", id)
 		}
+		return domain.Umat{}, err
 	}
 
 	// 3. Map values onto the actual field variables present in your legacy schema
@@ -719,9 +770,7 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 	item.TahunChiutaoMandarin = payload.TahunChiutaoMandarin
 	item.WaktuChiutaoMandarin = payload.WaktuChiutaoMandarin
 	item.Pengajak = payload.Pengajak
-	item.PengajakManual = payload.PengajakManual
 	item.Penanggung = payload.Penanggung
-	item.PenanggungManual = payload.PenanggungManual
 	item.Tcs = payload.Tcs
 	item.UangPahala = payload.UangPahala
 	item.FotangChiutao = payload.FotangChiutao
@@ -747,23 +796,18 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 	item.Email = payload.Email
 	item.ImagePath = payload.ImagePath
 
+	var (
+		errPenanggung error
+		errPengajak   error
+		wg            sync.WaitGroup
+	)
+
 	needPenanggung := (payload.Penanggung != nil && string(*payload.Penanggung) != "") && (payload.PenanggungManual == nil || *payload.PenanggungManual == "")
 	needPengajak := (payload.Pengajak != nil && string(*payload.Pengajak) != "") && (payload.PengajakManual == nil || *payload.PengajakManual == "")
 
-	tasksCount := 1
+	// Goroutine: Lookup Penanggung concurrently if needed
 	if needPenanggung {
-		tasksCount++
-	}
-	if needPengajak {
-		tasksCount++
-	}
-
-	wg.Add(tasksCount)
-
-	// Goroutine 2: Lookup Penanggung concurrently if needed
-	if needPenanggung {
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			var temp []domain.Umat
 			if err := s.db.Where("id = ?", *payload.Penanggung).Limit(1).Select("namaindonesia, namamandarin, alias").Find(&temp).Error; err != nil {
 				errPenanggung = fmt.Errorf("Penanggung %s not found: %w", *payload.Penanggung, err)
@@ -779,13 +823,12 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 				}
 				payload.PenanggungManual = &pn
 			}
-		}()
+		})
 	}
 
-	// Goroutine 3: Lookup Pengajak concurrently if needed
+	// Goroutine: Lookup Pengajak concurrently if needed
 	if needPengajak {
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			var temp []domain.Umat
 			if err := s.db.Where("id = ?", *payload.Pengajak).Limit(1).Select("namaindonesia, namamandarin, alias").Find(&temp).Error; err != nil {
 				errPengajak = fmt.Errorf("Pengajak %s not found: %w", *payload.Pengajak, err)
@@ -801,20 +844,20 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 				}
 				payload.PengajakManual = &pn
 			}
-		}()
+		})
 	}
 
 	wg.Wait()
 
-	if errFetchItem != nil {
-		return domain.Umat{}, errFetchItem
-	}
 	if errPenanggung != nil {
 		return domain.Umat{}, errPenanggung
 	}
 	if errPengajak != nil {
 		return domain.Umat{}, errPengajak
 	}
+
+	item.PenanggungManual = payload.PenanggungManual
+	item.PengajakManual = payload.PengajakManual
 
 	// Legacy metadata mappings
 	item.ModAct = "U"                   // 'U' standard legacy flag for Update
@@ -1347,7 +1390,7 @@ func (s *UmatService) Ocr(file multipart.File, header *multipart.FileHeader, c *
 	height := bounds.Dy()
 
 	var finalImg image.Image = srcImg
-	maxDim := 1600
+	maxDim := 2800 // must 2800
 	if width > maxDim || height > maxDim {
 		scale := math.Min(float64(maxDim)/float64(width), float64(maxDim)/float64(height))
 		targetW := int(float64(width) * scale)
@@ -1368,13 +1411,13 @@ func (s *UmatService) Ocr(file multipart.File, header *multipart.FileHeader, c *
 	buf.Reset()
 	defer ocrBufferPool.Put(buf)
 
-	quality := 80
+	quality := 100
 	if err := jpeg.Encode(buf, finalImg, &jpeg.Options{Quality: quality}); err != nil {
 		return nil, fmt.Errorf("gagal kompresi gambar: %w", err)
 	}
 
 	for buf.Len() > 1000000 && quality > 30 {
-		quality -= 20
+		quality -= 15
 		buf.Reset()
 		if err := jpeg.Encode(buf, finalImg, &jpeg.Options{Quality: quality}); err != nil {
 			return nil, fmt.Errorf("gagal re-encode kompresi gambar: %w", err)
@@ -1385,7 +1428,7 @@ func (s *UmatService) Ocr(file multipart.File, header *multipart.FileHeader, c *
 
 	apiKey := os.Getenv("OCR_SPACE_API_KEY")
 	if apiKey == "" {
-		apiKey = "helloworld"
+		return nil, errors.New("API Key OCR.space tidak ditemukan")
 	}
 
 	formData := url.Values{}
@@ -1509,15 +1552,98 @@ func convertToPinyin(chineseName string) string {
 	return strings.Join(words, " ")
 }
 
+func parseGregorianDateFromText(text string) string {
+	clean := strings.ReplaceAll(text, "′", "/")
+	clean = strings.ReplaceAll(clean, "’", "/")
+	clean = strings.ReplaceAll(clean, "'", "/")
+	clean = strings.ReplaceAll(clean, "`", "/")
+
+	monthMap := map[string]int{
+		"jan": 1, "januari": 1, "january": 1,
+		"feb": 2, "februari": 2, "february": 2,
+		"mar": 3, "maret": 3, "march": 3,
+		"apr": 4, "april": 4,
+		"may": 5, "mei": 5,
+		"jun": 6, "juni": 6, "june": 6,
+		"jul": 7, "juli": 7, "july": 7,
+		"aug": 8, "agu": 8, "agustus": 8, "august": 8,
+		"sep": 9, "sept": 9, "september": 9,
+		"oct": 10, "okt": 10, "oktober": 10, "october": 10,
+		"nov": 11, "november": 11,
+		"dec": 12, "des": 12, "desember": 12, "december": 12,
+	}
+
+	reMMM := regexp.MustCompile(`(?i)\b(\d{1,2})[\s/\-\.]*([a-z]{3,9})[\s/\-\.]*(\d{2,4})\b`)
+	if matches := reMMM.FindStringSubmatch(clean); len(matches) == 4 {
+		day, _ := strconv.Atoi(matches[1])
+		monthStr := strings.ToLower(matches[2])
+		year, _ := strconv.Atoi(matches[3])
+		if year < 100 {
+			year += 2000
+		}
+		if monthNum, ok := monthMap[monthStr]; ok && day >= 1 && day <= 31 {
+			return fmt.Sprintf("%04d-%02d-%02d", year, monthNum, day)
+		}
+	}
+
+	reYYYY := regexp.MustCompile(`\b(20\d{2})[/\-\.](\d{1,2})[/\-\.](\d{1,2})\b`)
+	if matches := reYYYY.FindStringSubmatch(clean); len(matches) == 4 {
+		year, _ := strconv.Atoi(matches[1])
+		month, _ := strconv.Atoi(matches[2])
+		day, _ := strconv.Atoi(matches[3])
+		if month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+			return fmt.Sprintf("%04d-%02d-%02d", year, month, day)
+		}
+	}
+
+	reDDMM := regexp.MustCompile(`\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b`)
+	if matches := reDDMM.FindStringSubmatch(clean); len(matches) == 4 {
+		day, _ := strconv.Atoi(matches[1])
+		month, _ := strconv.Atoi(matches[2])
+		year, _ := strconv.Atoi(matches[3])
+		if year < 100 {
+			year += 2000
+		}
+		if month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+			return fmt.Sprintf("%04d-%02d-%02d", year, month, day)
+		}
+	}
+
+	return ""
+}
+
 func ParseUmatOcrText(rawText string) map[string]interface{} {
 	parsed := make(map[string]interface{})
-
 	lines := strings.Split(rawText, "\n")
-	for i := range lines {
-		lines[i] = strings.TrimSpace(lines[i])
+
+	cleanSymbols := func(str string) string {
+		re := regexp.MustCompile(`[^\p{L}\p{N}\s]`)
+		cleaned := re.ReplaceAllString(str, "")
+		return strings.TrimSpace(cleaned)
+	}
+
+	deduplicateName := func(str string) string {
+		str = strings.TrimSpace(str)
+		parts := strings.Fields(str)
+		if len(parts) == 0 {
+			return ""
+		}
+		if len(parts) == 2 && strings.HasSuffix(parts[0], parts[1]) {
+			return parts[0]
+		}
+		seen := make(map[string]bool)
+		var unique []string
+		for _, p := range parts {
+			if !seen[p] {
+				seen[p] = true
+				unique = append(unique, p)
+			}
+		}
+		return strings.Join(unique, " ")
 	}
 
 	for _, line := range lines {
+		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
@@ -1568,24 +1694,31 @@ func ParseUmatOcrText(rawText string) map[string]interface{} {
 				val = strings.TrimSpace(strings.ReplaceAll(line, "PENDIDIKAN", ""))
 				val = strings.TrimSpace(strings.ReplaceAll(val, "教育", ""))
 			}
-			val = strings.ToUpper(val)
-			if val == "SI" || val == "S I" {
+			valUpper := strings.ToUpper(strings.TrimSuffix(val, "."))
+			valUpper = strings.ReplaceAll(valUpper, " ", "")
+			if valUpper == "SI" || valUpper == "S" || valUpper == "S1" || valUpper == "S-1" || valUpper == "S/1" {
 				val = "S1"
+			} else if valUpper == "SII" || valUpper == "S2" || valUpper == "S-2" {
+				val = "S2"
+			} else if valUpper == "SIII" || valUpper == "S3" || valUpper == "S-3" {
+				val = "S3"
+			} else if val != "" {
+				val = strings.ToUpper(val)
 			}
 			parsed["pendidikan"] = val
 		}
 
 		// 4. JENIS KELAMIN / 性別
-		if strings.Contains(line, "JENIS KELAMIN") || strings.Contains(line, "性別") {
+		if strings.Contains(line, "性別") || strings.Contains(line, "JENIS KELAMIN") || strings.Contains(line, "KELAMIN") {
 			lineUpper := strings.ToUpper(line)
-			if strings.Contains(lineUpper, "坤") || strings.Contains(lineUpper, "WANITA") || strings.Contains(lineUpper, "PEREMPUAN") || strings.Contains(lineUpper, " W ") || strings.HasSuffix(lineUpper, " W") || strings.HasSuffix(lineUpper, "WANITA") {
-				parsed["jenis_kelamin"] = "WANITA"
-			} else if strings.Contains(lineUpper, "乾") || lineUpper == "PRIA" || lineUpper == "LAKI-LAKI" || lineUpper == "L" {
-				parsed["jenis_kelamin"] = "PRIA"
-			} else if strings.Contains(lineUpper, "童") || lineUpper == "ANAK PRIA" || lineUpper == "ANAK LAKI-LAKI" || lineUpper == "ANAK L" || lineUpper == "ANAK LAKI" {
+			if strings.Contains(lineUpper, "童") || lineUpper == "ANAK PRIA" || lineUpper == "ANAK LAKI-LAKI" || lineUpper == "ANAK L" || lineUpper == "ANAK LAKI" {
 				parsed["jenis_kelamin"] = "ANAK PRIA"
 			} else if strings.Contains(lineUpper, "女") || lineUpper == "ANAK WANITA" || lineUpper == "ANAK W" {
 				parsed["jenis_kelamin"] = "ANAK WANITA"
+			} else if strings.Contains(lineUpper, "坤") || lineUpper == "P" || strings.Contains(lineUpper, "WANITA") || strings.Contains(lineUpper, "PEREMPUAN") || strings.Contains(lineUpper, " W ") || strings.HasSuffix(lineUpper, " W") || strings.HasSuffix(lineUpper, "WANITA") {
+				parsed["jenis_kelamin"] = "WANITA"
+			} else if strings.Contains(lineUpper, "乾") || lineUpper == "PRIA" || lineUpper == "LAKI-LAKI" || lineUpper == "L" {
+				parsed["jenis_kelamin"] = "PRIA"
 			}
 		}
 
@@ -1627,6 +1760,10 @@ func ParseUmatOcrText(rawText string) map[string]interface{} {
 			}
 			if len(parts) == 2 {
 				parsed["pengajak_manual"] = cleanSymbols(parts[1])
+			} else {
+				reKeyword := regexp.MustCompile(`(?i)(PERANTARA|引師)\s*`)
+				val := reKeyword.ReplaceAllString(line, "")
+				parsed["pengajak_manual"] = cleanSymbols(val)
 			}
 		}
 
@@ -1638,6 +1775,10 @@ func ParseUmatOcrText(rawText string) map[string]interface{} {
 			}
 			if len(parts) == 2 {
 				parsed["penanggung_manual"] = cleanSymbols(parts[1])
+			} else {
+				reKeyword := regexp.MustCompile(`(?i)(PENANGGUNG|保師)\s*`)
+				val := reKeyword.ReplaceAllString(line, "")
+				parsed["penanggung_manual"] = cleanSymbols(val)
 			}
 		}
 
@@ -1649,10 +1790,21 @@ func ParseUmatOcrText(rawText string) map[string]interface{} {
 			}
 			if len(parts) == 2 {
 				parsed["tcs"] = cleanSymbols(parts[1])
+			} else {
+				reKeyword := regexp.MustCompile(`(?i)(點傳師|TCS)\s*`)
+				val := reKeyword.ReplaceAllString(line, "")
+				parsed["tcs"] = cleanSymbols(val)
 			}
 		}
 
-		// 10. 功德費 / uang_pahala & waktu_chiutao_mandarin
+		// 10. 日期 / TANGGAL / tanggal_chiutao_int
+		if strings.Contains(line, "日期") || strings.Contains(line, "TANGGAL") {
+			if dt := parseGregorianDateFromText(line); dt != "" {
+				parsed["tanggal_chiutao_int"] = dt
+			}
+		}
+
+		// 11. 功德費 / uang_pahala & waktu_chiutao_mandarin
 		if strings.Contains(line, "功德費") || strings.Contains(line, "UANG PAHALA") {
 			reDigits := regexp.MustCompile(`\d[\d\.\,]*`)
 			if numMatch := reDigits.FindString(line); numMatch != "" {
@@ -1669,6 +1821,13 @@ func ParseUmatOcrText(rawText string) map[string]interface{} {
 					break
 				}
 			}
+		}
+	}
+
+	// Fallback date check across whole rawText if tanggal_chiutao_int was not found in specific line
+	if parsed["tanggal_chiutao_int"] == nil {
+		if dt := parseGregorianDateFromText(rawText); dt != "" {
+			parsed["tanggal_chiutao_int"] = dt
 		}
 	}
 

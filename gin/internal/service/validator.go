@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"net/mail"
 	"reflect"
 	"strings"
 
@@ -10,8 +11,24 @@ import (
 	"guangjiapps/gin/internal/domain"
 )
 
-var validate = func() *validator.Validate {
-	v := validator.New()
+func isValidEmail(email string) bool {
+	str := strings.TrimSpace(email)
+	if str == "" {
+		return true
+	}
+	addr, err := mail.ParseAddress(str)
+	if err != nil || addr.Address != str {
+		return false
+	}
+	parts := strings.Split(str, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	domainPart := parts[1]
+	return strings.Contains(domainPart, ".") && !strings.HasPrefix(domainPart, ".") && !strings.HasSuffix(domainPart, ".")
+}
+
+func ConfigureValidator(v *validator.Validate) {
 	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
 		if name == "-" {
@@ -34,6 +51,19 @@ var validate = func() *validator.Validate {
 		}
 		return nil
 	}, domain.DateOnly{}, domain.DateTime{})
+
+	v.RegisterValidation("email", func(fl validator.FieldLevel) bool {
+		val := fl.Field()
+		if val.Kind() == reflect.String {
+			return isValidEmail(val.String())
+		}
+		return false
+	})
+}
+
+var validate = func() *validator.Validate {
+	v := validator.New()
+	ConfigureValidator(v)
 	return v
 }()
 

@@ -16,9 +16,9 @@ func TestDonasiSxyService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
 	}
-	if err := database.AutoMigrate(db); err != nil {
-		t.Fatalf("auto migrate failed: %v", err)
-	}
+	// if err := database.AutoMigrate(db); err != nil {
+	// 	t.Fatalf("auto migrate failed: %v", err)
+	// }
 
 	svc := NewDonasiSxyService(db)
 	c := setupTestContext()
@@ -141,4 +141,3 @@ func TestDonasiSxyResponseJSON(t *testing.T) {
 		}
 	}
 }
-

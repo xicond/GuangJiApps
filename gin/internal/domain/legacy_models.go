@@ -173,7 +173,7 @@ type MainMenuItem struct {
 
 // AdminGroup represents table [dbo].[T_Login_Group]
 type AdminGroup struct {
-	GroupId     int32  `gorm:"primaryKey;autoIncrement:false;column:GroupId" json:"group_id"`
+	GroupId     int32  `gorm:"primaryKey;column:GroupId" json:"group_id"`
 	GroupName   string `gorm:"column:GroupName" json:"group_name" validate:"required,max=50"`
 	RInsert     bool   `gorm:"column:RInsert" json:"-"`
 	REdit       bool   `gorm:"column:REdit" json:"-"`
@@ -201,7 +201,7 @@ func (DepartmentMst) TableName() string {
 
 // GroupMenuMapping represents table [dbo].[T_Login_Menu]
 type GroupMenuMapping struct {
-	MenuId       int32  `gorm:"primaryKey;autoIncrement:false;column:MenuId" json:"menu_id"`
+	MenuId       int32  `gorm:"primaryKey;column:MenuId" json:"menu_id"`
 	ParentId     int32  `gorm:"column:ParentId" json:"parent_id"`
 	MenuName     string `gorm:"column:MenuName" json:"menu_name" validate:"required,max=50"`
 	PageUrl      string `gorm:"column:PageUrl" json:"page_url" validate:"omitempty,max=250"`
@@ -307,6 +307,43 @@ type Umat struct {
 	NamaFotangLain      *string   `gorm:"column:NamaFotangLain" json:"nama_fotang_lain" validate:"omitempty,max=50"`
 	NamaTcsLain         *string   `gorm:"column:NamaTcsLain" json:"nama_tcs_lain" validate:"omitempty,max=50"`
 	KodeBuku            *string   `gorm:"column:KodeBuku" json:"kode_buku" validate:"omitempty,max=50"`
+}
+
+func (u *Umat) UnmarshalJSON(data []byte) error {
+	type Alias Umat
+	aux := &struct {
+		Ikrar1Alt *bool `json:"ikrar1"`
+		Ikrar2Alt *bool `json:"ikrar2"`
+		Ikrar3Alt *bool `json:"ikrar3"`
+		Ikrar4Alt *bool `json:"ikrar4"`
+		Ikrar5Alt *bool `json:"ikrar5"`
+		Ikrar6Alt *bool `json:"ikrar6"`
+		*Alias
+	}{
+		Alias: (*Alias)(u),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if aux.Ikrar1Alt != nil {
+		u.Ikrar1 = *aux.Ikrar1Alt
+	}
+	if aux.Ikrar2Alt != nil {
+		u.Ikrar2 = *aux.Ikrar2Alt
+	}
+	if aux.Ikrar3Alt != nil {
+		u.Ikrar3 = *aux.Ikrar3Alt
+	}
+	if aux.Ikrar4Alt != nil {
+		u.Ikrar4 = *aux.Ikrar4Alt
+	}
+	if aux.Ikrar5Alt != nil {
+		u.Ikrar5 = *aux.Ikrar5Alt
+	}
+	if aux.Ikrar6Alt != nil {
+		u.Ikrar6 = *aux.Ikrar6Alt
+	}
+	return nil
 }
 
 func (Umat) TableName() string { return "T_BUS_UMAT" }
@@ -451,7 +488,10 @@ func (d *DateOnly) parseString(s string) error {
 
 // Value untuk menyimpan kembali ke database jika diperlukan
 func (d DateOnly) Value() (driver.Value, error) {
-	return d.Time, nil
+	if d.IsZero() {
+		return nil, nil
+	}
+	return d.Format("2006-01-02"), nil
 }
 
 // UnmarshalJSON mendeteksi format string JSON (misal "2026-07-27" atau "2026-07-27T00:00:00Z")
@@ -560,7 +600,10 @@ func (dt *DateTime) parseString(s string) error {
 
 // Value untuk menyimpan kembali ke database jika diperlukan
 func (dt DateTime) Value() (driver.Value, error) {
-	return dt.Time, nil
+	if dt.IsZero() {
+		return nil, nil
+	}
+	return dt.Format("2006-01-02 15:04:05"), nil
 }
 
 // UnmarshalJSON mendeteksi format string JSON (misal "2022-10-08 09:12:39" atau "2022-10-08T09:12:39.423Z")
@@ -841,11 +884,187 @@ type KelasPeserta struct {
 	MakananMalam    *string   `gorm:"column:MakananMalam;type:varchar(30)" json:"makanan_malam" validate:"omitempty,max=30"`
 
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
+	Umat  *Umat  `gorm:"foreignKey:IdPeserta;references:ID;constraint:false" json:"umat,omitempty" validate:"-"`
 }
 
 // TableName menentukan nama tabel secara eksplisit di database
 func (KelasPeserta) TableName() string {
 	return "T_TRX_KELAS_PESERTA"
+}
+
+// UnmarshalJSON custom unmarshaler for KelasPeserta to enforce single umat ID
+func (p *KelasPeserta) UnmarshalJSON(data []byte) error {
+	type auxKelasPeserta struct {
+		DetailId        int32           `json:"detail_id"`
+		TrxId           int32           `json:"trx_id"`
+		IdPeserta       json.RawMessage `json:"id_peserta"`
+		IdPesertaAlt    json.RawMessage `json:"idpeserta"`
+		Sumbangan       *float64        `json:"sumbangan"`
+		Barang          *string         `json:"barang"`
+		TimKerja        *string         `json:"tim_kerja"`
+		Keterangan      *string         `json:"keterangan"`
+		Status          *bool           `json:"status"`
+		ModAct          *string         `json:"mod_act"`
+		ModBy           *int32          `json:"mod_by"`
+		ModDate         *DateTime       `json:"mod_date"`
+		Lulus           *bool           `json:"lulus"`
+		KeteranganLulus *string         `json:"keterangan_lulus"`
+		Anak            *string         `json:"anak"`
+		Suster          *string         `json:"suster"`
+		Menginap        *string         `json:"menginap"`
+		MakananPagi     *string         `json:"makanan_pagi"`
+		MakananSiang    *string         `json:"makanan_siang"`
+		MakananMalam    *string         `json:"makanan_malam"`
+	}
+
+	var aux auxKelasPeserta
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	rawID := aux.IdPeserta
+	if len(rawID) == 0 {
+		rawID = aux.IdPesertaAlt
+	}
+
+	if len(rawID) > 0 && string(rawID) != "null" {
+		trimmedID := strings.TrimSpace(string(rawID))
+		if strings.HasPrefix(trimmedID, "[") {
+			return fmt.Errorf("idpeserta: idpeserta should be single value of umat")
+		}
+
+		var singleInt int32
+		if err := json.Unmarshal(rawID, &singleInt); err == nil {
+			p.IdPeserta = &singleInt
+		} else {
+			var singleStr string
+			if err := json.Unmarshal(rawID, &singleStr); err == nil {
+				if val, err := strconv.ParseInt(strings.TrimSpace(singleStr), 10, 32); err == nil {
+					v32 := int32(val)
+					p.IdPeserta = &v32
+				} else {
+					return fmt.Errorf("idpeserta: idpeserta should be single value of umat")
+				}
+			} else {
+				return fmt.Errorf("idpeserta: idpeserta should be single value of umat")
+			}
+		}
+	}
+
+	p.DetailId = aux.DetailId
+	p.TrxId = aux.TrxId
+	p.Sumbangan = aux.Sumbangan
+	p.Barang = aux.Barang
+	p.TimKerja = aux.TimKerja
+	p.Keterangan = aux.Keterangan
+	p.Status = aux.Status
+	p.ModAct = aux.ModAct
+	p.ModBy = aux.ModBy
+	p.ModDate = aux.ModDate
+	p.Lulus = aux.Lulus
+	p.KeteranganLulus = aux.KeteranganLulus
+	p.Anak = aux.Anak
+	p.Suster = aux.Suster
+	p.Menginap = aux.Menginap
+	p.MakananPagi = aux.MakananPagi
+	p.MakananSiang = aux.MakananSiang
+	p.MakananMalam = aux.MakananMalam
+
+	return nil
+}
+
+type KelasPesertaBulkRequest struct {
+	TrxId           int32    `json:"trx_id" validate:"required"`
+	IdPeserta       []int32  `json:"id_peserta" validate:"required,min=1"`
+	Sumbangan       *float64 `json:"sumbangan" validate:"omitempty"`
+	Barang          *string  `json:"barang" validate:"omitempty,max=100"`
+	TimKerja        *string  `json:"tim_kerja" validate:"omitempty,max=3"`
+	Keterangan      *string  `json:"keterangan" validate:"omitempty,max=200"`
+	Status          *bool    `json:"status" validate:"omitempty"`
+	Lulus           *bool    `json:"lulus" validate:"omitempty"`
+	KeteranganLulus *string  `json:"keterangan_lulus" validate:"omitempty,max=200"`
+	Anak            *string  `json:"anak" validate:"omitempty,max=30"`
+	Suster          *string  `json:"suster" validate:"omitempty,max=30"`
+	Menginap        *string  `json:"menginap" validate:"omitempty,max=30"`
+	MakananPagi     *string  `json:"makanan_pagi" validate:"omitempty,max=30"`
+	MakananSiang    *string  `json:"makanan_siang" validate:"omitempty,max=30"`
+	MakananMalam    *string  `json:"makanan_malam" validate:"omitempty,max=30"`
+}
+
+// UnmarshalJSON custom unmarshaler for KelasPesertaBulkRequest to enforce array of umat IDs
+func (p *KelasPesertaBulkRequest) UnmarshalJSON(data []byte) error {
+	type auxBulkRequest struct {
+		TrxId           int32           `json:"trx_id"`
+		IdPeserta       json.RawMessage `json:"id_peserta"`
+		IdPesertaAlt    json.RawMessage `json:"idpeserta"`
+		Sumbangan       *float64        `json:"sumbangan"`
+		Barang          *string         `json:"barang"`
+		TimKerja        *string         `json:"tim_kerja"`
+		Keterangan      *string         `json:"keterangan"`
+		Status          *bool           `json:"status"`
+		Lulus           *bool           `json:"lulus"`
+		KeteranganLulus *string         `json:"keterangan_lulus"`
+		Anak            *string         `json:"anak"`
+		Suster          *string         `json:"suster"`
+		Menginap        *string         `json:"menginap"`
+		MakananPagi     *string         `json:"makanan_pagi"`
+		MakananSiang    *string         `json:"makanan_siang"`
+		MakananMalam    *string         `json:"makanan_malam"`
+	}
+
+	var aux auxBulkRequest
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	rawID := aux.IdPeserta
+	if len(rawID) == 0 {
+		rawID = aux.IdPesertaAlt
+	}
+
+	if len(rawID) > 0 && string(rawID) != "null" {
+		trimmedID := strings.TrimSpace(string(rawID))
+		if !strings.HasPrefix(trimmedID, "[") {
+			return fmt.Errorf("idpeserta: idpeserta must array")
+		}
+
+		var sliceInt []int32
+		if err := json.Unmarshal(rawID, &sliceInt); err == nil {
+			p.IdPeserta = sliceInt
+		} else {
+			var sliceStr []string
+			if err := json.Unmarshal(rawID, &sliceStr); err == nil {
+				parsedList := make([]int32, 0, len(sliceStr))
+				for _, s := range sliceStr {
+					if val, err := strconv.ParseInt(strings.TrimSpace(s), 10, 32); err == nil {
+						parsedList = append(parsedList, int32(val))
+					} else {
+						return fmt.Errorf("idpeserta: idpeserta format is invalid")
+					}
+				}
+				p.IdPeserta = parsedList
+			} else {
+				return fmt.Errorf("idpeserta: idpeserta format is invalid")
+			}
+		}
+	}
+
+	p.TrxId = aux.TrxId
+	p.Sumbangan = aux.Sumbangan
+	p.Barang = aux.Barang
+	p.TimKerja = aux.TimKerja
+	p.Keterangan = aux.Keterangan
+	p.Status = aux.Status
+	p.Lulus = aux.Lulus
+	p.KeteranganLulus = aux.KeteranganLulus
+	p.Anak = aux.Anak
+	p.Suster = aux.Suster
+	p.Menginap = aux.Menginap
+	p.MakananPagi = aux.MakananPagi
+	p.MakananSiang = aux.MakananSiang
+	p.MakananMalam = aux.MakananMalam
+
+	return nil
 }
 
 type KelasPesertaList struct {
@@ -1158,3 +1377,21 @@ type UmatReport struct {
 	Ikrar6               bool     `gorm:"column:ikrar6" json:"ikrar6"`
 	TotalRow             int64    `gorm:"column:TotalRow" json:"total_row"`
 }
+
+type KelasPesertaPrevious struct {
+	IdPeserta        int32  `gorm:"column:idpeserta" json:"id_peserta"`
+	Id               int32  `gorm:"column:id" json:"id"`
+	Kode             string `gorm:"column:kode" json:"kode"`
+	NamaIndonesia    string `gorm:"column:namaindonesia" json:"nama_indonesia"`
+	NamaMandarin     string `gorm:"column:namamandarin" json:"nama_mandarin"`
+	Alias            string `gorm:"column:alias" json:"alias"`
+	Marga            string `gorm:"column:marga" json:"marga"`
+	Alamat           string `gorm:"column:alamat" json:"alamat"`
+	FotangAktif      string `gorm:"column:fotangaktif" json:"fotang_aktif"`
+	FotangAktifDesc  string `gorm:"column:FotangAktifDesc" json:"fotang_aktif_desc"`
+	FotangCiuTao     string `gorm:"column:fotangciutao" json:"fotang_ciu_tao"`
+	FotangCiuTaoDesc string `gorm:"column:FotangCiuTaoDesc" json:"fotang_ciu_tao_desc"`
+	Pengajak         string `gorm:"column:pengajak" json:"pengajak"`
+	Penanggung       string `gorm:"column:penanggung" json:"penanggung"`
+}
+

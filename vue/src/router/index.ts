@@ -85,6 +85,12 @@ const router = createRouter({
           meta: { title: 'Topic', menu: 'Master Data', subMenu: 'Topik' }
         },
         {
+          path: 'master-data/kelas',
+          name: 'master-kelas',
+          component: () => import('../views/master-data/KelasMasterList.vue'),
+          meta: { title: 'Master Kelas', activeMenu: '/master-data/kelas', menu: 'Master Data', subMenu: 'Kelas' }
+        },
+        {
           path: 'master-data/activity',
           name: 'activity',
           component: () => import('../views/master-data/ActivityList.vue'),

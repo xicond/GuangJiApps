@@ -17,7 +17,7 @@
     "dayjs": "^1.11.21",
     "element-plus": "^2.7.7",
     "pinia": "^2.1.7",
-    "vue": "^3.4.31",
+    "vue": "^3.5",
     "vue-advanced-cropper": "^2.8.9",
     "vue-router": "^4.4.0",
     "workbox-window": "^7.1.0"

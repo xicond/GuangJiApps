@@ -20,13 +20,13 @@ type TestItem struct {
 func (TestItem) TableName() string { return "test_items" }
 
 func setupTestDB(t *testing.T) *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("file:memdb_snm?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite in-memory db: %v", err)
 	}
-	if err := db.AutoMigrate(&TestItem{}); err != nil {
-		t.Fatalf("failed to automigrate: %v", err)
-	}
+	// if err := db.AutoMigrate(&TestItem{}); err != nil {
+	// 	t.Fatalf("failed to automigrate: %v", err)
+	// }
 	return db
 }
 

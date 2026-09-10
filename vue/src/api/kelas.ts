@@ -6,10 +6,17 @@ import type {
   KelasTopik,
   KelasDonasi,
   KelasDonasiBarang,
+  KelasKendaraan,
+  KelasKendaraanListResponse,
+  KelasPengeluaran,
+  KelasPengeluaranListResponse,
   KelasQueryParams,
   KelasListResponse,
   KelasSingleResponse,
   KelasPesertaListResponse,
+  KelasPesertaPreviousListResponse,
+  KelasPesertaBulkPayload,
+  KelasPesertaBulkResponse,
   KelasPengabdiListResponse,
   KelasTopikListResponse,
   KelasDonasiListResponse,
@@ -173,6 +180,32 @@ export const kelasApi = {
     return response.data
   },
 
+  /**
+   * Load previous participants for a class (from previous class level/code)
+   */
+  async loadPreviousKelasPeserta(
+    id: string | number,
+    params: { page?: number; limit?: number } = {},
+    signal?: AbortSignal
+  ): Promise<KelasPesertaPreviousListResponse> {
+    const response = await apiClient.get<KelasPesertaPreviousListResponse>(`/v1/kelas/${id}/peserta/load-previous`, {
+      params: { page: params.page || 1, limit: params.limit || 10 },
+      signal
+    })
+    return response.data
+  },
+
+  /**
+   * Bulk insert participants into a class
+   */
+  async createKelasPesertaBulk(
+    payload: KelasPesertaBulkPayload
+  ): Promise<KelasPesertaBulkResponse> {
+    const kelasId = payload.trx_id || 0
+    const response = await apiClient.post<KelasPesertaBulkResponse>(`/v1/kelas/${kelasId}/peserta/bulk`, payload)
+    return response.data
+  },
+
   // --- KelasPengabdi API ---
   async getKelasPengabdi(
     kelasId: string | number,
@@ -302,6 +335,72 @@ export const kelasApi = {
 
   async deleteKelasDonasiBarang(id: string | number, kelasId: string | number = 0): Promise<{ message: string }> {
     const response = await apiClient.delete<{ message: string }>(`/v1/kelas/${kelasId}/donasi-barang/${id}`)
+    return response.data
+  },
+
+  // --- KelasKendaraan API ---
+  async getKelasKendaraan(
+    kelasId: string | number,
+    params: { page?: number; limit?: number } = {},
+    signal?: AbortSignal
+  ): Promise<KelasKendaraanListResponse> {
+    const response = await apiClient.get<KelasKendaraanListResponse>(`/v1/kelas/${kelasId}/kendaraan`, {
+      params: { page: params.page || 1, limit: params.limit || 10 },
+      signal
+    })
+    return response.data
+  },
+
+  async createKelasKendaraan(payload: Partial<KelasKendaraan>): Promise<{ data: KelasKendaraan }> {
+    const kelasId = payload.trx_id || 0
+    const response = await apiClient.post<{ data: KelasKendaraan }>(`/v1/kelas/${kelasId}/kendaraan`, payload)
+    return response.data
+  },
+
+  async updateKelasKendaraan(
+    id: string | number,
+    payload: Partial<KelasKendaraan>
+  ): Promise<{ data: KelasKendaraan }> {
+    const kelasId = payload.trx_id || 0
+    const response = await apiClient.patch<{ data: KelasKendaraan }>(`/v1/kelas/${kelasId}/kendaraan/${id}`, payload)
+    return response.data
+  },
+
+  async deleteKelasKendaraan(id: string | number, kelasId: string | number = 0): Promise<{ message: string }> {
+    const response = await apiClient.delete<{ message: string }>(`/v1/kelas/${kelasId}/kendaraan/${id}`)
+    return response.data
+  },
+
+  // --- KelasPengeluaran API ---
+  async getKelasPengeluaran(
+    kelasId: string | number,
+    params: { page?: number; limit?: number } = {},
+    signal?: AbortSignal
+  ): Promise<KelasPengeluaranListResponse> {
+    const response = await apiClient.get<KelasPengeluaranListResponse>(`/v1/kelas/${kelasId}/pengeluaran`, {
+      params: { page: params.page || 1, limit: params.limit || 10 },
+      signal
+    })
+    return response.data
+  },
+
+  async createKelasPengeluaran(payload: Partial<KelasPengeluaran>): Promise<{ data: KelasPengeluaran }> {
+    const kelasId = payload.trx_id || 0
+    const response = await apiClient.post<{ data: KelasPengeluaran }>(`/v1/kelas/${kelasId}/pengeluaran`, payload)
+    return response.data
+  },
+
+  async updateKelasPengeluaran(
+    id: string | number,
+    payload: Partial<KelasPengeluaran>
+  ): Promise<{ data: KelasPengeluaran }> {
+    const kelasId = payload.trx_id || 0
+    const response = await apiClient.patch<{ data: KelasPengeluaran }>(`/v1/kelas/${kelasId}/pengeluaran/${id}`, payload)
+    return response.data
+  },
+
+  async deleteKelasPengeluaran(id: string | number, kelasId: string | number = 0): Promise<{ message: string }> {
+    const response = await apiClient.delete<{ message: string }>(`/v1/kelas/${kelasId}/pengeluaran/${id}`)
     return response.data
   }
 }

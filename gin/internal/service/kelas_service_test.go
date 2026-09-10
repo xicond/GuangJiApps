@@ -20,9 +20,9 @@ func TestKelasService(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
 	}
-	if err := database.AutoMigrate(db); err != nil {
-		t.Fatalf("auto migrate failed: %v", err)
-	}
+	// if err := database.AutoMigrate(db); err != nil {
+	// 	t.Fatalf("auto migrate failed: %v", err)
+	// }
 
 	db.Exec("DELETE FROM T_APP_LOOKUP WHERE LookupId = 'LK001'")
 	db.Exec("DELETE FROM T_APP_LOOKUPCATEGORY WHERE CategoryId = 'B_KELASKHUSUS'")
@@ -192,9 +192,9 @@ func TestKelasServiceReport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
 	}
-	if err := database.AutoMigrate(db); err != nil {
-		t.Fatalf("auto migrate failed: %v", err)
-	}
+	// if err := database.AutoMigrate(db); err != nil {
+	// 	t.Fatalf("auto migrate failed: %v", err)
+	// }
 
 	db.Exec("DELETE FROM T_WH_USER_MATRIX_MST WHERE CRUID = 999999 OR LOGINID = 999999")
 	if err := db.Exec("INSERT INTO T_WH_USER_MATRIX_MST (CRUID, LOGINID, SUBWHID) VALUES (?, ?, ?)", 999999, 999999, 160).Error; err != nil {

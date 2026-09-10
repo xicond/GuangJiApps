@@ -75,17 +75,13 @@ func (s *AdminService) List(page int, filters map[string]string, limit int) ([]d
 		wg       sync.WaitGroup
 	)
 
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 			countErr = fmt.Errorf("database count error: %w", err)
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).
 			Limit(limit).
 			Preload("AdminGroup").
@@ -99,7 +95,7 @@ func (s *AdminService) List(page int, filters map[string]string, limit int) ([]d
 				findErr = fmt.Errorf("database error: %w", err)
 			}
 		}
-	}()
+	})
 
 	wg.Wait()
 
@@ -137,8 +133,11 @@ func (s *AdminService) Create(payload domain.Admin, c *gin.Context) (domain.Admi
 	if payload.DateEnd.IsZero() {
 		payload.DateEnd = domain.DateOnly{Time: time.Now().AddDate(10, 0, 0)}
 	}
+	if payload.LastLogin.IsZero() {
+		payload.LastLogin = domain.DateTime{Time: time.Now()}
+	}
 
-	if err := s.db.Create(&payload).Error; err != nil {
+	if err := s.db.Omit("AdminGroup", "Department").Create(&payload).Error; err != nil {
 		return domain.Admin{}, fmt.Errorf("failed to create record: %w", err)
 	}
 	payload.Password = ""
@@ -175,14 +174,28 @@ func (s *AdminService) Update(id string, payload domain.Admin, c *gin.Context) (
 		return domain.Admin{}, err
 	}
 
-	item.Username = payload.Username
-	item.Email = payload.Email
-	item.GroupId = payload.GroupId
-	item.PhoneNumber = payload.PhoneNumber
-	item.ImgUrl = payload.ImgUrl
+	if payload.Username != "" {
+		item.Username = payload.Username
+	}
+	if payload.Email != nil {
+		item.Email = payload.Email
+	}
+	if payload.GroupId != 0 {
+		item.GroupId = payload.GroupId
+	}
+	if payload.PhoneNumber != nil {
+		item.PhoneNumber = payload.PhoneNumber
+	}
+	if payload.ImgUrl != "" {
+		item.ImgUrl = payload.ImgUrl
+	}
 	item.FlagUse = payload.FlagUse
-	item.LoginDesc = payload.LoginDesc
-	item.DepartmentId = payload.DepartmentId
+	if payload.LoginDesc != nil {
+		item.LoginDesc = payload.LoginDesc
+	}
+	if payload.DepartmentId != 0 {
+		item.DepartmentId = payload.DepartmentId
+	}
 	item.IsWarehouse = payload.IsWarehouse
 
 	if !payload.DateStart.IsZero() {
@@ -194,8 +207,11 @@ func (s *AdminService) Update(id string, payload domain.Admin, c *gin.Context) (
 	if payload.Password != "" {
 		item.Password = EncryptPassword(payload.Password)
 	}
+	if err := ValidateStruct(item); err != nil {
+		return domain.Admin{}, fmt.Errorf("Validation failed: %w", err)
+	}
 
-	if err := s.db.Save(&item).Error; err != nil {
+	if err := s.db.Omit("AdminGroup", "Department").Save(&item).Error; err != nil {
 		return domain.Admin{}, fmt.Errorf("failed to update record: %w", err)
 	}
 	item.Password = ""

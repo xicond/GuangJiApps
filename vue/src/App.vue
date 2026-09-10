@@ -4,7 +4,7 @@
   </el-config-provider>
 </template>
 
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { onMounted } from 'vue'
 import { initTheme } from './theme'
 

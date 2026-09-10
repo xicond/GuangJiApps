@@ -1,4 +1,5 @@
 import type { AppLookup } from './lookup'
+import type { Umat } from './umat'
 
 export interface Kelas {
   trx_id?: number | string
@@ -53,6 +54,7 @@ export interface KelasPeserta {
   makanan_pagi?: string
   makanan_siang?: string
   makanan_malam?: string
+  umat?: Partial<Umat>
 }
 
 export interface KelasQueryParams {
@@ -88,6 +90,53 @@ export interface KelasSingleResponse {
 export interface KelasPesertaListResponse {
   data: KelasPeserta[]
   meta?: PaginatedMeta
+  resource?: string
+}
+
+export interface KelasPesertaPrevious {
+  id_peserta: number
+  id?: number
+  kode?: string
+  nama_indonesia?: string
+  nama_mandarin?: string
+  alias?: string
+  marga?: string
+  alamat?: string
+  fotang_aktif?: number
+  fotang_aktif_desc?: string
+  fotang_ciu_tao?: number
+  fotang_ciu_tao_desc?: string
+  pengajak?: string
+  penanggung?: string
+}
+
+export interface KelasPesertaPreviousListResponse {
+  data: KelasPesertaPrevious[]
+  meta?: PaginatedMeta
+  resource?: string
+}
+
+export interface KelasPesertaBulkPayload {
+  trx_id?: number | string
+  id_peserta: (number | string)[]
+  sumbangan?: number
+  barang?: string
+  tim_kerja?: string
+  keterangan?: string
+  status?: boolean
+  lulus?: boolean
+  keterangan_lulus?: string
+  anak?: string
+  suster?: string
+  menginap?: string
+  makanan_pagi?: string
+  makanan_siang?: string
+  makanan_malam?: string
+  umat?: Partial<Umat>
+}
+
+export interface KelasPesertaBulkResponse {
+  data: KelasPeserta[]
   resource?: string
 }
 
@@ -170,6 +219,42 @@ export interface KelasDonasiBarang {
 
 export interface KelasDonasiBarangListResponse {
   data: KelasDonasiBarang[]
+  meta?: PaginatedMeta
+  resource?: string
+}
+
+export interface KelasKendaraan {
+  detailid?: number | string
+  detail_id?: number | string
+  trx_id?: number | string
+  no_polisi?: string
+  pengendara?: string
+  tipe_kendaraan?: string
+  fotang?: string
+  hari?: string
+  keterangan?: string
+  status?: boolean
+}
+
+export interface KelasKendaraanListResponse {
+  data: KelasKendaraan[]
+  meta?: PaginatedMeta
+  resource?: string
+}
+
+export interface KelasPengeluaran {
+  detailid?: number | string
+  detail_id?: number | string
+  trx_id?: number | string
+  tim_kerja?: string
+  tim_kerja_desc?: string
+  keterangan?: string
+  biaya?: number
+  status?: boolean
+}
+
+export interface KelasPengeluaranListResponse {
+  data: KelasPengeluaran[]
   meta?: PaginatedMeta
   resource?: string
 }

@@ -159,17 +159,13 @@ func Lookup(db *gorm.DB, categoryID string, page int, limit int, opts ...interfa
 		wg       sync.WaitGroup
 	)
 
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 			countErr = fmt.Errorf("database count error: %w", err)
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		q := query.Session(&gorm.Session{})
 		if limit > 0 {
 			if page <= 0 {
@@ -186,7 +182,7 @@ func Lookup(db *gorm.DB, categoryID string, page int, limit int, opts ...interfa
 				findErr = fmt.Errorf("database error: %w", err)
 			}
 		}
-	}()
+	})
 
 	wg.Wait()
 

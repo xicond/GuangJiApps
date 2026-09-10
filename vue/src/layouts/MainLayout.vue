@@ -50,6 +50,7 @@
             </template>
             <el-menu-item v-if="hasSubMenu('Master Data', 'Umat')" index="/master-data/umat">Umat</el-menu-item>
             <el-menu-item v-if="hasSubMenu('Master Data', 'Topik')" index="/master-data/topic">Topic</el-menu-item>
+            <el-menu-item v-if="hasSubMenu('Master Data', 'Kelas')" index="/master-data/kelas">Kelas</el-menu-item>
             <el-menu-item v-if="hasSubMenu('Master Data', 'Kegiatan')"
               index="/master-data/activity">Activity</el-menu-item>
             <!-- <el-menu-item v-if="hasSubMenu('Master Data', 'Tim Kerja')" index="/master-data/tim-kerja">Tim
@@ -95,8 +96,8 @@
               <!-- Level paling bawah menggunakan el-menu-item -->
               <el-menu-item index="/report/master/umat">Umat</el-menu-item>
               <el-menu-item index="/report/master/tcs">Tcs</el-menu-item>
-              <el-menu-item index="/report/master/umat-cheng-chien">Umat Cheng Cien</el-menu-item>
-              <el-menu-item index="/report/master/lagu">Lagu</el-menu-item>
+              <!-- <el-menu-item index="/report/master/umat-cheng-chien">Umat Cheng Cien</el-menu-item>
+              <el-menu-item index="/report/master/lagu">Lagu</el-menu-item> -->
             </el-sub-menu>
             <el-menu-item v-if="hasSubMenu('Report', 'SXY')" index="/report/sxy">Sxy</el-menu-item>
           </el-sub-menu>
@@ -168,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useBreakpoints, breakpointsTailwind, useOnline } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { ElNotification } from 'element-plus'
@@ -197,34 +198,123 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+// 1. State Jaringan & Notifikasi
 const isOnline = useOnline()
+const isRealInternet = ref(true)
 let offlineNotificationHandle: ReturnType<typeof ElNotification> | null = null
 
-watch(
-  isOnline,
-  (online) => {
-    if (!online) {
-      if (!offlineNotificationHandle) {
-        offlineNotificationHandle = ElNotification.warning({
-          title: 'Koneksi Terputus',
-          message: 'Anda sedang offline. Beberapa fitur mungkin terbatas.',
-          duration: 0,
-          showClose: false,
-          onClose: () => {
-            offlineNotificationHandle = null
-          },
-          position: 'top-right'
-        })
-      }
-    } else {
-      if (offlineNotificationHandle) {
-        offlineNotificationHandle.close()
-        offlineNotificationHandle = null
-      }
+// 2. Fungsi Cek Koneksi Kilat ke Cloudflare Jakarta
+const cekInternetKilat = async () => {
+  if (!isOnline.value) {
+    isRealInternet.value = false
+    return false
+  }
+
+  const nav = navigator as any
+  const koneksi = nav.connection || nav.mozConnection || nav.webkitConnection
+  let koneksiType = 'wifi'
+  console.log("connnection type", koneksi.type)
+  if (koneksi && koneksi.type) {
+    koneksiType = koneksi.type === 'cellular' ? 'cell' : 'wifi'
+  }
+
+  if (koneksiType === 'cell') {
+
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 200) // Timeout 200ms
+
+    try {
+      await fetch("https://cp.cloudflare.com/generate_204", {
+        method: "HEAD",
+        mode: "no-cors",
+        cache: "no-store",
+        signal: controller.signal
+      })
+      clearTimeout(timer)
+      return true // Internet aktif
+    } catch (err) {
+      clearTimeout(timer)
+      return false // Terblokir iOS atau masalah jaringan
     }
-  },
-  { immediate: true }
-)
+  }
+
+  return isOnline.value
+
+}
+
+// 3. Logika Utama Pengelolaan Notifikasi
+const kelolaNotifikasiBlokir = async () => {
+  const terhubung = await cekInternetKilat()
+  isRealInternet.value = terhubung
+
+  if (!terhubung && isOnline.value) {
+    // KONDISI: Safari diblokir (Sistem online, internet nyata mati)
+    if (!offlineNotificationHandle) {
+      offlineNotificationHandle = ElNotification.warning({
+        title: 'Koneksi Terputus',
+        message: 'Anda sedang offline. Beberapa fitur mungkin terbatas.',
+        duration: 0, // Tidak hilang otomatis
+        showClose: true,
+        onClose: () => { offlineNotificationHandle = null }
+      })
+    }
+  } else if (terhubung) {
+    // KONDISI: Internet pulih / Tidak diblokir
+    if (offlineNotificationHandle) {
+      offlineNotificationHandle.close()
+      offlineNotificationHandle = null
+
+      // Opsional: Tampilkan notifikasi sukses singkat bahwa internet pulih
+      // ElNotification.success({
+      //   title: 'Terhubung Kembali',
+      //   message: 'Akses internet Safari telah aktif.',
+      //   duration: 3000
+      // })
+    }
+  }
+}
+
+// 4. Handler saat Browser Kembali Fokus
+const handleBrowserFocus = () => {
+  // Hanya jalankan cek jika status dokumen terlihat (active/foreground)
+  if (document.visibilityState === 'visible') {
+    console.log("User kembali ke Safari, memeriksa status izin internet...")
+    kelolaNotifikasiBlokir()
+  }
+}
+
+// 5. Lifecycle Hooks untuk Event Listener
+onMounted(() => {
+  // Jalankan cek pertama kali saat halaman dimuat
+  kelolaNotifikasiBlokir()
+
+  // visibilitychange mendeteksi tab pindah background/foreground (Sangat akurat di iOS)
+  document.addEventListener('visibilitychange', handleBrowserFocus)
+  // window focus sebagai cadangan penguat interaksi
+  window.addEventListener('focus', handleBrowserFocus)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleBrowserFocus)
+  window.removeEventListener('focus', handleBrowserFocus)
+
+  if (offlineNotificationHandle) {
+    offlineNotificationHandle.close()
+  }
+})
+
+// 6. Watcher untuk transisi offline-to-online dasar sistem
+watch(isOnline, (newStatus, oldStatus) => {
+  if (newStatus === true && oldStatus === false) {
+    kelolaNotifikasiBlokir()
+  } else if (newStatus === false) {
+    isRealInternet.value = false
+    if (offlineNotificationHandle) {
+      offlineNotificationHandle.close()
+      offlineNotificationHandle = null
+    }
+  }
+})
 
 const { speedMbps, lastTestCompletedAt } = useQuickStreamSpeedTest()
 let lastNotificationTime = 0

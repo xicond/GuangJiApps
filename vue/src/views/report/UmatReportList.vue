@@ -373,7 +373,7 @@
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'"
+          :layout="(!isMobile ? 'total, ->' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
           @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
@@ -447,7 +447,11 @@ const onMouseLeave = () => {
 // 3. Handler untuk Mobile / Touch (Click/Tap)
 const onClick = () => {
   if (!canHover()) {
-    isVisible.value = !isVisible.value
+    if (isVisible.value = !isVisible.value) {
+      setTimeout(() => {
+        isVisible.value = false
+      }, 2100)
+    }
   }
 }
 

@@ -54,10 +54,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   function hasSubMenu(parentMenuName: string, subMenuName: string): boolean {
     if (!mainMenus.value || mainMenus.value.length === 0) return false
+    const parent = parentMenuName.trim().toLowerCase()
+    const sub = subMenuName.trim().toLowerCase()
+    if (parent === 'master data' && sub === 'kelas') {
+      return hasMenu('Master Data')
+    }
     return mainMenus.value.some(
       (item) =>
-        item.main_menu?.trim().toLowerCase() === parentMenuName.trim().toLowerCase() &&
-        item.sub_menu.some((subItem) => subItem.level2?.trim().toLowerCase() === subMenuName.trim().toLowerCase())
+        item.main_menu?.trim().toLowerCase() === parent &&
+        item.sub_menu.some((subItem) => subItem.level2?.trim().toLowerCase() === sub)
     )
   }
 

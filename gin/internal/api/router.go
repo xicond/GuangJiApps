@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"mime/multipart"
 	"net"
 	"net/http"
+	"os"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 
@@ -136,6 +139,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	adminSubWarehouseService := service.NewAdminSubWarehouseService(db)
 	umatService := service.NewUmatService(db)
 	topicService := service.NewTopicService(db)
+	kelasMasterService := service.NewKelasMasterService(db)
 	activityService := service.NewActivityService(db)
 	timKerjaService := service.NewTimKerjaService(db)
 	tahunCiuTaoService := service.NewTahunCiuTaoService(db)
@@ -161,6 +165,10 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		gin.SetMode(gin.DebugMode)
 	}
 
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		service.ConfigureValidator(v)
+	}
+
 	r := gin.New()
 	r.ForwardedByClientIP = true
 	r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
@@ -180,6 +188,37 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	r.Use(cors.New(corsConfig))
 
+	fail2ban := middleware.GetFail2Ban()
+	r.Use(fail2ban.Middleware())
+
+	r.NoRoute(func(c *gin.Context) {
+		candidates := []string{
+			"errors/404.htm",
+			"./errors/404.htm",
+			"dist/errors/404.htm",
+			"gin/dist/errors/404.htm",
+			"/app/errors/404.htm",
+		}
+		for _, path := range candidates {
+			if data, err := os.ReadFile(path); err == nil {
+				c.Data(http.StatusNotFound, "text/html; charset=utf-8", data)
+				return
+			}
+		}
+
+		c.Header("Content-Type", "application/json")
+		if cfg.GinMode == "debug" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":                "Rute tidak cocok di Gin",
+				"url_yang_diterima_go": c.Request.URL.Path,
+			})
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Not Found",
+			})
+		}
+	})
+
 	r.GET(cfg.BaseURL+"/ping", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, gin.H{"message": "pong", "baseUrl": cfg.BaseURL})
@@ -194,13 +233,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 				}
 			}
 			c.JSON(200, c.Request.Header)
-		})
-		r.NoRoute(func(c *gin.Context) {
-			c.Header("Content-Type", "application/json")
-			c.JSON(http.StatusNotFound, gin.H{
-				"error":                "Rute tidak cocok di Gin",
-				"url_yang_diterima_go": c.Request.URL.Path,
-			})
 		})
 	}
 
@@ -801,8 +833,8 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.POST("/topic", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		var payload domain.Topic
-		if err := c.ShouldBindJSON(&payload); err != nil {
-			respondValidationError(c, err)
+		if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil && !errors.Is(err, io.EOF) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON tidak valid: " + err.Error()})
 			return
 		}
 		created, err := topicService.Create(payload, c)
@@ -823,8 +855,8 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		var payload domain.Topic
-		if err := c.ShouldBindJSON(&payload); err != nil {
-			respondValidationError(c, err)
+		if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil && !errors.Is(err, io.EOF) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON tidak valid: " + err.Error()})
 			return
 		}
 		updated, err := topicService.Update(code, payload, c)
@@ -851,7 +883,128 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
 	})
 
-	// Activities
+	// Kelas Master (Master Data Kelas - T_APP_LOOKUP CategoryId = B_KELASKHUSUS)
+	kelasMasterMetadata := middleware.ResourceMetadata{
+		TableName:   "T_APP_LOOKUP",
+		WhereClause: "CategoryId = ?",
+		WhereArgs:   []interface{}{"B_KELASKHUSUS"},
+		CacheKey:    "lookup:B_KELASKHUSUS",
+	}
+
+	kelasMasterListHandler := func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := kelasMasterService.List(page, filters, limit)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "KelasMaster"})
+	}
+
+	protected.GET("/kelas-masters", middleware.StatusNotModifiedHeader(db, rdb, kelasMasterMetadata), kelasMasterListHandler)
+
+	protected.GET("/kelas-master", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		code := c.Query("code")
+		if code == "" {
+			code = c.Query("id")
+		}
+		if code == "" {
+			code = c.Query("lookup_id")
+		}
+		if code == "" {
+			kelasMasterListHandler(c)
+			return
+		}
+		item, err := kelasMasterService.Get(code)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "KelasMaster"})
+	})
+
+	protected.GET("/kelas-masters/:id", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		id := c.Param("id")
+		item, err := kelasMasterService.Get(id)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "KelasMaster"})
+	})
+
+	protected.POST("/kelas-master", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		var payload domain.AppLookup
+		if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil && !errors.Is(err, io.EOF) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON tidak valid: " + err.Error()})
+			return
+		}
+		created, err := kelasMasterService.Create(payload, c)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		if rdb != nil {
+			rdb.Del(c.Request.Context(), "lookup:B_KELASKHUSUS")
+		}
+		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "KelasMaster"})
+	})
+
+	protected.PATCH("/kelas-master", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		code := c.Query("code")
+		if code == "" {
+			code = c.Query("id")
+		}
+		if code == "" {
+			code = c.Query("lookup_id")
+		}
+		if code == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query param 'id' atau 'code' wajib diisi"})
+			return
+		}
+		var payload domain.AppLookup
+		if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil && !errors.Is(err, io.EOF) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Format JSON tidak valid: " + err.Error()})
+			return
+		}
+		updated, err := kelasMasterService.Update(code, payload, c)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		if rdb != nil {
+			rdb.Del(c.Request.Context(), "lookup:B_KELASKHUSUS")
+		}
+		c.JSON(http.StatusOK, gin.H{"data": updated, "resource": "KelasMaster"})
+	})
+
+	protected.DELETE("/kelas-master", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		code := c.Query("code")
+		if code == "" {
+			code = c.Query("id")
+		}
+		if code == "" {
+			code = c.Query("lookup_id")
+		}
+		if code == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Query param 'id' atau 'code' wajib diisi"})
+			return
+		}
+		if err := kelasMasterService.Delete(code, c); err != nil {
+			respondError(c, err)
+			return
+		}
+		if rdb != nil {
+			rdb.Del(c.Request.Context(), "lookup:B_KELASKHUSUS")
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+	})
 	protected.GET("/activities", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_EVENT", UpdatedColumn: "ModDate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
@@ -899,14 +1052,23 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": updated, "resource": "Activity"})
 	})
-	protected.DELETE("/activity", func(c *gin.Context) {
+	deleteActivityHandler := func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := activityService.Delete(c.Param("id"), c); err != nil {
+		id := c.Param("id")
+		if id == "" {
+			id = c.Query("code")
+		}
+		if id == "" {
+			id = c.Query("id")
+		}
+		if err := activityService.Delete(id, c); err != nil {
 			respondError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
-	})
+	}
+	protected.DELETE("/activity", deleteActivityHandler)
+	protected.DELETE("/activity/:id", deleteActivityHandler)
 
 	// Tim Kerja
 	protected.GET("/tim-kerja", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_POSISI"}, CacheKey: "lookup:B_POSISI"}), func(c *gin.Context) {
@@ -931,11 +1093,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.GET("/tim-kerja/lookup/:id/sub", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
 		page, limit, filters := parsePaginationAndFilters(c)
 		items, total, err := timKerjaService.LookupSub(c.Param("id"), filters, page, limit)
 		if err != nil {
@@ -956,11 +1113,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.GET("/tim-kerja/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
 		item, err := timKerjaService.Get(c.Param("id"))
 		if err != nil {
 			respondError(c, err)
@@ -984,11 +1136,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.PATCH("/tim-kerja/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
 		var payload domain.TimKerja
 		if err := c.ShouldBindJSON(&payload); err != nil {
 			respondValidationError(c, err)
@@ -1003,11 +1150,6 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.DELETE("/tim-kerja/:id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
-			return
-		}
 		if err := timKerjaService.Delete(c.Param("id"), c); err != nil {
 			respondError(c, err)
 			return
@@ -1028,7 +1170,11 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	})
 	protected.GET("/tahun-ciu-tao", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		item, err := tahunCiuTaoService.Get(c.Query("tahun"))
+		tahun := c.Query("tahun")
+		if tahun == "" {
+			tahun = c.Query("tahun_mandarin")
+		}
+		item, err := tahunCiuTaoService.Get(tahun)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -1056,21 +1202,34 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			respondValidationError(c, err)
 			return
 		}
-		updated, err := tahunCiuTaoService.Update(c.Query("tahun"), payload, c)
+		tahun := c.Query("tahun")
+		if tahun == "" {
+			tahun = c.Query("tahun_mandarin")
+		}
+		updated, err := tahunCiuTaoService.Update(tahun, payload, c)
 		if err != nil {
 			respondError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": updated, "resource": "Tahun Ciu Tao"})
 	})
-	protected.DELETE("/tahun-ciu-tao/:id", func(c *gin.Context) {
+	deleteTahunCiuTaoHandler := func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
-		if err := tahunCiuTaoService.Delete(c.Query("tahun"), c); err != nil {
+		id := c.Param("id")
+		if id == "" {
+			id = c.Query("tahun")
+		}
+		if id == "" {
+			id = c.Query("tahun_mandarin")
+		}
+		if err := tahunCiuTaoService.Delete(id, c); err != nil {
 			respondError(c, err)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "deleted"})
-	})
+	}
+	protected.DELETE("/tahun-ciu-tao/:id", deleteTahunCiuTaoHandler)
+	protected.DELETE("/tahun-ciu-tao", deleteTahunCiuTaoHandler)
 
 	// Penggalang Dana
 	protected.GET("/penggalang-dana", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_SXY_MST_PENGGALANG", UpdatedColumn: "updateddate"}), func(c *gin.Context) {
@@ -1514,6 +1673,21 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "KelasPeserta"})
 	})
+	protected.GET("/kelas/:id/peserta/load-previous", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
+			return
+		}
+		page, limit, _ := parsePaginationAndFilters(c)
+		items, total, err := kelasPesertaService.LoadPrevious(c.Param("id"), c, page, limit)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "KelasPesertaPrevious"})
+	})
 	protected.GET("/kelas/:id/peserta/:detail_id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
@@ -1547,6 +1721,26 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		payload.TrxId = service.ToInt32(c.Param("id"))
 		created, err := kelasPesertaService.Create(payload, c)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusCreated, gin.H{"data": created, "resource": "KelasPeserta"})
+	})
+	protected.POST("/kelas/:id/peserta/bulk", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
+			return
+		}
+		var payload domain.KelasPesertaBulkRequest
+		if err := c.ShouldBindJSON(&payload); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+		payload.TrxId = service.ToInt32(c.Param("id"))
+		created, err := kelasPesertaService.CreateBulk(payload, c)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2481,6 +2675,61 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	return &Router{r}
 }
 
+// ParseJSONError parses low-level JSON unmarshaling, syntax, and payload errors into user-friendly messages.
+func ParseJSONError(err error) map[string]string {
+	errorsMap := make(map[string]string)
+	if err == nil {
+		return errorsMap
+	}
+
+	var syntaxError *json.SyntaxError
+	var typeError *json.UnmarshalTypeError
+
+	switch {
+	case errors.As(err, &syntaxError) || errors.Is(err, io.ErrUnexpectedEOF):
+		errorsMap["general"] = "Format payload JSON tidak valid atau rusak."
+
+	case errors.Is(err, io.EOF) || err.Error() == "EOF":
+		errorsMap["general"] = "Payload request tidak boleh kosong."
+
+	// Deteksi spesifik berdasarkan UnmarshalTypeError
+	case errors.As(err, &typeError):
+		field := typeError.Field
+		if field == "" {
+			field = "general"
+		}
+
+		// Petakan pesan error spesifik berdasarkan nama field-nya
+		switch field {
+		case "idpeserta", "id_peserta":
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "cannot unmarshal array") {
+				errorsMap[field] = "idpeserta should be single value of umat"
+			} else if strings.Contains(errMsg, "cannot unmarshal") {
+				errorsMap[field] = "idpeserta must array"
+			} else {
+				errorsMap[field] = errMsg
+			}
+
+		default:
+			// Fallback jika ada field lain yang tipe datanya salah
+			errorsMap[field] = fmt.Sprintf("Field '%s' memiliki tipe data yang tidak sesuai.", field)
+		}
+
+	default:
+		errStr := strings.TrimPrefix(err.Error(), "Validation failed: ")
+		if idx := strings.Index(errStr, ": "); idx != -1 {
+			f := errStr[:idx]
+			m := errStr[idx+2:]
+			errorsMap[f] = m
+		} else {
+			errorsMap["general"] = "Terjadi kesalahan pada struktur data."
+		}
+	}
+
+	return errorsMap
+}
+
 func FormatValidationError(err error) map[string][]string {
 	if err == nil {
 		return make(map[string][]string)
@@ -2494,6 +2743,17 @@ func FormatValidationError(err error) map[string][]string {
 	var validationErrs validator.ValidationErrors
 	if errors.As(err, &validationErrs) {
 		return service.FormatValidatorErrors(validationErrs)
+	}
+
+	var syntaxError *json.SyntaxError
+	var typeError *json.UnmarshalTypeError
+	if errors.As(err, &syntaxError) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) || err.Error() == "EOF" || errors.As(err, &typeError) {
+		jsonErrors := ParseJSONError(err)
+		errorsMap := make(map[string][]string, len(jsonErrors))
+		for k, v := range jsonErrors {
+			errorsMap[k] = []string{v}
+		}
+		return errorsMap
 	}
 
 	errorsMap := make(map[string][]string)
@@ -2525,9 +2785,33 @@ func getPathAndMethod(c *gin.Context) (string, string) {
 func respondValidationError(c *gin.Context, err error) {
 	// path, method := getPathAndMethod(c)
 	// log.Printf("[API VALIDATION ERROR 400] path=%s method=%s err=%v", path, method, err)
+	details := FormatValidationError(err)
+	errMsg := "Validation failed"
+	if err != nil && err.Error() != "" {
+		errMsg = err.Error()
+	}
+
+	var syntaxError *json.SyntaxError
+	var typeError *json.UnmarshalTypeError
+	if errors.As(err, &syntaxError) || errors.Is(err, io.ErrUnexpectedEOF) {
+		errMsg = "Format payload JSON tidak valid atau rusak."
+	} else if errors.Is(err, io.EOF) || err.Error() == "EOF" {
+		errMsg = "Payload request tidak boleh kosong."
+	} else if errors.As(err, &typeError) {
+		field := typeError.Field
+		if field == "" {
+			field = "general"
+		}
+		if msgs, ok := details[field]; ok && len(msgs) > 0 {
+			errMsg = fmt.Sprintf("%s: %s", field, msgs[0])
+		} else {
+			errMsg = fmt.Sprintf("Field '%s' memiliki tipe data yang tidak sesuai.", field)
+		}
+	}
+
 	c.JSON(http.StatusBadRequest, gin.H{
-		"error":   "Invalid Input",
-		"details": FormatValidationError(err),
+		"error":   errMsg,
+		"details": details,
 	})
 }
 

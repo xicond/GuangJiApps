@@ -221,9 +221,19 @@
           <el-col :xs="24" :sm="12" :md="8">
             <AppFormItem v-if="formData.pengajak || !formData.pengajak_manual" label="Pengajak" prop="pengajak"
               :error="hasFieldError('pengajak') ? ' ' : undefined" required>
-              <LookupSelect v-model="formData.pengajak" placeholder="Cari & pilih pengajak"
+              <!-- Mobile view: LookupSelect -->
+              <LookupSelect v-if="isMobile" v-model="formData.pengajak" placeholder="Cari & pilih pengajak"
                 :fetch-api="umatApi.getUmats" :get-item-api="umatApi.getUmatById" value-key="id"
                 label-key="nama_indonesia" :label-formatter="formatUmatLabel" :clearable="false" />
+              <!-- Desktop & Tablet view: custom popup dialog trigger -->
+              <div v-else class="desktop-umat-selector">
+                <el-input :model-value="selectedPengajakLabel" placeholder="Pilih Pengajak..." readonly
+                  class="clickable-umat-input" @click="openPengajakPopup">
+                  <template #append>
+                    <el-button :icon="MoreFilled" title="Buka Pencarian Umat" @click="openPengajakPopup" />
+                  </template>
+                </el-input>
+              </div>
               <FieldErrors :errors="getFieldErrors('pengajak')" />
             </AppFormItem>
 
@@ -237,9 +247,19 @@
           <el-col :xs="24" :sm="12" :md="8">
             <AppFormItem v-if="formData.penanggung || !formData.penanggung_manual" label="Penanggung" prop="penanggung"
               :error="hasFieldError('penanggung') ? ' ' : undefined" required>
-              <LookupSelect v-model="formData.penanggung" placeholder="Cari & pilih penanggung"
+              <!-- Mobile view: LookupSelect -->
+              <LookupSelect v-if="isMobile" v-model="formData.penanggung" placeholder="Cari & pilih penanggung"
                 :fetch-api="umatApi.getUmats" :get-item-api="umatApi.getUmatById" value-key="id"
                 label-key="nama_indonesia" :label-formatter="formatUmatLabel" :clearable="false" />
+              <!-- Desktop & Tablet view: custom popup dialog trigger -->
+              <div v-else class="desktop-umat-selector">
+                <el-input :model-value="selectedPenanggungLabel" placeholder="Pilih Penanggung..." readonly
+                  class="clickable-umat-input" @click="openPenanggungPopup">
+                  <template #append>
+                    <el-button :icon="MoreFilled" title="Buka Pencarian Umat" @click="openPenanggungPopup" />
+                  </template>
+                </el-input>
+              </div>
               <FieldErrors :errors="getFieldErrors('penanggung')" />
             </AppFormItem>
 
@@ -545,6 +565,26 @@
       </el-button>
     </div>
   </el-form>
+
+  <!-- Custom Popup Dialog Selector for Umat (Desktop/Tablet) -->
+  <UmatPopupSelector v-model="umatPopupVisible" :title="popupTitle" :fetch-api="umatApi.getUmats"
+    :fetch-fotang-api="lookupApi.getLookupFotang" :filter-name="{
+      namaindonesia: 'Nama Chiu Tao',
+      namamandarin: 'Nama Lain',
+      alias: 'Alias / Pin Yin'
+    }" :filter-fotang="{
+      fotang_chiutao: 'Fotang Ciu Tao',
+      fotang_aktif: 'Fotang Aktif'
+    }" :Columns="{
+      kode: 'Kode',
+      nama_indonesia: 'Nama Chiu Tao',
+      alias: 'Alias / Pin Yin',
+      nama_mandarin: 'Nama Lain',
+      fotang_aktif_desc: 'Fotang Aktif',
+      pengajak: 'Pengajak',
+      penanggung: 'Penanggung',
+      alamat: 'Alamat'
+    }" :multiple="false" @select="handleUmatSelected" :width="isMobile ? '90%' : '650px'" />
 </template>
 
 <script setup lang="ts">
@@ -552,11 +592,12 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useBreakpoints, breakpointsTailwind, useIntersectionObserver } from '@vueuse/core'
 import dayjs from 'dayjs'
 import type { FormInstance, FormRules } from 'element-plus'
-import { User, Phone, Calendar, Notebook, Check } from '@element-plus/icons-vue'
+import { User, Phone, Calendar, Notebook, Check, MoreFilled } from '@element-plus/icons-vue'
 import type { Umat } from '../../types/umat'
 import LookupSelect from '../common/LookupSelect.vue'
 import AppFormItem from '../common/AppFormItem.vue'
 import FieldErrors from '../common/FieldErrors.vue'
+import UmatPopupSelector from '../common/UmatPopupSelector.vue'
 import UmatPhotoUpload from './UmatPhotoUpload.vue'
 import lookupApi from '../../api/lookup'
 import fotangApi from '../../api/fotang'
@@ -638,15 +679,7 @@ function revealAllCards() {
   isCard4Visible.value = true
 }
 
-watch(
-  () => props.initialData,
-  (val) => {
-    if (val && Object.keys(val).length > 0) {
-      revealAllCards()
-    }
-  },
-  { immediate: true, deep: true }
-)
+
 
 function onPhotoChange(fileBlob: Blob | null) {
   photoFile.value = fileBlob
@@ -698,7 +731,7 @@ const formData = ref<Partial<Umat>>({
   tempat_sd3: '',
   kelas_umum: '',
   kelas_khusus: '',
-  status_umat: 'B_STATUS006',
+  status_umat: '006',
   tim_kerja: '',
   posisi: '',
   ikrar_1: false,
@@ -729,6 +762,7 @@ watch(
         ...formData.value,
         ...newVal
       }
+      revealAllCards()
     }
   },
   { immediate: true, deep: true }
@@ -816,10 +850,80 @@ watch(
     if (val && Object.keys(val).length > 0) {
       const trimmedVal = trimTargetFields(val)
       formData.value = { ...formData.value, ...trimmedVal }
+      resolveInitialUmatNames()
     }
   },
   { immediate: true, deep: true }
 )
+
+const umatPopupVisible = ref(false)
+const umatPopupTarget = ref<'pengajak' | 'penanggung'>('pengajak')
+
+const popupTitle = computed(() => {
+  return umatPopupTarget.value === 'pengajak' ? 'Popup Pengajak' : 'Popup Penanggung'
+})
+
+const selectedPengajakLabel = ref('')
+const selectedPenanggungLabel = ref('')
+
+function openPengajakPopup() {
+  umatPopupTarget.value = 'pengajak'
+  umatPopupVisible.value = true
+}
+
+function openPenanggungPopup() {
+  umatPopupTarget.value = 'penanggung'
+  umatPopupVisible.value = true
+}
+
+function handleUmatSelected(selected: Umat) {
+  if (!selected) return
+  if (umatPopupTarget.value === 'pengajak') {
+    formData.value.pengajak = String(selected.id)
+    selectedPengajakLabel.value = formatUmatLabel(selected)
+    if (formRef.value) {
+      formRef.value.validateField('pengajak').catch(() => { })
+    }
+  } else {
+    formData.value.penanggung = String(selected.id)
+    selectedPenanggungLabel.value = formatUmatLabel(selected)
+    if (formRef.value) {
+      formRef.value.validateField('penanggung').catch(() => { })
+    }
+  }
+}
+
+async function resolveInitialUmatNames() {
+  if (formData.value.pengajak) {
+    try {
+      const res = await umatApi.getUmatById(formData.value.pengajak)
+      if (res.data) {
+        selectedPengajakLabel.value = formatUmatLabel(res.data)
+      } else {
+        selectedPengajakLabel.value = String(formData.value.pengajak)
+      }
+    } catch {
+      selectedPengajakLabel.value = String(formData.value.pengajak)
+    }
+  } else {
+    selectedPengajakLabel.value = ''
+  }
+
+  if (formData.value.penanggung) {
+    try {
+      const res = await umatApi.getUmatById(formData.value.penanggung)
+      if (res.data) {
+        selectedPenanggungLabel.value = formatUmatLabel(res.data)
+      } else {
+        selectedPenanggungLabel.value = String(formData.value.penanggung)
+      }
+    } catch {
+      selectedPenanggungLabel.value = String(formData.value.penanggung)
+    }
+  } else {
+    selectedPenanggungLabel.value = ''
+  }
+}
 
 // Form Validation Rules
 const rules: FormRules = {
@@ -944,5 +1048,13 @@ function handleCancel() {
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.desktop-umat-selector {
+  width: 100%;
+}
+
+.clickable-umat-input :deep(.el-input__inner) {
+  cursor: pointer;
 }
 </style>

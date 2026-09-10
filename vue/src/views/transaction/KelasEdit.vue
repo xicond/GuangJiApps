@@ -14,21 +14,18 @@
 
     <template v-else>
       <!-- Form Component -->
-      <KelasForm
-        :initial-data="kelasData"
-        :submitting="submitting"
-        :field-errors="fieldErrors"
-        :submit-text="isMobile ? 'Simpan' : 'Simpan Perubahan'"
-        @submit="handleUpdate"
-        @cancel="handleBack"
-      />
+      <KelasForm :initial-data="kelasData" :submitting="submitting" :field-errors="fieldErrors"
+        :submit-text="isMobile ? 'Simpan' : 'Simpan Perubahan'" @submit="handleUpdate" @cancel="handleBack" />
 
       <!-- Sub-model Lists -->
-      <KelasPesertaTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
+      <KelasPesertaTable :kelas-id="kelasId" :kode-kelas="kelasData?.kode_kelas" :start-date="kelasData?.start_date"
+        :end-date="kelasData?.end_date" />
       <KelasPengabdiTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
       <KelasTopikTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
+      <KelasKendaraanTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
       <KelasDonasiTable :kelas-id="kelasId" />
       <KelasDonasiBarangTable :kelas-id="kelasId" />
+      <!-- <KelasPengeluaranTable :kelas-id="kelasId" /> -->
     </template>
   </div>
 </template>
@@ -45,6 +42,8 @@ import KelasPengabdiTable from '../../components/kelas/KelasPengabdiTable.vue'
 import KelasTopikTable from '../../components/kelas/KelasTopikTable.vue'
 import KelasDonasiTable from '../../components/kelas/KelasDonasiTable.vue'
 import KelasDonasiBarangTable from '../../components/kelas/KelasDonasiBarangTable.vue'
+import KelasKendaraanTable from '../../components/kelas/KelasKendaraanTable.vue'
+import KelasPengeluaranTable from '../../components/kelas/KelasPengeluaranTable.vue'
 import { kelasApi } from '../../api/kelas'
 import type { Kelas } from '../../types/kelas'
 import { scrollToFormError } from '../../utils/scroll'

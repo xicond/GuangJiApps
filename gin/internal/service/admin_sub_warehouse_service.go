@@ -70,17 +70,13 @@ func (s *AdminSubWarehouseService) List(page int, filters map[string]string, lim
 		wg       sync.WaitGroup
 	)
 
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 			countErr = fmt.Errorf("database count error: %w", err)
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).
 			Limit(limit).
 			Offset(offset).
@@ -92,7 +88,7 @@ func (s *AdminSubWarehouseService) List(page int, filters map[string]string, lim
 				findErr = fmt.Errorf("database error: %w", err)
 			}
 		}
-	}()
+	})
 
 	wg.Wait()
 

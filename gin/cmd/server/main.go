@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
-	"strings" // WAJIB: Tambahkan import strings
+	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
 	"guangjiapps/gin/internal/api"
+	"guangjiapps/gin/internal/api/middleware"
 	"guangjiapps/gin/internal/config"
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/service"
@@ -61,7 +66,46 @@ func main() {
 		WriteTimeout:      100 * time.Second,
 		// IdleTimeout:       300 * time.Second,
 	}
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("server failed: %v", err)
+
+	// Initializing the server in a goroutine so that it doesn't block shutdown handling
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("server failed: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with a 10-second timeout
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	sig := <-quit
+	log.Printf("[INFO] Shutdown signal received (%s), starting graceful shutdown...", sig)
+
+	// Stop background tickers / fail2ban loops
+	middleware.GetFail2Ban().Stop()
+
+	// Context for HTTP server shutdown (allow up to 10 seconds for active requests to finish)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("[ERROR] Server forced to shutdown: %v", err)
+	} else {
+		log.Println("[INFO] Server HTTP listener stopped cleanly")
 	}
+
+	// Close database connection pool
+	if db != nil {
+		if sqlDB, err := db.DB(); err == nil {
+			if err := sqlDB.Close(); err != nil {
+				log.Printf("[ERROR] Failed to close database connections: %v", err)
+			} else {
+				log.Println("[INFO] Database connection pool closed")
+			}
+		}
+	}
+
+	// Close redis connections
+	database.CloseRedisClient()
+
+	log.Println("[INFO] Server exited gracefully")
 }

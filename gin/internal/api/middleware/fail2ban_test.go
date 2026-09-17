@@ -39,7 +39,7 @@ func TestIsScannerURL(t *testing.T) {
 func TestFail2Ban_General404Rule(t *testing.T) {
 	fb := NewFail2Ban()
 	defer fb.Stop()
-	targetIP := "192.168.1.100"
+	targetIP := "203.0.113.100"
 
 	// 9 404s should NOT block
 	for i := 0; i < 9; i++ {
@@ -63,7 +63,7 @@ func TestFail2Ban_General404Rule(t *testing.T) {
 func TestFail2Ban_Scanner404Rule(t *testing.T) {
 	fb := NewFail2Ban()
 	defer fb.Stop()
-	targetIP := "192.168.1.101"
+	targetIP := "203.0.113.101"
 
 	// 1st scanner 404 should NOT block
 	blocked := fb.Record404(targetIP, "/.env")
@@ -85,14 +85,16 @@ func TestFail2Ban_Scanner404Rule(t *testing.T) {
 func TestFail2Ban_LoopbackNotBlocked(t *testing.T) {
 	fb := NewFail2Ban()
 	defer fb.Stop()
-	loopbackIP := "127.0.0.1"
+	loopbackIPs := []string{"127.0.0.1", "::1", "192.168.1.1", "10.0.0.1"}
 
-	for i := 0; i < 15; i++ {
-		fb.Record404(loopbackIP, "/.env")
-	}
+	for _, ip := range loopbackIPs {
+		for i := 0; i < 15; i++ {
+			fb.Record404(ip, "/.env")
+		}
 
-	if fb.IsBlocked(loopbackIP) {
-		t.Fatalf("Loopback IP 127.0.0.1 should NEVER be blocked")
+		if fb.IsBlocked(ip) {
+			t.Fatalf("Whitelisted/Private IP %s should NEVER be blocked", ip)
+		}
 	}
 }
 
@@ -110,22 +112,22 @@ func TestFail2Ban_MiddlewareIntegration(t *testing.T) {
 	// 1. Valid request -> 200 OK
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/valid-route", nil)
-	req.RemoteAddr = "10.0.0.50:12345"
+	req.RemoteAddr = "203.0.113.50:12345"
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected status 200, got %d", w.Code)
 	}
 
-	// 2. Trigger 2 scanner 404s for 10.0.0.50
-	fb.Record404("10.0.0.50", "/.env")
-	fb.Record404("10.0.0.50", "/wp-admin")
+	// 2. Trigger 2 scanner 404s for 203.0.113.50
+	fb.Record404("203.0.113.50", "/.env")
+	fb.Record404("203.0.113.50", "/wp-admin")
 
-	// 3. Subsequent request -> 403 Forbidden
+	// 3. Subsequent request -> 403 Forbidden (in TestMode/debug) or 404
 	w2 := httptest.NewRecorder()
 	req2, _ := http.NewRequest("GET", "/valid-route", nil)
-	req2.RemoteAddr = "10.0.0.50:12345"
+	req2.RemoteAddr = "203.0.113.50:12345"
 	r.ServeHTTP(w2, req2)
-	if w2.Code != http.StatusForbidden {
-		t.Fatalf("Expected status 403 Forbidden for blocked IP, got %d", w2.Code)
+	if w2.Code != http.StatusForbidden && w2.Code != http.StatusNotFound {
+		t.Fatalf("Expected blocked status (403 or 404), got %d", w2.Code)
 	}
 }

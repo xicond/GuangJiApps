@@ -247,7 +247,7 @@ const kelolaNotifikasiBlokir = async () => {
   const terhubung = await cekInternetKilat()
   isRealInternet.value = terhubung
 
-  if (!terhubung && isOnline.value) {
+  if (!terhubung || !isOnline.value) {
     // KONDISI: Safari diblokir (Sistem online, internet nyata mati)
     if (!offlineNotificationHandle) {
       offlineNotificationHandle = ElNotification.warning({
@@ -283,8 +283,20 @@ const handleBrowserFocus = () => {
   }
 }
 
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+// const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+const isTablet = breakpoints.between('md', 'lg')
+
+watch(isOnline, () => {
+  if (!isMobile.value)
+    kelolaNotifikasiBlokir();
+}, { immediate: true }) // immediate: true untuk langsung mengecek status saat komponen dimuat
+
 // 5. Lifecycle Hooks untuk Event Listener
 onMounted(() => {
+  if (isMobile.value) return;
+
   // Jalankan cek pertama kali saat halaman dimuat
   kelolaNotifikasiBlokir()
 
@@ -304,17 +316,17 @@ onUnmounted(() => {
 })
 
 // 6. Watcher untuk transisi offline-to-online dasar sistem
-watch(isOnline, (newStatus, oldStatus) => {
-  if (newStatus === true && oldStatus === false) {
-    kelolaNotifikasiBlokir()
-  } else if (newStatus === false) {
-    isRealInternet.value = false
-    if (offlineNotificationHandle) {
-      offlineNotificationHandle.close()
-      offlineNotificationHandle = null
-    }
-  }
-})
+// watch(isOnline, (newStatus, oldStatus) => {
+//   if (newStatus === true && oldStatus === false) {
+//     kelolaNotifikasiBlokir()
+//   } else if (newStatus === false) {
+//     isRealInternet.value = false
+//     if (offlineNotificationHandle) {
+//       offlineNotificationHandle.close()
+//       offlineNotificationHandle = null
+//     }
+//   }
+// })
 
 const { speedMbps, lastTestCompletedAt } = useQuickStreamSpeedTest()
 let lastNotificationTime = 0
@@ -341,10 +353,6 @@ watch(lastTestCompletedAt, () => {
 
 const isChangePasswordVisible = ref(false)
 
-const breakpoints = useBreakpoints(breakpointsTailwind)
-const isMobile = breakpoints.smaller('md')   // True if width < 768px
-// const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
-const isTablet = breakpoints.between('md', 'lg')
 
 const menuRef = ref()
 const reportMasterRef = ref()

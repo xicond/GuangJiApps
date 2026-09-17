@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -308,11 +309,32 @@ func (f *Fail2Ban) Middleware() gin.HandlerFunc {
 		ip := sanitizeIP(c.ClientIP())
 
 		if f.IsBlocked(ip) {
-			c.Header("Content-Type", "application/json")
-			c.JSON(http.StatusForbidden, gin.H{
-				"error": "Access blocked by firewall rules",
-				"ip":    ip,
-			})
+			if gin.IsDebugging() {
+				c.Header("Content-Type", "application/json")
+				c.JSON(http.StatusForbidden, gin.H{
+					"error": "Access blocked by firewall rules",
+					"ip":    ip,
+				})
+			} else {
+				candidates := []string{
+					"errors/404.htm",
+					"./errors/404.htm",
+					"dist/errors/404.htm",
+					"gin/dist/errors/404.htm",
+					"/app/errors/404.htm",
+				}
+				for _, path := range candidates {
+					if data, err := os.ReadFile(path); err == nil {
+						c.Data(http.StatusNotFound, "text/html; charset=utf-8", data)
+						c.Abort()
+						return
+					}
+				}
+				c.Header("Content-Type", "application/json")
+				c.JSON(http.StatusNotFound, gin.H{
+					"error": "Not Found",
+				})
+			}
 			c.Abort()
 			return
 		}

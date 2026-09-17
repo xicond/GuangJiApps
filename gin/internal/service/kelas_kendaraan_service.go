@@ -26,7 +26,7 @@ func NewKelasKendaraanService(db *gorm.DB) *KelasKendaraanService {
 	return &KelasKendaraanService{db: db, resource: "kelas_kendaraan"}
 }
 
-func (s *KelasKendaraanService) List(trxID string, page int, limit int) ([]domain.KelasKendaraan, int64, error) {
+func (s *KelasKendaraanService) List(c *gin.Context, trxID string, page int, limit int) ([]domain.KelasKendaraan, int64, error) {
 	var items []domain.KelasKendaraan
 	var total int64
 
@@ -37,6 +37,16 @@ func (s *KelasKendaraanService) List(trxID string, page int, limit int) ([]domai
 		page = 1
 	}
 
+	userID := getUserID(c)
+	var subWhVal string
+	row := s.db.Model(&domain.AdminMatrix{}).
+		Where("LOGINID = ?", userID).
+		Select("SUBWHID").
+		Row()
+	if row != nil {
+		_ = row.Scan(&subWhVal)
+	}
+
 	query := s.db.Model(&domain.KelasKendaraan{}).Where("status = ?", true)
 
 	if trxID != "" {
@@ -45,13 +55,35 @@ func (s *KelasKendaraanService) List(trxID string, page int, limit int) ([]domai
 		}
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return items, 0, fmt.Errorf("failed to count record: %w", err)
-	}
+	query = query.Where("fotang = ?", subWhVal)
 
 	offset := (page - 1) * limit
-	if err := query.Offset(offset).Limit(limit).Find(&items).Error; err != nil {
-		return items, 0, fmt.Errorf("failed to list records: %w", err)
+
+	var (
+		countErr error
+		findErr  error
+		wg       sync.WaitGroup
+	)
+
+	wg.Go(func() {
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			countErr = fmt.Errorf("failed to count record: %w", err)
+		}
+	})
+
+	wg.Go(func() {
+		if err := query.Session(&gorm.Session{}).Offset(offset).Limit(limit).Find(&items).Error; err != nil {
+			findErr = fmt.Errorf("failed to list records: %w", err)
+		}
+	})
+
+	wg.Wait()
+
+	if countErr != nil {
+		return items, 0, countErr
+	}
+	if findErr != nil {
+		return items, 0, findErr
 	}
 
 	return items, total, nil

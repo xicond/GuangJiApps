@@ -37,7 +37,7 @@
 
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Fotang" :label-position="isMobile ? 'top' : 'right'">
-            <LookupSelect v-model="filters.fotang" placeholder="Pilih fotang..."
+            <LookupSelect v-model="filters.fotang" placeholder="Cari fotang..."
               :fetch-api="fotangApi.getFotangLookupSxy" value-key="lookup_value" label-key="lookup_description"
               clearable @change="onFilterChange" />
           </el-form-item>

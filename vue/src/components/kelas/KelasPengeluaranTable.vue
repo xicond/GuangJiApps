@@ -13,7 +13,7 @@
                 Pengeluaran</el-tag>
             </div>
             <div class="header-actions" @click.stop>
-              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+              <el-button v-if="!readonly" type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
                 {{ isMobile ? '' : 'Tambah Pengeluaran' }}
               </el-button>
               <el-button :icon="Refresh" circle size="small" title="Refresh Pengeluaran"
@@ -45,7 +45,8 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
+            <el-table-column v-if="!readonly" label="Aksi" width="90" align="center"
+              :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
                 <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
                 <el-popconfirm title="Yakin ingin menghapus pengeluaran ini?" confirm-button-text="Ya, Hapus"
@@ -79,7 +80,7 @@
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="130px" size="default" v-loading="submitting">
         <el-form-item label="Tim Kerja" prop="tim_kerja" :error="hasFieldError('tim_kerja') ? ' ' : undefined">
           <LookupSelect v-model="form.tim_kerja" :fetch-api="lookupApi.getLookupTimKerja" value-key="lookup_value"
-            placeholder="Pilih Tim Kerja..." :clearable="true" />
+            placeholder="Pilih Tim Kerja..." :clearable="true" auto-populate />
           <FieldErrors :errors="getFieldErrors('tim_kerja')" />
         </el-form-item>
 
@@ -117,9 +118,15 @@ import FieldErrors from '../common/FieldErrors.vue'
 import LookupSelect from '../common/LookupSelect.vue'
 import type { KelasPengeluaran } from '../../types/kelas'
 
-const props = defineProps<{
-  kelasId: string | number
-}>()
+const props = withDefaults(
+  defineProps<{
+    kelasId: string | number
+    readonly?: boolean
+  }>(),
+  {
+    readonly: false
+  }
+)
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -400,7 +407,7 @@ onUnmounted(() => {
 
 .pagination-container {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
+  /* justify-content: flex-end;
+  margin-top: 1rem; */
 }
 </style>

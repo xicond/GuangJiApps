@@ -13,7 +13,7 @@
                 Kendaraan</el-tag>
             </div>
             <div class="header-actions" @click.stop>
-              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+              <el-button v-if="!readonly" type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
                 {{ isMobile ? '' : 'Tambah Kendaraan' }}
               </el-button>
               <el-button :icon="Refresh" circle size="small" title="Refresh Kendaraan" @click.stop="fetchKendaraan" />
@@ -62,7 +62,8 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
+            <el-table-column v-if="!readonly" label="Aksi" width="90" align="center"
+              :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
                 <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
                 <el-popconfirm title="Yakin ingin menghapus kendaraan ini?" confirm-button-text="Ya, Hapus"
@@ -168,11 +169,17 @@ import FieldErrors from '../common/FieldErrors.vue'
 import LookupSelect from '../common/LookupSelect.vue'
 import type { KelasKendaraan } from '../../types/kelas'
 
-const props = defineProps<{
-  kelasId: string | number
-  startDate?: string
-  endDate?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    kelasId: string | number
+    startDate?: string
+    endDate?: string
+    readonly?: boolean
+  }>(),
+  {
+    readonly: false
+  }
+)
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -533,8 +540,8 @@ onUnmounted(() => {
 
 .pagination-container {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
+  /* justify-content: flex-end;
+  margin-top: 1rem; */
 }
 
 .hari-table-wrapper {

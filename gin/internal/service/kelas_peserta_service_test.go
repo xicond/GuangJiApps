@@ -28,12 +28,14 @@ func TestKelasPesertaService(t *testing.T) {
 
 	// Seed target FK records (Kelas & Umat) for lookup validation
 	kodeK := "K01"
+	db.Exec("DELETE FROM T_TRX_KELAS_PESERTA WHERE trxid = ? OR idpeserta = ?", 26160003, 101)
 	db.Exec("DELETE FROM T_TRX_KELAS WHERE trxid = ?", 26160003)
 	db.Exec("DELETE FROM T_BUS_UMAT WHERE id = ?", 101)
 	db.Create(&domain.Kelas{TrxId: 26160003, KodeKelas: &kodeK})
 	kode101 := "UM101"
 	db.Create(&domain.Umat{ID: 101, Kode: &kode101, NamaIndonesia: "Peserta Test", JenisKelamin: "001"})
 	defer func() {
+		db.Exec("DELETE FROM T_TRX_KELAS_PESERTA WHERE trxid = ? OR idpeserta = ?", 26160003, 101)
 		db.Exec("DELETE FROM T_TRX_KELAS WHERE trxid = ?", 26160003)
 		db.Exec("DELETE FROM T_BUS_UMAT WHERE id = ?", 101)
 	}()
@@ -86,6 +88,35 @@ func TestKelasPesertaService(t *testing.T) {
 	}
 	if fetched.Keterangan == nil || *fetched.Keterangan != "Peserta baru" {
 		t.Errorf("expected Keterangan 'Peserta baru', got %v", fetched.Keterangan)
+	}
+
+	// 3b. GetByIdPerserta
+	pesertaById, err := svc.GetByIdPerserta(strconv.Itoa(int(idPeserta)), strconv.Itoa(int(trxId)))
+	if err != nil {
+		t.Fatalf("GetByIdPerserta failed: %v", err)
+	}
+	if pesertaById.DetailId != created.DetailId {
+		t.Errorf("expected DetailId %d, got %d", created.DetailId, pesertaById.DetailId)
+	}
+	if pesertaById.Keterangan == nil || *pesertaById.Keterangan != "Peserta baru" {
+		t.Errorf("expected Keterangan 'Peserta baru', got %v", pesertaById.Keterangan)
+	}
+
+	// 3c. GetByIdPerserta without trxId (only id_peserta)
+	pesertaByIdOnly, err := svc.GetByIdPerserta(strconv.Itoa(int(idPeserta)))
+	if err != nil {
+		t.Fatalf("GetByIdPerserta (id only) failed: %v", err)
+	}
+	if pesertaByIdOnly.DetailId != created.DetailId {
+		t.Errorf("expected DetailId %d, got %d", created.DetailId, pesertaByIdOnly.DetailId)
+	}
+
+	// 3d. GetByIdPerserta error scenarios
+	if _, err := svc.GetByIdPerserta("999999", strconv.Itoa(int(trxId))); err == nil {
+		t.Errorf("expected error for non-existent id_peserta, got nil")
+	}
+	if _, err := svc.GetByIdPerserta("invalid_id"); err == nil {
+		t.Errorf("expected error for invalid id_peserta format, got nil")
 	}
 
 	// 4. Update

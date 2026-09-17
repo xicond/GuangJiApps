@@ -32,7 +32,7 @@
         <el-row :gutter="16" class="filter-row">
           <el-col :xs="24" :sm="12" :md="6">
             <el-form-item label="Fotang Aktif">
-              <LookupSelect v-model="filters.fotang_aktif" placeholder="Pilih Fotang Aktif"
+              <LookupSelect v-model="filters.fotang_aktif" placeholder="Cari Fotang Aktif"
                 :fetch-api="fotangApi.getFotangLookup" value-key="lookup_value" label-key="lookup_description" clearable
                 @change="onFilterChange" />
             </el-form-item>
@@ -40,7 +40,7 @@
 
           <el-col :xs="24" :sm="12" :md="6">
             <el-form-item label="Fotang Chiu Tao">
-              <LookupSelect v-model="filters.fotang_chiutao" placeholder="Pilih Fotang Chiu Tao"
+              <LookupSelect v-model="filters.fotang_chiutao" placeholder="Cari Fotang Chiu Tao"
                 :fetch-api="fotangApi.getFotangLookup" value-key="lookup_value" label-key="lookup_description" clearable
                 @change="onFilterChange" />
             </el-form-item>
@@ -373,8 +373,8 @@
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="(!isMobile ? 'total, ->' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange" @current-change="handlePageChange" />
+          :layout="(!isMobile ? 'total, ->,' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next, jumper'"
+          :pager-count="isMobile ? 3 : 6" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
   </div>
@@ -773,8 +773,8 @@ onMounted(() => {
 
 .pagination-container {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
+  /* justify-content: flex-end;
+  margin-top: 20px; */
 }
 
 .font-semibold {

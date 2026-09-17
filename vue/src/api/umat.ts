@@ -31,6 +31,9 @@ export const umatApi = {
 
     const response = await apiClient.get<UmatListResponse>('/v1/umats', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -43,7 +46,12 @@ export const umatApi = {
     id: number | string,
     signal?: AbortSignal
   ): Promise<UmatSingleResponse> {
-    const response = await apiClient.get<UmatSingleResponse>(`/v1/umats/${id}`, { signal })
+    const response = await apiClient.get<UmatSingleResponse>(`/v1/umats/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 
@@ -77,7 +85,10 @@ export const umatApi = {
       '/v1/umats/ocr',
       formData,
       {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        fetchOptions: {
+          priority: 'high'
+        }
       }
     )
     return response.data
@@ -140,6 +151,9 @@ export const umatApi = {
 
     const response = await apiClient.get<UmatReportResponse>('/v1/umats/report', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -171,6 +185,9 @@ export const umatApi = {
     const response = await apiClient.get('/v1/umats/report/excel', {
       params: cleanParams,
       responseType: 'blob',
+      fetchOptions: {
+        priority: 'low'
+      },
       signal
     })
     return response.data

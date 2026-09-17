@@ -12,12 +12,14 @@
               <el-tag v-if="isExpanded && !isMobile" size="small" type="info" class="ml-2">{{ total }} Peserta</el-tag>
             </div>
             <div class="header-actions">
-              <el-button type="success" size="small" :icon="Timer" @click.stop="openHistoryDialog">
-                {{ isMobile ? '' : 'Add From History' }}
-              </el-button>
-              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
-                {{ isMobile ? '' : 'Tambah Peserta' }}
-              </el-button>
+              <template v-if="!readonly">
+                <el-button type="success" size="small" :icon="Timer" @click.stop="openHistoryDialog">
+                  {{ isMobile ? '' : 'Add From History' }}
+                </el-button>
+                <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+                  {{ isMobile ? '' : 'Tambah Peserta' }}
+                </el-button>
+              </template>
               <el-button :icon="Refresh" circle size="small" title="Refresh Peserta" @click.stop="fetchPeserta" />
             </div>
           </div>
@@ -74,7 +76,8 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
+            <el-table-column v-if="!readonly" label="Aksi" width="90" align="center"
+              :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
                 <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
                 <el-popconfirm title="Yakin ingin menghapus peserta ini?" confirm-button-text="Ya, Hapus"
@@ -147,7 +150,7 @@
 
           <!-- Add / Edit Single Mode: Desktop & Tablet view custom popup dialog trigger -->
           <div v-else class="desktop-umat-selector">
-            <el-input :model-value="selectedUmatLabel" placeholder="Pilih Umat..." readonly class="clickable-umat-input"
+            <el-input :model-value="selectedUmatLabel" placeholder="Cari Umat..." readonly class="clickable-umat-input"
               @click="openUmatPopup">
               <template #append>
                 <el-button :icon="MoreFilled" title="Buka Pencarian Umat" @click="openUmatPopup">
@@ -266,8 +269,8 @@
       }" :multiple="false" @select="handleUmatSelected" :width="isMobile ? '90%' : '650px'" />
 
     <!-- Custom Popup Dialog Selector for History Peserta (Multiple Selection) -->
-    <UmatPopupSelector v-model="historyPopupVisible" title="Pilih Peserta Dari Riwayat Kelas Sebelumnya"
-      :fetch-api="fetchPreviousPesertaApi" :selected="selectedHistoryUmats" :Columns="{
+    <UmatPopupSelector v-model="historyPopupVisible" title="Pilih dari Riwayat" :fetch-api="fetchPreviousPesertaApi"
+      :selected="selectedHistoryUmats" :Columns="{
         kode: 'Kode',
         nama_indonesia: 'Nama Chiu Tao',
         nama_mandarin: 'Nama Lain',
@@ -297,12 +300,18 @@ import type { KelasPeserta, KelasPesertaPrevious, KelasPesertaBulkPayload } from
 import type { Umat } from '../../types/umat'
 import { scrollToFormError } from '../../utils/scroll'
 
-const props = defineProps<{
-  kelasId: string | number
-  kodeKelas?: string
-  startDate?: string
-  endDate?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    kelasId: string | number
+    kodeKelas?: string
+    startDate?: string
+    endDate?: string
+    readonly?: boolean
+  }>(),
+  {
+    readonly: false
+  }
+)
 
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
@@ -1020,8 +1029,8 @@ onUnmounted(() => {
 
 .pagination-container {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
+  /* justify-content: flex-end;
+  margin-top: 1rem; */
 }
 
 .desktop-umat-selector {

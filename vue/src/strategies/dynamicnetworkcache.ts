@@ -7,25 +7,21 @@ export interface DynamicNetworkCacheStrategyOptions extends StrategyOptions {
 
 export class DynamicNetworkCacheStrategy extends Strategy {
     private timeoutMs: number;
-    private debounceMs: number;
-    private debounceMap: Map<string, ReturnType<typeof setTimeout>>; // Diubah ke number (tipe setTimeout di browser/SW)
     protected inFlightRequests: Map<string, Promise<Response>>;
 
     constructor(options: DynamicNetworkCacheStrategyOptions = {}) {
         super(options);
         this.timeoutMs = options.timeoutMs ?? 500;
-        this.debounceMs = options.debounceMs ?? 5000;
-        this.debounceMap = new Map<string, ReturnType<typeof setTimeout>>();
         this.inFlightRequests = new Map<string, Promise<Response>>();
     }
 
     /**
-     * Executes network fetch with deduplication.
+     * Executes network fetch and cache with deduplication.
      * If an identical GET/HEAD request is already in-flight, returns a clone of the existing promise.
      */
     protected fetchDeduplicated(request: Request, handler: StrategyHandler): Promise<Response> {
         if (request.method !== 'GET' && request.method !== 'HEAD') {
-            return handler.fetch(request);
+            return handler.fetchAndCachePut(request);
         }
 
         const key = `${request.method}:${request.url}`;
@@ -35,117 +31,80 @@ export class DynamicNetworkCacheStrategy extends Strategy {
             return existingPromise.then((response) => response.clone());
         }
 
-        const fetchPromise = handler.fetch(request)
+        let cleanupTimer: ReturnType<typeof setTimeout> | undefined;
+
+        const fetchPromise = handler.fetchAndCachePut(request)
             .finally(() => {
+                if (cleanupTimer) clearTimeout(cleanupTimer);
                 this.inFlightRequests.delete(key);
             });
 
+        // Safety timeout: ensure inFlightRequests key is deleted within 15s no matter what
+        cleanupTimer = setTimeout(() => {
+            this.inFlightRequests.delete(key);
+        }, 15000);
+
+        // Attach passive catch handler so inFlightRequests never causes unhandledrejection in SW
+        fetchPromise.catch(() => { });
+
         this.inFlightRequests.set(key, fetchPromise);
 
-        return fetchPromise.then((response) => response.clone());
+        return fetchPromise;
     }
 
     protected async _handle(request: Request, handler: StrategyHandler): Promise<Response> {
-        // console.log('[SW DynamicNetworkCacheStrategy] Intercepting:', request.method, request.url);
-        // 1. Check cache and fetch network asynchronously in parallel without initial await
-        const cachePromise: Promise<Response | undefined> = handler.cacheMatch(request).catch(() => undefined);
-        const networkPromise: Promise<Response> = this.fetchDeduplicated(request, handler);
+        // 1. Start deduplicated network fetch + automatic background cache update via Workbox
+        const networkFetchPromise = this.fetchDeduplicated(request, handler);
 
-        // Attach non-blocking background cache update once network fetch completes successfully
-        networkPromise.then((networkResponse) => {
-            if (networkResponse && networkResponse.ok) {
-                const putPromise = handler.cachePut(request, networkResponse.clone()).catch(() => { });
-                if (typeof handler.waitUntil === 'function') {
-                    handler.waitUntil(putPromise);
-                }
-            }
-            return networkResponse;
-        }).catch(() => { });
-
-        // 2. Setup timeoutMs promise with clean timer reference
+        // 2. Setup timeoutMs timer promise
         let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
-        const timeoutPromise = new Promise<{ isTimeout: true }>((resolve) => {
-            timeoutTimer = setTimeout(() => resolve({ isTimeout: true }), this.timeoutMs);
+        const timeoutPromise = new Promise<'TIMEOUT'>((resolve) => {
+            timeoutTimer = setTimeout(() => resolve('TIMEOUT'), this.timeoutMs);
         });
 
         // 3. Race network fetch against timeoutMs
         try {
-            const result = await Promise.race([
-                networkPromise.then((res) => ({ isTimeout: false as const, res })),
+            const raceResult = await Promise.race([
+                networkFetchPromise,
                 timeoutPromise
             ]);
 
-            // If network finished BEFORE timeoutMs, return fast network response
-            if (!result.isTimeout && result.res) {
-                clearTimeout(timeoutTimer);
-                return result.res;
-            }
-        } catch (err) {
-            // Network fetch failed or errored before timeoutMs
-            this.triggerDebouncedBackgroundUpdate(request, handler);
-        } finally {
             clearTimeout(timeoutTimer);
-        }
 
-        // 4. Network did NOT finish before timeoutMs (or network fetch failed):
-        // Race checking cache vs waiting for network fetch
-        type FallbackWinner =
-            | { source: 'cache'; res: Response | undefined }
-            | { source: 'network'; res: Response };
-
-        let fallbackWinner: FallbackWinner | null = null;
-        try {
-            fallbackWinner = await Promise.race([
-                cachePromise.then((res) => ({ source: 'cache' as const, res })),
-                networkPromise.then((res) => ({ source: 'network' as const, res }))
-            ]);
-
-            if (fallbackWinner.source === 'cache') {
-                if (fallbackWinner.res) {
-                    // Cache exists! Return cache immediately; fetch will renew cache in background
-                    return fallbackWinner.res;
-                }
-                // Cache does NOT exist, wait for fetch to return and add to cache
-                return await networkPromise;
-            } else {
-                // networkPromise won the race! Return network response
-                return fallbackWinner.res;
+            if (raceResult !== 'TIMEOUT') {
+                // Network fetch finished BEFORE timeoutMs! Return network response directly.
+                return raceResult;
             }
-        } catch (err) {
-            if (fallbackWinner && fallbackWinner.source === 'cache') {
-                if (fallbackWinner.res) {
-                    // Cache exists! Return cache immediately; fetch will renew cache in background
-                    return fallbackWinner.res;
-                }
+        } catch (err: any) {
+            clearTimeout(timeoutTimer);
+            if (request.signal?.aborted || err?.name === 'AbortError' || (err?.message && String(err.message).toLowerCase().includes('aborted'))) {
+                throw err;
             }
-            const cachedResponse = await cachePromise;
+            // Network fetch failed before timeoutMs -> try cache fallback
+            const cachedResponse = await handler.cacheMatch(request).catch(() => undefined);
             if (cachedResponse) {
                 return cachedResponse;
             }
-            return await networkPromise;
-        }
-    }
-
-    private triggerDebouncedBackgroundUpdate(request: Request, handler: StrategyHandler): void {
-        const url = request.url;
-
-        if (this.debounceMap.has(url)) {
-            clearTimeout(this.debounceMap.get(url)!);
+            throw err;
         }
 
-        // Menggunakan global setTimeout di Service Worker scope
-        const timerId = setTimeout(async () => {
-            this.debounceMap.delete(url);
-            try {
-                const networkResponse = await this.fetchDeduplicated(request, handler);
-                if (networkResponse && networkResponse.ok) {
-                    await handler.cachePut(request, networkResponse.clone());
-                }
-            } catch (err) {
-                console.warn('Background update failed for:', url, err);
+        // 4. Network did NOT finish within timeoutMs (timed out): Check cache fallback
+        const cachedResponse = await handler.cacheMatch(request).catch(() => undefined);
+
+        if (cachedResponse) {
+            // Cache hit! Return cached response immediately (< 500ms response time).
+            // networkFetchPromise is already running fetchAndCachePut in background with handler.waitUntil!
+            return cachedResponse;
+        }
+
+        // 5. Cache miss after timeoutMs: Wait for network fetch to finish
+        try {
+            return await networkFetchPromise;
+        } catch (err: any) {
+            if (request.signal?.aborted || err?.name === 'AbortError' || (err?.message && String(err.message).toLowerCase().includes('aborted'))) {
+                throw err;
             }
-        }, this.debounceMs);
-
-        this.debounceMap.set(url, timerId);
+            throw err;
+        }
     }
 }

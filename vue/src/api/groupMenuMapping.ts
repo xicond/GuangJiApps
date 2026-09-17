@@ -24,6 +24,9 @@ export const groupMenuMappingApi = {
 
     const response = await apiClient.get<GroupMenuMappingListResponse>('/v1/group-menu-mappings', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -36,7 +39,12 @@ export const groupMenuMappingApi = {
     id: number,
     signal?: AbortSignal
   ): Promise<GroupMenuMappingSingleResponse> {
-    const response = await apiClient.get<GroupMenuMappingSingleResponse>(`/v1/group-menu-mappings/${id}`, { signal })
+    const response = await apiClient.get<GroupMenuMappingSingleResponse>(`/v1/group-menu-mappings/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 

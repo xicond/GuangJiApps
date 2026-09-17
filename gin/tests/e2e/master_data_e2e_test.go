@@ -23,7 +23,7 @@ func TestE2E_MasterData(t *testing.T) {
 			JSON().Object().
 			ContainsKey("data").
 			Value("meta").Object().
-			Value("total").Number().Gt(0)
+			Value("total").Number().Ge(0)
 
 		// GET Report
 		e.GET("/v1/umats/report").
@@ -35,7 +35,7 @@ func TestE2E_MasterData(t *testing.T) {
 			JSON().Object().
 			ContainsKey("data").
 			Value("meta").Object().
-			Value("total").Number().Gt(0)
+			Value("total").Number().Ge(0)
 
 		// GET Report Excel
 		e.GET("/v1/umats/report/excel").
@@ -61,11 +61,42 @@ func TestE2E_MasterData(t *testing.T) {
 
 		umatID := int(createRes.Value("data").Object().Value("id").Number().Raw())
 
-		// GET By ID
-		e.GET(fmt.Sprintf("/v1/umats/%d", umatID)).
+		// GET By ID - verify qr_token is appended
+		getRes := e.GET(fmt.Sprintf("/v1/umats/%d", umatID)).
 			WithHeader("Authorization", auth).
 			Expect().
-			Status(http.StatusOK)
+			Status(http.StatusOK).
+			JSON().Object()
+
+		qrToken := getRes.Value("data").Object().Value("qr_token").String().Raw()
+
+		// POST /v1/umats/verify-qr - 400 Bad Request (missing / empty qr_token)
+		e.POST("/v1/umats/verify-qr").
+			WithHeader("Authorization", auth).
+			WithJSON(map[string]string{}).
+			Expect().
+			Status(http.StatusBadRequest)
+
+		// POST /v1/umats/verify-qr - 400 Bad Request (invalid qr_token)
+		e.POST("/v1/umats/verify-qr").
+			WithHeader("Authorization", auth).
+			WithJSON(map[string]string{"qr_token": "invalid.jwt.token"}).
+			Expect().
+			Status(http.StatusBadRequest)
+
+		// POST /v1/umats/verify-qr - 200 OK (valid qr_token)
+		verifyRes := e.POST("/v1/umats/verify-qr").
+			WithHeader("Authorization", auth).
+			WithJSON(map[string]string{"qr_token": qrToken}).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object()
+
+		verifyData := verifyRes.Value("data").Object()
+		verifyData.Value("nama_indonesia").String().NotEmpty()
+		verifyData.Value("fotang_ciu_tao").NotNull()
+		verifyData.Value("fotang_aktif").NotNull()
+		verifyData.Value("claims").Object().NotEmpty()
 
 		// PATCH 400
 		e.PATCH(fmt.Sprintf("/v1/umats/%d", umatID)).

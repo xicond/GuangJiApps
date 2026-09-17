@@ -24,6 +24,9 @@ export const tahunCiuTaoApi = {
 
     const response = await apiClient.get<TahunCiuTaoListResponse>('/v1/tahun-ciu-tao/list', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -36,7 +39,12 @@ export const tahunCiuTaoApi = {
     id: string,
     signal?: AbortSignal
   ): Promise<TahunCiuTaoSingleResponse> {
-    const response = await apiClient.get<TahunCiuTaoSingleResponse>(`/v1/tahun-ciu-tao?tahun=${id}`, { signal })
+    const response = await apiClient.get<TahunCiuTaoSingleResponse>(`/v1/tahun-ciu-tao?tahun=${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 

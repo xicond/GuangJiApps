@@ -26,6 +26,9 @@ export const kelasMasterApi = {
 
     const response = await apiClient.get<KelasMasterListResponse>('/v1/kelas-masters', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -40,6 +43,9 @@ export const kelasMasterApi = {
   ): Promise<KelasMasterSingleResponse> {
     const response = await apiClient.get<KelasMasterSingleResponse>('/v1/kelas-master', {
       params: { id },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data

@@ -523,6 +523,31 @@ func (s *KelasPesertaService) Get(id string) (domain.KelasPeserta, error) {
 	return item, nil
 }
 
+func (s *KelasPesertaService) GetByIdPerserta(idPeserta string, trxIds ...string) (domain.KelasPeserta, error) {
+	parsedInt, err := strconv.Atoi(idPeserta)
+	if err != nil {
+		return domain.KelasPeserta{}, fmt.Errorf("invalid ID format: %w", err)
+	}
+	var item domain.KelasPeserta
+	query := s.db.Preload("Umat").Where("idpeserta = ?", parsedInt)
+	if len(trxIds) > 0 && strings.TrimSpace(trxIds[0]) != "" {
+		if trxIdInt, err := strconv.Atoi(strings.TrimSpace(trxIds[0])); err == nil {
+			query = query.Where("trxid = ?", trxIdInt)
+		}
+	}
+	if err := query.Order("status DESC, detailid DESC").Take(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.KelasPeserta{}, fmt.Errorf("kelas peserta with id_peserta %s not found", idPeserta)
+		}
+		return domain.KelasPeserta{}, err
+	}
+	return item, nil
+}
+
+func (s *KelasPesertaService) GetByIdPeserta(idPeserta string, trxIds ...string) (domain.KelasPeserta, error) {
+	return s.GetByIdPerserta(idPeserta, trxIds...)
+}
+
 func (s *KelasPesertaService) Update(id string, payload domain.KelasPeserta, c *gin.Context) (domain.KelasPeserta, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

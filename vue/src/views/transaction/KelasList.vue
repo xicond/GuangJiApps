@@ -23,14 +23,14 @@
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="7">
           <el-form-item label="Kelas" :label-position="isMobile ? 'top' : 'right'">
-            <LookupSelect v-model="filters.kelas" placeholder="Pilih kelas..." :fetch-api="kelasApi.getKelasLookup"
+            <LookupSelect v-model="filters.kelas" placeholder="Cari nama kelas..." :fetch-api="kelasApi.getKelasLookup"
               @change="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="7">
           <el-form-item label="Fotang" :label-position="isMobile ? 'top' : 'right'">
-            <LookupSelect v-model="filters.fotang" placeholder="Pilih fotang..." :fetch-api="fotangApi.getFotangLookup"
+            <LookupSelect v-model="filters.fotang" placeholder="Cari fotang..." :fetch-api="fotangApi.getFotangLookup"
               @change="onFilterChange" />
           </el-form-item>
         </el-col>

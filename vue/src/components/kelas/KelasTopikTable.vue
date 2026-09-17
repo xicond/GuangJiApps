@@ -12,7 +12,7 @@
               <el-tag v-if="isExpanded && !isMobile" size="small" type="info" class="ml-2">{{ total }} Topik</el-tag>
             </div>
             <div class="header-actions" @click.stop>
-              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+              <el-button v-if="!readonly" type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
                 {{ isMobile ? '' : 'Tambah Topik' }}
               </el-button>
               <el-button :icon="Refresh" circle size="small" title="Refresh Topik" @click.stop="fetchTopik" />
@@ -67,7 +67,8 @@
 
             <el-table-column prop="keterangan" label="Keterangan" min-width="160" />
 
-            <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
+            <el-table-column v-if="!readonly" label="Aksi" width="90" align="center"
+              :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
                 <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
                 <el-popconfirm title="Yakin ingin menghapus topik ini?" confirm-button-text="Ya, Hapus"
@@ -102,7 +103,7 @@
         <el-row :gutter="16">
           <el-col :md="12" :sm="24">
             <el-form-item label="Nama Topik" prop="kode_topik" :error="hasFieldError('kode_topik') ? ' ' : undefined">
-              <LookupSelect v-model="form.kode_topik" placeholder="Pilih Nama Topik..." :fetch-api="fetchTopicLookup"
+              <LookupSelect v-model="form.kode_topik" placeholder="Cari Nama Topik..." :fetch-api="fetchTopicLookup"
                 value-key="topic_code" label-key="topic_name" :clearable="false" />
               <FieldErrors :errors="getFieldErrors('kode_topik')" />
             </el-form-item>
@@ -201,11 +202,17 @@ import type { KelasTopik } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
 import type { Topic } from '../../types/topic'
 
-const props = defineProps<{
-  kelasId: string | number
-  startDate?: string
-  endDate?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    kelasId: string | number
+    startDate?: string
+    endDate?: string
+    readonly?: boolean
+  }>(),
+  {
+    readonly: false
+  }
+)
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -614,8 +621,8 @@ onUnmounted(() => {
 
 .pagination-container {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
+  /* justify-content: flex-end;
+  margin-top: 1rem; */
 }
 
 .static-text {

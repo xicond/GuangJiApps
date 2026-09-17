@@ -128,8 +128,8 @@
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="(!isMobile ? 'total, ->' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange" @current-change="handlePageChange" />
+          :layout="(!isMobile ? 'total, ->,' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
+          :pager-count="6" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
@@ -148,7 +148,7 @@
         </el-form-item>
 
         <el-form-item label="Donatur" prop="donatur_id">
-          <LookupSelect v-model="formData.donatur_id" placeholder="Pilih Donatur..."
+          <LookupSelect v-model="formData.donatur_id" placeholder="Cari Donatur..."
             :fetch-api="sxyDonaturApi.getSxyDonaturs" :get-item-api="sxyDonaturApi.getSxyDonaturById" value-key="id"
             label-key="nama" clearable />
         </el-form-item>
@@ -156,7 +156,7 @@
         <el-form-item label="Tipe Sumbangan" prop="tipe_sumbangan">
           <LookupSelect v-model="formData.tipe_sumbangan" placeholder="Pilih Tipe Sumbangan..."
             :fetch-api="lookupApi.getLookupTipeSumbangan" value-key="lookup_value" label-key="lookup_description"
-            clearable />
+            clearable auto-populate />
         </el-form-item>
 
         <el-form-item label="Jumlah (Rp)" prop="jumlah">
@@ -165,7 +165,7 @@
         </el-form-item>
 
         <el-form-item label="Penggalang Dana" prop="penggalang_id">
-          <LookupSelect v-model="formData.penggalang_id" placeholder="Pilih Penggalang Dana..."
+          <LookupSelect v-model="formData.penggalang_id" placeholder="Cari Penggalang Dana..."
             :fetch-api="penggalangDanaApi.getPenggalangDanas" :get-item-api="penggalangDanaApi.getPenggalangDanaById"
             value-key="id" label-key="nama" clearable />
         </el-form-item>

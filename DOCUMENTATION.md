@@ -1,5 +1,76 @@
 # Documentation - Completed Tasks
 
+## [Completed] Service Worker: Workbox Native `handler.fetchAndCachePut` Integration (`vue/src/strategies/dynamicnetworkcache.ts`)
+
+### Summary & Changes Made:
+- **Native Workbox Integration**: Refactored `DynamicNetworkCacheStrategy` in [dynamicnetworkcache.ts](./vue/src/strategies/dynamicnetworkcache.ts) to utilize Workbox's built-in `handler.fetchAndCachePut(request)`.
+- **Elimination of Stream Locking**: Replaced custom `response.clone()` and manual `handler.cachePut()` calls with `handler.fetchAndCachePut()`. This delegates stream cloning, plugin lifecycle execution (`CacheableResponsePlugin`, `ExpirationPlugin`), and background `waitUntil()` registration natively to Workbox, completely preventing `TypeError: Response body is already used` and hanging `FetchEvent.respondWith()` promises.
+- **Verification**: Verified via `npm run build:client` (`vue-tsc --noEmit` and `vite build`), compiling cleanly with 0 errors.
+
+---
+
+## [Completed] Vue: QR Code SVG Display & Download in `UmatForm.vue`
+
+### Summary & Changes Made:
+- **Type Definitions ([umat.ts](./vue/src/types/umat.ts))**:
+  - Added `qr_token?: string` property to the `Umat` interface to support typed QR token binding from backend responses.
+- **Dependency Integration**:
+  - Installed `qrcode` and `@types/qrcode` for scalable in-memory SVG generation from JWT tokens.
+- **Component Implementation ([UmatForm.vue](./vue/src/components/umat/UmatForm.vue))**:
+  - Added reactive generation of QR Code SVG using `QRCode.toString(token, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' })`.
+  - Added a responsive `.qr-code-section` in the photo column displaying the rendered SVG, action to enlarge via modal dialog (`el-dialog`), and action to download the vector SVG (`downloadQRCode`).
+  - Added full modal dialog previewing enlarged QR Code alongside Umat name, alias, and kode.
+- **Verification & Bug Fix**:
+  - Resolved `ReferenceError: Cannot access 'formData' before initialization` by moving `qrCodeSvg` and its `watch` after `formData` definition in `<script setup>` (resolving Temporal Dead Zone).
+  - Executed `npm run type-check` (`vue-tsc --noEmit`) (**PASS**).
+  - Executed `npm run build` (**PASS** - bundled with zero errors).
+
+---
+
+## [Completed] Gin: JWT-based Umat QR Token Generation (`Get`) & Verification (`VerifyQR`)
+
+### Summary & Changes Made:
+- **Model Enhancements ([legacy_models.go](./gin/internal/domain/legacy_models.go))**:
+  - Added `QRToken *string` (`gorm:"-" json:"qr_token,omitempty"`) to `type Umat struct`.
+  - Added `VerifyQRRequest` struct (`qr_token string`).
+  - Added `VerifyQRResponse` struct returning `claims`, `nama_indonesia`, `nama_mandarin`, `alias`, `fotang_ciu_tao`, and `fotang_aktif`.
+- **Service Implementation ([umat_service.go](./gin/internal/service/umat_service.go))**:
+  - Injected `cfg config.Config` into `UmatService` and updated `NewUmatService(db *gorm.DB, cfgs ...config.Config) *UmatService`.
+  - Cleaned up JWT claims in `GenerateQRToken`: removed personal data (`id`, `nama_indonesia`, `fotang_ciu_tao`, `fotang_aktif`, etc.) from token payload to avoid bloating and leaking sensitive info; token claims now only carry identity `sub: item.ID`.
+  - Added `umat.` prefix to generated QR token string (`item.QRToken = &qrToken` -> `umat.eyJ...`).
+  - Updated `VerifyQR(tokenString string)`: automatically strips `umat.` prefix via `strings.TrimPrefix`, verifies JWT signature, decodes `sub` identity claim, acquires fresh profile data (`nama_indonesia`, `nama_mandarin`, `alias`) directly from the database, and resolves `fotang_ciu_tao` and `fotang_aktif` to the actual fotang names looked up from `T_APP_LOOKUP` with `CategoryId = 'B_FOTHANG'`.
+- **Routing ([router.go](./gin/internal/api/router.go))**:
+  - Registered `POST /umats/verify-qr` on the protected route group (mapped to `/v1/umats/verify-qr`).
+  - Handles JSON payload validation via `respondValidationError` and returns `{ "data": result, "resource": "Umat" }` on success (200) or `{ "error": ... }` on failure (400).
+- **Testing & Verification ([gin/internal/service/umat_service_test.go](./gin/internal/service/umat_service_test.go), [gin/tests/e2e/master_data_e2e_test.go](./gin/tests/e2e/master_data_e2e_test.go))**:
+  - Unit tests: Added `TestUmatService_GenerateQRToken_ClaimsAndPrefix` to verify token generation with `umat.` prefix and claims containing only `sub` (with `nama_indonesia`, `fotang_ciu_tao`, `fotang_aktif`, `id` stripped).
+  - Updated `TestUmatService_QRTokenAndVerifyQR` to verify both `umat.` prefixed tokens and non-prefixed raw tokens, asserting verified data comes from DB.
+  - Verified via `go test -v -count=1 ./internal/service -run TestUmatService_GenerateQRToken_ClaimsAndPrefix` (**PASS**).
+- **Postman Collection ([apps-gin.postman_collection.json](./gin/postman/apps-gin.postman_collection.json))**:
+  - Updated `Umat - Verify QR` endpoint (`POST {{baseUrl}}/v1/umats/verify-qr`) request and response examples with `umat.eyJ...` prefix and stripped claims.
+
+---
+
+## [Completed] Vue: Readonly Mode in `KelasView.vue` for All 7 Sub-model Tables
+
+### Summary & Changes Made:
+- **Component Prop & Conditional Actions**:
+  - Added `readonly?: boolean` prop (defaults to `false`) across all 7 kelas sub-model table components:
+    - [KelasPesertaTable.vue](./vue/src/components/kelas/KelasPesertaTable.vue): hides "Tambah Peserta", "Add From History", and the "Aksi" column (Edit/Delete).
+    - [KelasPengabdiTable.vue](./vue/src/components/kelas/KelasPengabdiTable.vue): hides "Tambah Pengabdi" and the "Aksi" column.
+    - [KelasTopikTable.vue](./vue/src/components/kelas/KelasTopikTable.vue): hides "Tambah Topik" and the "Aksi" column.
+    - [KelasKendaraanTable.vue](./vue/src/components/kelas/KelasKendaraanTable.vue): hides "Tambah Kendaraan" and the "Aksi" column.
+    - [KelasDonasiTable.vue](./vue/src/components/kelas/KelasDonasiTable.vue): hides "Tambah Donasi" and the "Aksi" column.
+    - [KelasDonasiBarangTable.vue](./vue/src/components/kelas/KelasDonasiBarangTable.vue): hides "Tambah Donasi Barang" and the "Aksi" column.
+    - [KelasPengeluaranTable.vue](./vue/src/components/kelas/KelasPengeluaranTable.vue): hides "Tambah Pengeluaran" and the "Aksi" column.
+- **View Integration ([KelasView.vue](./vue/src/views/transaction/KelasView.vue))**:
+  - Passed `readonly` attribute to all 7 components in `KelasView.vue`, effectively rendering a clean read-only view while retaining full create/edit/delete capabilities in [KelasEdit.vue](./vue/src/views/transaction/KelasEdit.vue).
+- **Verification**:
+  - `npm run type-check` (`vue-tsc --noEmit`): **Passed (0 errors)**.
+  - `npm run build:client`: **Production client build succeeded cleanly (20.68s)**.
+
+---
+
 ## [Completed] Vue: "Add From History" Feature in `KelasPesertaTable.vue`
 
 ### Summary & Changes Made:
@@ -234,7 +305,7 @@
 
 ### Summary & Changes Made:
 - **Login Credentials & Dynamic Token Authentication**:
-  - Updated Login endpoint credentials in [`apps-gin.postman_collection.json`](file:///Users/xicond/Workspace/www/GuangJiApps/gin/postman/apps-gin.postman_collection.json) to `admin` / `password`.
+  - Updated Login endpoint credentials in [`apps-gin.postman_collection.json`](./gin/postman/apps-gin.postman_collection.json) to `admin` / `password`.
   - Added UAT test script in Login endpoint to verify HTTP 200 OK, token presence, and automatically extract and set `authToken` in Postman collection variables (`pm.collectionVariables.set("authToken", jsonData.token)`).
 - **Comprehensive User Acceptance Test (UAT) Scripts**:
   - Configured automated test scripts (`event` with `listen: "test"`) across all 117 endpoints covering:
@@ -265,7 +336,7 @@
   - Relaunched Docker Desktop cleanly via `/Applications/Docker.app`.
   - Monitored startup until socket listener initialized and responded.
 - **Automated Recovery Script (`fix-docker.sh`)**:
-  - Created executable script [`fix-docker.sh`](file:///Users/xicond/Workspace/www/GuangJiApps/fix-docker.sh) to automatically terminate hung processes, restart Docker Desktop, wait for daemon readiness up to 60s, and display running containers.
+  - Created executable script [`fix-docker.sh`](./fix-docker.sh) to automatically terminate hung processes, restart Docker Desktop, wait for daemon readiness up to 60s, and display running containers.
 - **Verification**:
   - `docker info` responds instantly with Docker Engine version `29.7.2`.
   - `docker ps` verified all workspace containers (`gin_app`, `redis_app`, `mssql_server`, `vue_dev`) are running and healthy.
@@ -359,11 +430,11 @@
 ## [Completed] Topic Name Uniqueness Validation & Combined Struct Validation (`gin/internal/service/topic_service.go`, `gin/internal/service/topic_service_test.go`)
 
 ### Summary & Changes Made:
-- **`validateTopic` Helper with Combined Error Reporting**: Implemented `validateTopic(payload domain.Topic, excludeCode string) error` on `TopicService` in [topic_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/topic_service.go).
+- **`validateTopic` Helper with Combined Error Reporting**: Implemented `validateTopic(payload domain.Topic, excludeCode string) error` on `TopicService` in [topic_service.go](./gin/internal/service/topic_service.go).
   - Executes struct validation (`ValidateStruct`) and uniqueness check (`validateTopicName`) together.
   - Aggregates all validation error details (e.g. `topic_category`, `topic_name`, `description`, etc.) into a unified `Details map[string][]string`.
   - Returns a single combined `*ValidationError`, ensuring all validation failures are delivered simultaneously.
-- **`validateTopicName` Helper**: Added `validateTopicName(topicName string, excludeCode string) error` method to `TopicService` in [topic_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/topic_service.go).
+- **`validateTopicName` Helper**: Added `validateTopicName(topicName string, excludeCode string) error` method to `TopicService` in [topic_service.go](./gin/internal/service/topic_service.go).
   - Queries `T_BUS_TOPIC` for records where `TopicName = ?` and `Status = true`.
   - When `excludeCode` is provided, filters `TopicCode <> excludeCode` to allow updating an existing record without self-conflict.
   - Returns structured `*ValidationError` with key `topic_name` (`"Nama topik '<name>' sudah ada"`).
@@ -374,7 +445,7 @@
   - If `topic_name` is unchanged, duplicate validation passes for its own record. If changed, verifies no other active record uses the new name.
   - Delivers any struct validation errors and duplicate name errors combined.
 - **Verification**:
-  - Added unit test cases in [topic_service_test.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/topic_service_test.go) verifying duplicate rejection on create, update keeping current name, update to duplicate name, update to a new unique name, and multi-error combined delivery on both create and update.
+  - Added unit test cases in [topic_service_test.go](./gin/internal/service/topic_service_test.go) verifying duplicate rejection on create, update keeping current name, update to duplicate name, update to a new unique name, and multi-error combined delivery on both create and update.
   - Verified with `docker compose run --rm gin-build /bin/sh -c "go test -v ./internal/service -run TestTopicService"` (**PASS**) and compiled server binary with `docker compose run --rm gin-build` (**PASS**).
 
 ---
@@ -382,7 +453,7 @@
 ## [Completed] JWT Claims Redis Caching & User Token Eviction (`gin/internal/service/auth_service.go`, `gin/internal/api/middleware/auth.go`, `gin/internal/api/middleware/auth_test.go`)
 
 ### Summary & Changes Made:
-- **`CacheJWTToken` Implementation**: Added `CacheJWTToken(userID int32, tokenString string)` method to `AuthService` in [auth_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/auth_service.go).
+- **`CacheJWTToken` Implementation**: Added `CacheJWTToken(userID int32, tokenString string)` method to `AuthService` in [auth_service.go](./gin/internal/service/auth_service.go).
   - Automatically called before successful return from `Login`.
   - Calculates Redis TTL based on token expiration minus 200ms (`exp - 200ms`).
   - Serializes all JWT claims as JSON and stores under `jwt:token:<token_string>`.
@@ -390,17 +461,17 @@
   - Tracks user's active tokens under Redis set `jwt:user:<userID>:tokens`.
   - When the same user logs in again, all previously cached tokens for that user are evicted (`DEL` on token keys and set key) before caching the new token.
 - **Bypass Signature Parsing in Middleware**:
-  - Updated `AuthMiddleware` in [auth.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/middleware/auth.go).
+  - Updated `AuthMiddleware` in [auth.go](./gin/internal/api/middleware/auth.go).
   - Checks Redis for `jwt:token:<token_string>`. On cache hit, deserializes claims, sets `userID` context key (`c.Set("userID", claims["sub"])`), and calls `c.Next()` immediately (skipping signature parsing & verification).
   - Falls back to standard `jwt.Parse` validation if cache miss occurs or if Redis is unavailable.
-- **Verification**: Added unit test `TestAuthMiddleware_Unauthorized` in [auth_test.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/middleware/auth_test.go) and verified `go test -v ./internal/api/middleware` and `./internal/config`, passing cleanly with 0 errors.
+- **Verification**: Added unit test `TestAuthMiddleware_Unauthorized` in [auth_test.go](./gin/internal/api/middleware/auth_test.go) and verified `go test -v ./internal/api/middleware` and `./internal/config`, passing cleanly with 0 errors.
 
 ---
 
 ## [Completed] Excel Report Download Activation Condition (`vue/src/views/report/UmatReportList.vue` & `vue/src/views/report/SxyReportList.vue`)
 
 ### Summary & Changes Made:
-- **`hasActiveFilter` Computed Property**: Added a `hasActiveFilter` computed property in [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue) and [SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue) that evaluates to `true` only when at least one filter field is active/filled.
+- **`hasActiveFilter` Computed Property**: Added a `hasActiveFilter` computed property in [UmatReportList.vue](./vue/src/views/report/UmatReportList.vue) and [SxyReportList.vue](./vue/src/views/report/SxyReportList.vue) that evaluates to `true` only when at least one filter field is active/filled.
 - **Button Status & Guard Check**: Updated the **Download Report Excel** button `:disabled` state to include `|| !hasActiveFilter`, ensuring the button is disabled when no filters are set. Added a guard check inside `handleDownloadExcel()` showing a warning message if triggered without active filters.
 - **Verification**: Executed `npm run type-check` (`vue-tsc --noEmit`), passing cleanly with 0 errors.
 
@@ -412,13 +483,13 @@
 When network conditions are slow, if a client cancels/aborts a fetch (e.g. component unmounting or user navigation/retry), the Service Worker strategy may still have an orphaned `fetch(request)` in-flight. When the client re-requests the same resource, the SW launched a duplicate network `fetch()`, causing redundant network traffic and wasted bandwidth.
 
 ### Summary & Changes Made:
-- **`fetchDeduplicated` Method**: Implemented `protected fetchDeduplicated(request: Request, handler: StrategyHandler): Promise<Response>` on `DynamicNetworkCacheStrategy` in [dynamicnetworkcache.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/strategies/dynamicnetworkcache.ts).
+- **`fetchDeduplicated` Method**: Implemented `protected fetchDeduplicated(request: Request, handler: StrategyHandler): Promise<Response>` on `DynamicNetworkCacheStrategy` in [dynamicnetworkcache.ts](./vue/src/strategies/dynamicnetworkcache.ts).
 - **In-Flight Request Map**: Uses `protected inFlightRequests: Map<string, Promise<Response>>` to track active in-flight GET/HEAD requests by `${request.method}:${request.url}`.
 - **Promise Re-use & Response Cloning**:
   - When an in-flight fetch promise exists for a request key, returns `existingPromise.then((response) => response.clone())`, allowing concurrent callers to receive independent response stream clones.
   - Automatically cleans up key entries upon settlement via `.finally(() => { this.inFlightRequests.delete(key); })`.
   - Non-GET/HEAD requests fall back directly to standard `handler.fetch(request)`.
-- **`DynamicLowNetworkCacheStrategy` Inheritance**: Updated [dynamiclownetworkcache.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/strategies/dynamiclownetworkcache.ts) to utilize `this.fetchDeduplicated(request, handler)` for both background updates and cache-miss network fetches, automatically extending deduplication benefits to low network strategy mode.
+- **`DynamicLowNetworkCacheStrategy` Inheritance**: Updated [dynamiclownetworkcache.ts](./vue/src/strategies/dynamiclownetworkcache.ts) to utilize `this.fetchDeduplicated(request, handler)` for both background updates and cache-miss network fetches, automatically extending deduplication benefits to low network strategy mode.
 - **Verification**: Verified via `npm run type-check` (`vue-tsc --noEmit`), passing cleanly with 0 type errors.
 
 ---
@@ -426,7 +497,7 @@ When network conditions are slow, if a client cancels/aborts a fetch (e.g. compo
 ## [Completed] `DynamicLowNetworkCacheStrategy` Implementation (`vue/src/strategies/dynamicnetworkcache.ts`)
 
 ### Summary & Changes Made:
-- **`DynamicLowNetworkCacheStrategy`**: Created class inheriting `DynamicNetworkCacheStrategy` in [dynamicnetworkcache.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/strategies/dynamicnetworkcache.ts).
+- **`DynamicLowNetworkCacheStrategy`**: Created class inheriting `DynamicNetworkCacheStrategy` in [dynamicnetworkcache.ts](./vue/src/strategies/dynamicnetworkcache.ts).
 - **Network Detection**: Automatically checks `navigator.connection` (`effectiveType <= 3g` e.g. `'slow-2g'`, `'2g'`, `'3g'` OR `saveData === true`). Falls back to standard `DynamicNetworkCacheStrategy` when network is fast.
 - **Cache-First Priority & Configurable 30m Debounce**:
   - When low network mode is active: if cache is present, returns `cachedResponse` immediately.
@@ -440,7 +511,7 @@ When network conditions are slow, if a client cancels/aborts a fetch (e.g. compo
 ## [Completed] HTTPS Scheme Detection & Port 443 Logging (`gin/internal/api/router.go`)
 
 ### Summary & Changes Made:
-- **`ForwardedHeaderMiddleware`**: Implemented `ForwardedHeaderMiddleware` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go) to inspect `X-Forwarded-Proto`, `X-Forwarded-Scheme`, `X-Forwarded-Ssl`, and `Front-End-Https` headers sent by reverse proxies (such as IIS HttpPlatformHandler).
+- **`ForwardedHeaderMiddleware`**: Implemented `ForwardedHeaderMiddleware` in [router.go](./gin/internal/api/router.go) to inspect `X-Forwarded-Proto`, `X-Forwarded-Scheme`, `X-Forwarded-Ssl`, and `Front-End-Https` headers sent by reverse proxies (such as IIS HttpPlatformHandler).
 - **HTTPS & Port 443 Forced Logging**: Updated `FilterSuccessLogMiddleware` to detect if `Request.URL.Scheme` or `X-Forwarded-Proto` is `"https"` (or `X-Forwarded-Port` is `"443"`), forcing `c.Request.URL.Scheme = "https"` and tagging log lines with `[HTTPS:443]` (or `[HTTPS:443-PANIC]`).
 - **Verification**: Built and verified Go binary via `docker compose run --rm gin-build`, passing with exit code 0.
 
@@ -449,7 +520,7 @@ When network conditions are slow, if a client cancels/aborts a fetch (e.g. compo
 ## [Completed] HTTP Referer Logging in `FilterSuccessLogMiddleware` (`gin/internal/api/router.go`)
 
 ### Summary & Changes Made:
-- **HTTP Referer Logging**: Updated `FilterSuccessLogMiddleware` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go) to capture `c.Request.Referer()`. When the `Referer` header is present, it is automatically appended to `log.Printf` output (`| Ref: <referer_url>`) for both `[HTTP]` status >= 400 and `[PANIC]` log events.
+- **HTTP Referer Logging**: Updated `FilterSuccessLogMiddleware` in [router.go](./gin/internal/api/router.go) to capture `c.Request.Referer()`. When the `Referer` header is present, it is automatically appended to `log.Printf` output (`| Ref: <referer_url>`) for both `[HTTP]` status >= 400 and `[PANIC]` log events.
 - **Verification**: Compiled and verified Go server binary via `docker compose run --rm gin-build`, passing cleanly with exit code 0.
 
 ---
@@ -457,8 +528,8 @@ When network conditions are slow, if a client cancels/aborts a fetch (e.g. compo
 ## [Completed] IIS HttpPlatformHandler & Client IP Extraction (`gin/dist/web.config`, `gin/internal/api/middleware/ratelimit.go`, `gin/internal/api/router.go`)
 
 ### Summary & Changes Made:
-- **`middleware.GetClientIP(c)` Helper**: Created a robust `GetClientIP` function in [ratelimit.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/middleware/ratelimit.go) that checks incoming proxy headers (`X-Forwarded-For`, `X-Real-IP`, `X-ARR-ClientIP`, `X-Original-For`) to resolve the client's actual remote IP, filtering out loopback addresses (`127.0.0.1`, `::1`) and stripping ports via `net.SplitHostPort`.
-- **Rate Limiter & Middleware Integration**: Updated `LoginRateLimiter.GetKey` and `FilterSuccessLogMiddleware` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go) to use `middleware.GetClientIP(c)`.
+- **`middleware.GetClientIP(c)` Helper**: Created a robust `GetClientIP` function in [ratelimit.go](./gin/internal/api/middleware/ratelimit.go) that checks incoming proxy headers (`X-Forwarded-For`, `X-Real-IP`, `X-ARR-ClientIP`, `X-Original-For`) to resolve the client's actual remote IP, filtering out loopback addresses (`127.0.0.1`, `::1`) and stripping ports via `net.SplitHostPort`.
+- **Rate Limiter & Middleware Integration**: Updated `LoginRateLimiter.GetKey` and `FilterSuccessLogMiddleware` in [router.go](./gin/internal/api/router.go) to use `middleware.GetClientIP(c)`.
 - **Gin Proxy Trust Configuration**: Configured `r.ForwardedByClientIP = true` and `r.SetTrustedProxies(nil)` in `NewRouter` to trust proxy headers from upstream reverse proxies without fallback loopback locking.
 - **Verification**: Built and verified Go binary via `docker compose run --rm gin-build`, passing with exit code 0.
 
@@ -474,7 +545,7 @@ When network conditions are slow, if a client cancels/aborts a fetch (e.g. compo
   - Rebalanced Row 3 grid column spans (`Rentang Usia`, `Lulus SD3`, `Vege / Qing Kou`) to `:md="8"` (33.3% width each), filling the row cleanly.
   - Wrapped filter form in `<el-form label-position="top">` to ensure labels sit cleanly above inputs without squeezing controls horizontally.
 - **Usia Filter Initialization & Execution Fix**: Changed `usia_dari` and `usia_sampai` defaults in `filters` reactive state from `0` to `null as number | null` (and added `placeholder="Dari"` / `placeholder="Sampai"`). Updated `fetchData()` and `handleDownloadExcel()` to pass `filters.usia_dari ?? undefined` and `filters.usia_sampai ?? undefined`. This prevents the age filter from automatically triggering for age 0 on initial page load or after clicking Reset Filter.
-- **Pagination Layout String Cleanup**: Fixed redundant pagination layout expression string in [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue), [SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue), and [DonasiSxyList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/transaction/DonasiSxyList.vue) to cleanly evaluate `isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'`.
+- **Pagination Layout String Cleanup**: Fixed redundant pagination layout expression string in [UmatReportList.vue](./vue/src/views/report/UmatReportList.vue), [SxyReportList.vue](./vue/src/views/report/SxyReportList.vue), and [DonasiSxyList.vue](./vue/src/views/transaction/DonasiSxyList.vue) to cleanly evaluate `isDesktop ? 'total, sizes, prev, pager, next, jumper' : 'total, sizes, prev, pager, next'`.
 - **Verification**: Verified via `npm run type-check` (`vue-tsc --noEmit`) and production build (`npm run build`), passing with 0 errors.
 
 ---
@@ -482,7 +553,7 @@ When network conditions are slow, if a client cancels/aborts a fetch (e.g. compo
 ## [Completed] Login Rate Limiter with Redis & Standard Headers (`gin/internal/api/router.go` & `vue/src/views/Login.vue`)
 
 ### Summary & Changes Made:
-- **Rate Limiting Engine**: Implemented `LoginRateLimiter` in [ratelimit.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/middleware/ratelimit.go) using `github.com/ulule/limiter/v3` with Redis store default (`REDIS_ADDR`) and memory store fallback if Redis is unconfigured or unreachable.
+- **Rate Limiting Engine**: Implemented `LoginRateLimiter` in [ratelimit.go](./gin/internal/api/middleware/ratelimit.go) using `github.com/ulule/limiter/v3` with Redis store default (`REDIS_ADDR`) and memory store fallback if Redis is unconfigured or unreachable.
 - **Rule**: 3 failed login attempts per 5 minutes per Client IP.
 - **Standard Headers**: Configured headers on rate limited response:
   - `Retry-After`: Seconds remaining in lockout window.
@@ -494,12 +565,12 @@ When network conditions are slow, if a client cancels/aborts a fetch (e.g. compo
   - Automatically checks `limiter.Peek()` before processing login. If `limCtx.Reached` (count >= 3), returns `HTTP 429 Too Many Requests` with retry headers and error message `"Terlalu banyak percobaan login yang salah. Silakan coba lagi dalam 5 menit."`.
   - On login failure (`401`), increments failed attempt counter (`limiter.Increment()`).
   - On successful login (`200`), resets failed attempt counter (`limiter.Reset()`) so legitimate users are not locked out later.
-- **Docker Compose**: Added `redis` service (`redis:7-alpine`) and set `REDIS_ADDR=redis:6379` for Gin container in [docker-compose.yml](file:///Users/xicond/Workspace/www/GuangJiApps/docker-compose.yml).
-- **Frontend Vue**: Updated [Login.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/Login.vue) and [auth.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/stores/auth.ts) to handle rate limit responses. When 429 / `retry_after` occurs:
+- **Docker Compose**: Added `redis` service (`redis:7-alpine`) and set `REDIS_ADDR=redis:6379` for Gin container in [docker-compose.yml](./docker-compose.yml).
+- **Frontend Vue**: Updated [Login.vue](./vue/src/views/Login.vue) and [auth.ts](./vue/src/stores/auth.ts) to handle rate limit responses. When 429 / `retry_after` occurs:
   - Form inputs and submit button are disabled (`:disabled="loading || isLockedOut"`).
   - A live countdown timer (`formattedCountdown`) is displayed.
   - Automatically re-enables login once the countdown reaches 0 seconds.
-- **Verification**: Tested with unit test `TestLoginRateLimiter` in [router_test.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router_test.go), passing 100%.
+- **Verification**: Tested with unit test `TestLoginRateLimiter` in [router_test.go](./gin/internal/api/router_test.go), passing 100%.
 
 ---
 
@@ -509,7 +580,7 @@ When network conditions are slow, if a client cancels/aborts a fetch (e.g. compo
 When using `VitePWA` with `devOptions.type = 'classic'` and `strategies: 'injectManifest'`, the browser registers the development service worker as a classic script (`type: 'classic'`). However, `dev-sw.js` generated by Vite contains top-level ES `import` statements (e.g. `import { precacheAndRoute ... } from 'workbox-precaching'`), causing the browser to throw `Uncaught SyntaxError: Cannot use import statement outside a module (at dev-sw.js?dev-sw:1:1)`.
 
 ### Solution:
-Updated `devOptions.type` from `'classic'` to `'module'` in [vite.config.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/vite.config.ts).
+Updated `devOptions.type` from `'classic'` to `'module'` in [vite.config.ts](./vue/vite.config.ts).
 This tells `vite-plugin-pwa` to register the service worker as an ES module (`{ type: 'module' }`), allowing ES module `import` statements in `dev-sw.js` during development while building cleanly into bundled `sw.js` for production.
 
 ---
@@ -517,8 +588,8 @@ This tells `vite-plugin-pwa` to register the service worker as an ES module (`{ 
 ## [Completed] Added Debug Logging & Improved Route Matching (`vue/src/sw.ts` & `vue/src/strategies/dynamicnetworkcache.ts`)
 
 ### Changes Made:
-- Added explicit console logging in [sw.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/sw.ts) for matched routes (`[SW Route] Matched /v1/ or /api/: ...`).
-- Added console logging in [dynamicnetworkcache.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/strategies/dynamicnetworkcache.ts) (`[SW DynamicNetworkCacheStrategy] Intercepting: GET ...`).
+- Added explicit console logging in [sw.ts](./vue/src/sw.ts) for matched routes (`[SW Route] Matched /v1/ or /api/: ...`).
+- Added console logging in [dynamicnetworkcache.ts](./vue/src/strategies/dynamicnetworkcache.ts) (`[SW DynamicNetworkCacheStrategy] Intercepting: GET ...`).
 - Expanded route matcher in `sw.ts` to cover both `/v1/` and `/api/` endpoints cleanly under `DynamicNetworkCacheStrategy`.
 
 ---
@@ -647,7 +718,7 @@ Updated all CREATE/UPDATE forms and modal dialogs to disable the form/page durin
 ## [Completed] k6 Load Test Script (`vue/pentest.js`)
 
 ### Changes Made:
-Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJiApps/vue/pentest.js)) to focus strictly on performance load testing matching Postman collection specs:
+Updated `vue/pentest.js` ([pentest.js](./vue/pentest.js)) to focus strictly on performance load testing matching Postman collection specs:
 1. **Authentication Flow**: Login via `POST /login` and extract JWT Bearer token.
 2. **GET Umat Batch Parallel Pagination**: Hits page 1 first to read `meta.total` and determine `totalPages = Math.ceil(meta.total / limit)`. Then fires requests for pages 2 through `totalPages` concurrently in parallel using `http.batch()` without waiting sequentially for each page response.
 3. **Automatic Configuration & Docker Resolution**: Reads `.env` using k6's `open()` helper and resolves backend URLs (`http://gin:8080`) when run inside Docker.
@@ -757,7 +828,7 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 ## [Completed] Persistent Offline Warning Notification (`vue/src/layouts/MainLayout.vue`)
 
 ### Changes Made:
-- Imported `useOnline` from `@vueuse/core` in [MainLayout.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/layouts/MainLayout.vue#L172).
+- Imported `useOnline` from `@vueuse/core` in [MainLayout.vue](./vue/src/layouts/MainLayout.vue#L172).
 - Added reactive watcher on `isOnline`:
   - **When Offline (`isOnline === false`)**: Displays an `ElNotification.warning` with `duration: 0` (persistent notification that stays open until network connectivity returns).
   - **When Online (`isOnline === true`)**: Automatically closes the active offline notification handle via `.close()`.
@@ -768,12 +839,12 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 ## [Completed] PWA Asset Update Detection & Page Change Application (`vue/src/sw.ts` & `vue/src/utils/pwaUpdate.ts`)
 
 ### Changes Made:
-1. **Service Worker Update Broadcast & Skip Waiting** ([sw.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/sw.ts#L25-L45)):
+1. **Service Worker Update Broadcast & Skip Waiting** ([sw.ts](./vue/src/sw.ts#L25-L45)):
    - Added message listener for `SKIP_WAITING` event to immediately activate new Service Workers.
    - Added `activate` event handler broadcasting `{ type: 'SW_UPDATED' }` via `postMessage` to all active window clients when new cached assets are activated.
 
-2. **Router Navigation Update Guard** ([pwaUpdate.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/utils/pwaUpdate.ts)):
-   - Created `initPwaUpdate(router)` utility initialized in [main.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/main.ts#L25).
+2. **Router Navigation Update Guard** ([pwaUpdate.ts](./vue/src/utils/pwaUpdate.ts)):
+   - Created `initPwaUpdate(router)` utility initialized in [main.ts](./vue/src/main.ts#L25).
    - Listens to Workbox `onNeedRefresh` and SW `SW_UPDATED` messages to mark `hasPendingUpdate = true`.
    - On page navigation (`router.beforeEach`), if a SW update is pending, triggers `updateSW(true)` (reloading seamlessly to apply updated assets on page change).
    - Automatically checks `registration.update()` on every route change (`router.afterEach`) to detect newly deployed builds.
@@ -781,10 +852,10 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 
 ---
 
-## [Completed] Umat Image Processing, Cross-Platform Validation & `UmatFoto` One-To-One Record ([umat_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/umat_service.go))
+## [Completed] Umat Image Processing, Cross-Platform Validation & `UmatFoto` One-To-One Record ([umat_service.go](./gin/internal/service/umat_service.go))
 
 ### Changes Made:
-1. **Optional Image Header Processing** ([umat_service.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/umat_service.go)):
+1. **Optional Image Header Processing** ([umat_service.go](./gin/internal/service/umat_service.go)):
    - Updated `UmatService.Create` and `UmatService.Update` signatures to accept `fileHeader *multipart.FileHeader` (allowing `nil`).
 2. **Image Validation Engine**:
    - Max file size limit: 8MB (`8 * 1024 * 1024` bytes).
@@ -805,29 +876,29 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 ## [Completed] Frontend Photo Capture, 2:4 Cropper & Postman Multipart Collection Update
 
 ### Changes Made:
-1. **Postman Collection Update** ([apps-gin.postman_collection.json](file:///Users/xicond/Workspace/www/GuangJiApps/gin/postman/apps-gin.postman_collection.json)):
+1. **Postman Collection Update** ([apps-gin.postman_collection.json](./gin/postman/apps-gin.postman_collection.json)):
    - Added `Umat - Create (Multipart with Photo)` and `Umat - Update (Multipart with Photo)` endpoints with `formdata` containing `"data"` (JSON payload) and `"foto"` (file header).
-2. **Vue Multipart API Support** ([umat.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/api/umat.ts)):
+2. **Vue Multipart API Support** ([umat.ts](./vue/src/api/umat.ts)):
    - Updated `umatApi.createUmat` and `umatApi.updateUmat` to accept optional `photoFile?: File | Blob | null`.
    - Sends `FormData` with `multipart/form-data` content-type header when `photoFile` is present.
-3. **Photo Capture & 2:4 Aspect Ratio Cropper** ([UmatPhotoUpload.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatPhotoUpload.vue)):
+3. **Photo Capture & 2:4 Aspect Ratio Cropper** ([UmatPhotoUpload.vue](./vue/src/components/umat/UmatPhotoUpload.vue)):
    - Installed `vue-advanced-cropper` package.
    - HTML5 File Input with `accept="image/jpeg,image/png,image/webp,image/gif"` and `capture="environment"` for mobile camera and gallery picking.
    - Custom MediaDevices API live camera stream modal (`navigator.mediaDevices.getUserMedia`) for desktop/mobile browser video feed capture.
    - Interactive cropper modal enforcing strict **2:4 aspect ratio** (`aspectRatio: 2/4`) and output resolution.
 4. **Form Integration**:
-   - Embedded `UmatPhotoUpload` into Section 1 of [UmatForm.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatForm.vue).
-   - Updated [UmatCreateList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/UmatCreateList.vue) and [UmatEditList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/UmatEditList.vue) to forward `photoFile` blob to `createUmat` and `updateUmat`.
+   - Embedded `UmatPhotoUpload` into Section 1 of [UmatForm.vue](./vue/src/components/umat/UmatForm.vue).
+   - Updated [UmatCreateList.vue](./vue/src/views/master-data/UmatCreateList.vue) and [UmatEditList.vue](./vue/src/views/master-data/UmatEditList.vue) to forward `photoFile` blob to `createUmat` and `updateUmat`.
 5. **Responsive Layout Tuning**:
-   - Updated `.photo-preview-container` in [UmatPhotoUpload.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatPhotoUpload.vue) to `width: 100%`, `max-width: 210px`, and `aspect-ratio: 3 / 4` for responsive scaling across devices.
+   - Updated `.photo-preview-container` in [UmatPhotoUpload.vue](./vue/src/components/umat/UmatPhotoUpload.vue) to `width: 100%`, `max-width: 210px`, and `aspect-ratio: 3 / 4` for responsive scaling across devices.
 - Verified with `npx vue-tsc --noEmit`, passing cleanly with 0 type errors.
 
 ---
 
-## [Completed] Lazy Rendering Form Cards with `useIntersectionObserver` ([UmatForm.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatForm.vue))
+## [Completed] Lazy Rendering Form Cards with `useIntersectionObserver` ([UmatForm.vue](./vue/src/components/umat/UmatForm.vue))
 
 ### Changes Made:
-1. **Intersection Observer Integration** ([UmatForm.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/umat/UmatForm.vue#L571-L615)):
+1. **Intersection Observer Integration** ([UmatForm.vue](./vue/src/components/umat/UmatForm.vue#L571-L615)):
    - Imported `useIntersectionObserver` from `@vueuse/core`.
    - Created template ref containers (`cardRef2`, `cardRef3`, `cardRef4`) and boolean visibility flags (`isCard2Visible`, `isCard3Visible`, `isCard4Visible`).
    - Attached `useIntersectionObserver` with a `200px` root margin for smooth pre-rendering before entering the viewport, disconnecting each observer (`stop()`) once visible.
@@ -844,11 +915,11 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 
 ### Changes Made:
 - Added `margin-right: 0.75rem;` to `.header-actions` across all 5 Kelas accordion table components to maintain clean spacing between action/refresh buttons and the Element Plus collapse expand arrow:
-  1. [KelasDonasiBarangTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiBarangTable.vue#L348-L353)
-  2. [KelasDonasiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiTable.vue#L357-L362)
-  3. [KelasPengabdiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPengabdiTable.vue#L711-L716)
-  4. [KelasPesertaTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPesertaTable.vue#L668-L673)
-  5. [KelasTopikTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasTopikTable.vue#L603-L608)
+  1. [KelasDonasiBarangTable.vue](./vue/src/components/kelas/KelasDonasiBarangTable.vue#L348-L353)
+  2. [KelasDonasiTable.vue](./vue/src/components/kelas/KelasDonasiTable.vue#L357-L362)
+  3. [KelasPengabdiTable.vue](./vue/src/components/kelas/KelasPengabdiTable.vue#L711-L716)
+  4. [KelasPesertaTable.vue](./vue/src/components/kelas/KelasPesertaTable.vue#L668-L673)
+  5. [KelasTopikTable.vue](./vue/src/components/kelas/KelasTopikTable.vue#L603-L608)
 - Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
 
 ---
@@ -857,16 +928,16 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 
 ### Changes Made:
 - Applied `v-if="isExpanded"` to `<el-tag>` total counter badges in accordion headers across all 5 Kelas table components so the counter is hidden when folded and displayed only when expanded:
-  1. [KelasDonasiBarangTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiBarangTable.vue#L12)
-  2. [KelasDonasiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiTable.vue#L12)
-  3. [KelasPengabdiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPengabdiTable.vue#L12)
-  4. [KelasPesertaTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPesertaTable.vue#L12)
-  5. [KelasTopikTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasTopikTable.vue#L12)
+  1. [KelasDonasiBarangTable.vue](./vue/src/components/kelas/KelasDonasiBarangTable.vue#L12)
+  2. [KelasDonasiTable.vue](./vue/src/components/kelas/KelasDonasiTable.vue#L12)
+  3. [KelasPengabdiTable.vue](./vue/src/components/kelas/KelasPengabdiTable.vue#L12)
+  4. [KelasPesertaTable.vue](./vue/src/components/kelas/KelasPesertaTable.vue#L12)
+  5. [KelasTopikTable.vue](./vue/src/components/kelas/KelasTopikTable.vue#L12)
 - Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
 
 ---
 
-## [Completed] Dynamic Theme-Aware Browser Autofill Styling ([Login.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/Login.vue) & [style.css](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/style.css))
+## [Completed] Dynamic Theme-Aware Browser Autofill Styling ([Login.vue](./vue/src/views/Login.vue) & [style.css](./vue/src/style.css))
 
 ### Changes Made:
 1. **Dynamic CSS Variables for Autofill**:
@@ -875,16 +946,16 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
      - `-webkit-text-fill-color: var(--el-text-color-primary) !important;`
      - `caret-color: var(--el-text-color-primary) !important;`
 2. **Vue Scoped Selector Deep Penetration & Global Fallback**:
-   - Used `:deep(input:-webkit-autofill)` in [Login.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/Login.vue#L216-L229) to pierce Element Plus shadow DOM structure (`.el-input__inner`).
-   - Added global autofill rule to [style.css](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/style.css#L31-L40) ensuring all form input autofills across Light and Dark themes dynamically adapt without hardcoded colors.
+   - Used `:deep(input:-webkit-autofill)` in [Login.vue](./vue/src/views/Login.vue#L216-L229) to pierce Element Plus shadow DOM structure (`.el-input__inner`).
+   - Added global autofill rule to [style.css](./vue/src/style.css#L31-L40) ensuring all form input autofills across Light and Dark themes dynamically adapt without hardcoded colors.
 - Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
 
 ---
 
-## [Completed] Global CORS Allowed Headers Update ([router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go))
+## [Completed] Global CORS Allowed Headers Update ([router.go](./gin/internal/api/router.go))
 
 ### Changes Made:
-- Updated `corsConfig.AllowHeaders` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go#L176-L181) to globally include `User-Agent` and `X-Requested-With` headers alongside `Origin`, `Content-Length`, `Content-Type`, and `Authorization`:
+- Updated `corsConfig.AllowHeaders` in [router.go](./gin/internal/api/router.go#L176-L181) to globally include `User-Agent` and `X-Requested-With` headers alongside `Origin`, `Content-Length`, `Content-Type`, and `Authorization`:
   ```go
   corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "User-Agent", "X-Requested-With"}
   ```
@@ -897,10 +968,10 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 
 ---
 
-## [Completed] Global CORS Allowed Headers Update ([router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go))
+## [Completed] Global CORS Allowed Headers Update ([router.go](./gin/internal/api/router.go))
 
 ### Changes Made:
-- Updated `corsConfig.AllowHeaders` in [router.go](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/api/router.go#L176-L181) to globally include `User-Agent` and `X-Requested-With` headers alongside `Origin`, `Content-Length`, `Content-Type`, and `Authorization`:
+- Updated `corsConfig.AllowHeaders` in [router.go](./gin/internal/api/router.go#L176-L181) to globally include `User-Agent` and `X-Requested-With` headers alongside `Origin`, `Content-Length`, `Content-Type`, and `Authorization`:
   ```go
   corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "User-Agent", "X-Requested-With"}
   ```
@@ -908,18 +979,18 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 
 ---
 
-## [Completed] Programmatic `ElNotification` & `ElMessage` Global CSS Styles Import ([main.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/main.ts))
+## [Completed] Programmatic `ElNotification` & `ElMessage` Global CSS Styles Import ([main.ts](./vue/src/main.ts))
 
 ### Changes Made:
 1. **Global CSS Imports for Programmatic APIs**:
-   - Added explicit imports for Element Plus programmatic feedback components in [main.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/main.ts#L6-L9):
+   - Added explicit imports for Element Plus programmatic feedback components in [main.ts](./vue/src/main.ts#L6-L9):
      - `import 'element-plus/es/components/notification/style/css'`
      - `import 'element-plus/es/components/message/style/css'`
      - `import 'element-plus/es/components/message-box/style/css'`
      - `import 'element-plus/es/components/loading/style/css'`
    - Resolves unstyled/invisible DOM elements when calling `ElNotification` or `ElMessage` from JavaScript/TypeScript code (bypassing `unplugin-vue-components` template scanner).
 2. **Lifecycle Hook Enclosure**:
-   - Enclosed `ElNotification.warning` in [ActivityList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/ActivityList.vue#L336-L342) inside `onMounted()` hook to prevent pre-mount evaluation issues.
+   - Enclosed `ElNotification.warning` in [ActivityList.vue](./vue/src/views/master-data/ActivityList.vue#L336-L342) inside `onMounted()` hook to prevent pre-mount evaluation issues.
 - Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
 
 ---
@@ -927,28 +998,34 @@ Updated `vue/pentest.js` ([pentest.js](file:///Users/xicond/Workspace/www/GuangJ
 ## [Completed] Configurable DNS Pre-cache & Pre-connect via Environment Variables
 
 ### Changes Made:
-1. **Environment Configuration** ([.env.example](file:///Users/xicond/Workspace/www/GuangJiApps/vue/.env.example#L6-L8)):
+1. **Environment Configuration** ([.env.example](./vue/.env.example#L6-L8)):
    - Added `VITE_DNS_PREFETCH` variable to `.env.example` supporting a comma-separated list of domains/origins for DNS prefetching and preconnecting (e.g. `VITE_DNS_PREFETCH=https://speed.cloudflare.com,https://www.guangji.id`).
-2. **Vite HTML Transformation Plugin** ([vite.config.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/vite.config.ts#L50-L80)):
+2. **Vite HTML Transformation Plugin** ([vite.config.ts](./vue/vite.config.ts#L50-L80)):
    - Implemented `dnsPrefetchPlugin` in Vite to read `env.VITE_DNS_PREFETCH`.
    - When set, parses domains and transforms `%VITE_DNS_PREFETCH_TAGS%` placeholder in `index.html` into `<link rel="dns-prefetch" href="...">` and `<link rel="preconnect" href="..." crossorigin />` tags.
    - When empty/not configured, cleanly removes `%VITE_DNS_PREFETCH_TAGS%` without rendering any pre-cache tags or extra whitespace.
-3. **HTML Placeholder** ([index.html](file:///Users/xicond/Workspace/www/GuangJiApps/vue/index.html#L8)):
+3. **HTML Placeholder** ([index.html](./vue/index.html#L8)):
    - Added `%VITE_DNS_PREFETCH_TAGS%` placeholder inside `<head>` in `index.html`.
 - Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
 
 ---
 
-## [Completed] Conditional Tooltip "Do fill filter first" on Report Excel Download Buttons ([SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue) & [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue))
+## [Completed] Conditional Tooltip "Do fill filter first" on Report Excel Download Buttons ([SxyReportList.vue](./vue/src/views/report/SxyReportList.vue) & [UmatReportList.vue](./vue/src/views/report/UmatReportList.vue))
 
 ### Changes Made:
 1. **Conditional Tooltip Integration**:
-   - Wrapped the disabled "Download Report Excel" button in `<el-tooltip content="Do fill filter first" :disabled="!isDownloadTooltipActive" placement="top">` inside a `<span class="download-btn-wrapper">` element in both [SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue#L9-L17) and [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue#L9-L17).
+   - Wrapped the disabled "Download Report Excel" button in `<el-tooltip content="Do fill filter first" :disabled="!isDownloadTooltipActive" placement="top">` inside a `<span class="download-btn-wrapper">` element in both [SxyReportList.vue](./vue/src/views/report/SxyReportList.vue#L9-L17) and [UmatReportList.vue](./vue/src/views/report/UmatReportList.vue#L9-L17).
 2. **Reactive Active Tooltip State**:
    - Defined `isDownloadTooltipActive = computed(() => dataList.value.length > 0 && !hasActiveFilter.value)`.
    - Tooltip displays "Do fill filter first" when data is shown in the table (`dataList.length > 0`) but no filter has been filled (`!hasActiveFilter`).
    - Automatically hides when the user fills any filter or when no dataset is present.
 - Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
+
+
+
+
+
+
 
 
 

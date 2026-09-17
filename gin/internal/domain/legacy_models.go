@@ -307,6 +307,20 @@ type Umat struct {
 	NamaFotangLain      *string   `gorm:"column:NamaFotangLain" json:"nama_fotang_lain" validate:"omitempty,max=50"`
 	NamaTcsLain         *string   `gorm:"column:NamaTcsLain" json:"nama_tcs_lain" validate:"omitempty,max=50"`
 	KodeBuku            *string   `gorm:"column:KodeBuku" json:"kode_buku" validate:"omitempty,max=50"`
+	QRToken             *string   `gorm:"-" json:"qr_token,omitempty"`
+}
+
+type VerifyQRRequest struct {
+	QRToken string `json:"qr_token" validate:"required"`
+}
+
+type VerifyQRResponse struct {
+	Claims        map[string]interface{} `json:"claims"`
+	NamaIndonesia string                 `json:"nama_indonesia"`
+	NamaMandarin  *string                `json:"nama_mandarin"`
+	Alias         *string                `json:"alias"`
+	FotangCiuTao  string                 `json:"fotang_ciu_tao"`
+	FotangAktif   string                 `json:"fotang_aktif"`
 }
 
 func (u *Umat) UnmarshalJSON(data []byte) error {

@@ -25,6 +25,9 @@ export const timKerjaApi = {
 
     const response = await apiClient.get<TimKerjaListResponse>('/v1/tim-kerja', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -37,7 +40,12 @@ export const timKerjaApi = {
     id: string,
     signal?: AbortSignal
   ): Promise<TimKerjaSingleResponse> {
-    const response = await apiClient.get<TimKerjaSingleResponse>(`/v1/tim-kerja/${id}`, { signal })
+    const response = await apiClient.get<TimKerjaSingleResponse>(`/v1/tim-kerja/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 

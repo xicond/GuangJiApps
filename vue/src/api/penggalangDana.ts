@@ -26,6 +26,9 @@ export const penggalangDanaApi = {
 
     const response = await apiClient.get<PenggalangDanaListResponse>('/v1/penggalang-dana', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -38,7 +41,12 @@ export const penggalangDanaApi = {
     id: number | string,
     signal?: AbortSignal
   ): Promise<PenggalangDanaSingleResponse> {
-    const response = await apiClient.get<PenggalangDanaSingleResponse>(`/v1/penggalang-dana/${id}`, { signal })
+    const response = await apiClient.get<PenggalangDanaSingleResponse>(`/v1/penggalang-dana/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 

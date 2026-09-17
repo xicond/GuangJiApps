@@ -10,7 +10,7 @@
         <!-- Kelas Selection (Required) -->
         <el-col :xs="24" :sm="12">
           <el-form-item label="Kelas" prop="kode_kelas" :error="hasFieldError('kode_kelas') ? ' ' : undefined">
-            <LookupSelect v-model="formData.kode_kelas" placeholder="Pilih Kelas..."
+            <LookupSelect v-model="formData.kode_kelas" placeholder="Cari Nama Kelas..."
               :fetch-api="kelasApi.getKelasLookup" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('kode_kelas')" />
           </el-form-item>
@@ -19,7 +19,7 @@
         <!-- Fotang Selection -->
         <el-col :xs="24" :sm="12">
           <el-form-item label="Fotang" prop="kode_fotang" :error="hasFieldError('kode_fotang') ? ' ' : undefined">
-            <LookupSelect v-model="formData.kode_fotang" placeholder="Pilih Fotang..."
+            <LookupSelect v-model="formData.kode_fotang" placeholder="Cari Fotang..."
               :fetch-api="fotangApi.getFotangLookup" :clearable="false" />
             <FieldErrors :errors="getFieldErrors('kode_fotang')" />
           </el-form-item>
@@ -44,7 +44,7 @@
         <el-col :xs="24" :sm="12">
           <el-form-item label="Tingkat / Level" prop="level" :error="hasFieldError('level') ? ' ' : undefined">
             <LookupSelect v-model="formData.level" placeholder="Pilih Level..."
-              :fetch-api="lookupApi.getLookupKelasLevel" :clearable="false" />
+              :fetch-api="lookupApi.getLookupKelasLevel" :clearable="false" auto-populate />
             <FieldErrors :errors="getFieldErrors('level')" />
           </el-form-item>
         </el-col>

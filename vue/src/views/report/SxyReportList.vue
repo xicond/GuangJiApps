@@ -31,15 +31,14 @@
       <el-row :gutter="16" class="filter-row">
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Donatur" :label-position="isMobile ? 'top' : 'right'">
-            <LookupSelect v-model="filters.donatur" placeholder="Pilih Donatur"
-              :fetch-api="sxyDonaturApi.getSxyDonaturs" value-key="id" label-key="nama" clearable
-              @change="onFilterChange" />
+            <LookupSelect v-model="filters.donatur" placeholder="Cari Donatur" :fetch-api="sxyDonaturApi.getSxyDonaturs"
+              value-key="id" label-key="nama" clearable @change="onFilterChange" />
           </el-form-item>
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Penggalang Dana" :label-position="isMobile ? 'top' : 'right'">
-            <LookupSelect v-model="filters.penggalang" placeholder="Pilih Penggalang Dana"
+            <LookupSelect v-model="filters.penggalang" placeholder="Cari Penggalang Dana"
               :fetch-api="penggalangDanaApi.getPenggalangDanas" value-key="id" label-key="nama" clearable
               @change="onFilterChange" />
           </el-form-item>
@@ -47,7 +46,7 @@
 
         <el-col :xs="24" :sm="12" :md="8">
           <el-form-item label="Fotang" :label-position="isMobile ? 'top' : 'right'">
-            <LookupSelect v-model="filters.fotang" placeholder="Pilih Fotang" :fetch-api="fotangApi.getFotangLookupSxy"
+            <LookupSelect v-model="filters.fotang" placeholder="Cari Fotang" :fetch-api="fotangApi.getFotangLookupSxy"
               value-key="lookup_value" label-key="lookup_description" clearable @change="onFilterChange" />
           </el-form-item>
         </el-col>
@@ -142,8 +141,8 @@
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="(!isMobile ? 'total, ->' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          @size-change="handleSizeChange" @current-change="handlePageChange" />
+          :layout="(!isMobile ? 'total, ->,' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next, jumper'"
+          :pager-count="isMobile ? 3 : 6" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
   </div>

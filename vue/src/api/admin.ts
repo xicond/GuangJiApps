@@ -27,6 +27,9 @@ export const adminApi = {
 
     const response = await apiClient.get<AdminListResponse>('/v1/admins', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -39,7 +42,12 @@ export const adminApi = {
     id: number | string,
     signal?: AbortSignal
   ): Promise<AdminSingleResponse> {
-    const response = await apiClient.get<AdminSingleResponse>(`/v1/admins/${id}`, { signal })
+    const response = await apiClient.get<AdminSingleResponse>(`/v1/admins/${id}`, {
+      signal,
+      fetchOptions: {
+        priority: 'high'
+      }
+    })
     return response.data
   },
 
@@ -76,6 +84,9 @@ export const adminApi = {
   async getAdminGroups(signal?: AbortSignal): Promise<AdminGroupListResponse> {
     const response = await apiClient.get<AdminGroupListResponse>('/v1/admin-groups', {
       params: { limit: 100 },
+      fetchOptions: {
+        priority: 'low'
+      },
       signal
     })
     return response.data

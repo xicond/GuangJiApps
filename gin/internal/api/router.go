@@ -137,7 +137,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	adminGroupService := service.NewAdminGroupService(db)
 	groupMenuService := service.NewGroupMenuService(db)
 	adminSubWarehouseService := service.NewAdminSubWarehouseService(db)
-	umatService := service.NewUmatService(db)
+	umatService := service.NewUmatService(db, cfg)
 	topicService := service.NewTopicService(db)
 	kelasMasterService := service.NewKelasMasterService(db)
 	activityService := service.NewActivityService(db)
@@ -680,6 +680,27 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{
 			"data":     result,
 			"resource": "UmatOCR",
+		})
+	})
+	protected.POST("/umats/verify-qr", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		var req domain.VerifyQRRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+		if err := service.ValidateStruct(req); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+		result, err := umatService.VerifyQR(req.QRToken)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"data":     result,
+			"resource": "Umat",
 		})
 	})
 	protected.GET("/umats/:id", func(c *gin.Context) {
@@ -1687,6 +1708,25 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": items, "meta": gin.H{"page": page, "limit": limit, "total": total}, "resource": "KelasPesertaPrevious"})
+	})
+	protected.GET("/kelas/:id/peserta/by-idpeserta/:id_peserta", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		_, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
+			return
+		}
+		_, err = strconv.ParseUint(c.Param("id_peserta"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid Url"})
+			return
+		}
+		item, err := kelasPesertaService.GetByIdPerserta(c.Param("id_peserta"), c.Param("id"))
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": item, "resource": "KelasPeserta"})
 	})
 	protected.GET("/kelas/:id/peserta/:detail_id", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")

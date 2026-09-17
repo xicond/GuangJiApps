@@ -68,6 +68,7 @@ export interface Umat {
   nama_fotang_lain?: string
   nama_tcs_lain?: string
   kode_buku?: string
+  qr_token?: string
 }
 
 export interface UmatQueryParams {

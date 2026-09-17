@@ -26,6 +26,9 @@ export const sxyDonaturApi = {
 
     const response = await apiClient.get<SxyDonaturListResponse>('/v1/sxy-donatur', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -38,7 +41,12 @@ export const sxyDonaturApi = {
     id: number | string,
     signal?: AbortSignal
   ): Promise<SxyDonaturSingleResponse> {
-    const response = await apiClient.get<SxyDonaturSingleResponse>(`/v1/sxy-donatur/${id}`, { signal })
+    const response = await apiClient.get<SxyDonaturSingleResponse>(`/v1/sxy-donatur/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 

@@ -165,14 +165,14 @@
         </el-form-item>
 
         <el-form-item label="Group Admin" prop="group_id">
-          <el-select v-model="formData.group_id" placeholder="Pilih Group Admin" style="width: 100%" filterable>
+          <el-select v-model="formData.group_id" placeholder="Cari Group Admin" style="width: 100%" filterable>
             <el-option v-for="group in groupOptions" :key="group.group_id" :label="group.group_name"
               :value="group.group_id" />
           </el-select>
         </el-form-item>
 
         <el-form-item label="Department" prop="department_id">
-          <el-select v-model="formData.department_id" placeholder="Pilih Department" style="width: 100%" filterable
+          <el-select v-model="formData.department_id" placeholder="Cari Department" style="width: 100%" filterable
             clearable>
             <el-option v-for="department in departmentOptions" :key="department.department_id"
               :label="department.department_name" :value="department.department_id" />

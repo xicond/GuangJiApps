@@ -10,7 +10,7 @@ const THROTTLE_MS = 5000
 export function useQuickStreamSpeedTest() {
     const measureSpeedInOneSecond = async (
         timeLimitMs = 300, // Batasi tepat 300ms
-        fileUrl = 'https://speed.cloudflare.com/__down?bytes=580000' // Gunakan file besar agar tidak habis duluan
+        fileUrl = 'https://speed.cloudflare.com/__down?bytes=1130000' // Gunakan file besar agar tidak habis duluan
     ) => {
         const now = Date.now()
         if (isTesting.value || (now - lastTestTime < THROTTLE_MS)) {
@@ -24,14 +24,35 @@ export function useQuickStreamSpeedTest() {
         let receivedBytes = 0
 
         // Timer untuk membatalkan fetch tepat setelah timeLimitMs
-        const timer = setTimeout(() => {
-            controller.abort()
+        let timer = setTimeout(() => {
+            if (receivedBytes > 0) {
+                controller.abort()
+
+                const endTime = performance.now()
+
+                // Hitung durasi aktual (mendekati 1000ms)
+                const durationSeconds = (endTime - startTime) / 1000
+
+                if (durationSeconds > 0) {
+                    // Rumus: (Total Bytes * 8 bit) / Durasi (detik) / 1,000,000
+                    const totalBits = receivedBytes * 8
+                    const mbps = totalBits / durationSeconds / 1000000
+                    speedMbps.value = parseFloat(mbps.toFixed(2))
+                    console.warn(`[Network Monitor] Speed test ${speedMbps.value}`)
+
+                }
+            } else {
+                timer = setTimeout(() => {
+                    controller.abort()
+                }, timeLimitMs)
+            }
         }, timeLimitMs)
 
         try {
             const response = await fetch(`${fileUrl}&t=${Date.now()}`, {
                 cache: 'no-store',
                 mode: 'cors',
+                priority: 'high',
                 signal: controller.signal // Menghubungkan pembatalan ke fetch
             })
 

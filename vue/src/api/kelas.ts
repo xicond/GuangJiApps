@@ -71,6 +71,9 @@ export const kelasApi = {
 
     const response = await apiClient.get<KelasListResponse>('/v1/kelas', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -83,7 +86,12 @@ export const kelasApi = {
     id: string | number,
     signal?: AbortSignal
   ): Promise<KelasSingleResponse> {
-    const response = await apiClient.get<KelasSingleResponse>(`/v1/kelas/${id}`, { signal })
+    const response = await apiClient.get<KelasSingleResponse>(`/v1/kelas/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 
@@ -92,6 +100,9 @@ export const kelasApi = {
    */
   async downloadReport(id: string | number): Promise<Blob> {
     const response = await apiClient.get(`/v1/kelas/${id}/report`, {
+      fetchOptions: {
+        priority: 'low'
+      },
       responseType: 'blob'
     })
     return response.data
@@ -111,6 +122,9 @@ export const kelasApi = {
     }
     const response = await apiClient.get<KelasPesertaListResponse>(`/v1/kelas/${id}/peserta`, {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -147,7 +161,11 @@ export const kelasApi = {
    * Fetch single KelasPeserta by Detail ID.
    */
   async getKelasPesertaById(id: string | number, kelasId: string | number = 0): Promise<{ data: KelasPeserta }> {
-    const response = await apiClient.get<{ data: KelasPeserta }>(`/v1/kelas/${kelasId}/peserta/${id}`)
+    const response = await apiClient.get<{ data: KelasPeserta }>(`/v1/kelas/${kelasId}/peserta/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      }
+    })
     return response.data
   },
 
@@ -190,6 +208,9 @@ export const kelasApi = {
   ): Promise<KelasPesertaPreviousListResponse> {
     const response = await apiClient.get<KelasPesertaPreviousListResponse>(`/v1/kelas/${id}/peserta/load-previous`, {
       params: { page: params.page || 1, limit: params.limit || 10 },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -214,6 +235,9 @@ export const kelasApi = {
   ): Promise<KelasPengabdiListResponse> {
     const response = await apiClient.get<KelasPengabdiListResponse>(`/v1/kelas/${kelasId}/pengabdi`, {
       params: { page: params.page || 1, limit: params.limit || 10 },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -247,6 +271,9 @@ export const kelasApi = {
   ): Promise<KelasTopikListResponse> {
     const response = await apiClient.get<KelasTopikListResponse>(`/v1/kelas/${kelasId}/topik`, {
       params: { page: params.page || 1, limit: params.limit || 10 },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -280,6 +307,9 @@ export const kelasApi = {
   ): Promise<KelasDonasiListResponse> {
     const response = await apiClient.get<KelasDonasiListResponse>(`/v1/kelas/${kelasId}/donasi`, {
       params: { page: params.page || 1, limit: params.limit || 10 },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -313,6 +343,9 @@ export const kelasApi = {
   ): Promise<KelasDonasiBarangListResponse> {
     const response = await apiClient.get<KelasDonasiBarangListResponse>(`/v1/kelas/${kelasId}/donasi-barang`, {
       params: { page: params.page || 1, limit: params.limit || 10 },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -346,6 +379,9 @@ export const kelasApi = {
   ): Promise<KelasKendaraanListResponse> {
     const response = await apiClient.get<KelasKendaraanListResponse>(`/v1/kelas/${kelasId}/kendaraan`, {
       params: { page: params.page || 1, limit: params.limit || 10 },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -379,6 +415,9 @@ export const kelasApi = {
   ): Promise<KelasPengeluaranListResponse> {
     const response = await apiClient.get<KelasPengeluaranListResponse>(`/v1/kelas/${kelasId}/pengeluaran`, {
       params: { page: params.page || 1, limit: params.limit || 10 },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data

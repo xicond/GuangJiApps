@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -13,10 +14,12 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"guangjiapps/gin/internal/config"
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func setupTestContext() *gin.Context {
@@ -486,3 +489,222 @@ func TestProcessAndSaveUmatFoto_PolyglotNeutralization(t *testing.T) {
 		t.Errorf("expected format png, got %s", format)
 	}
 }
+
+func TestUmatService_QRTokenAndVerifyQR(t *testing.T) {
+	db, err := database.Open("")
+	if err != nil {
+		t.Skipf("skipping test, DB not available: %v", err)
+		return
+	}
+
+	cfg := config.Config{
+		GinMode:   "test",
+		JWTSecret: "../../certs/dev-private-key.pem",
+	}
+
+	svc := NewUmatService(db, cfg)
+
+	mandarin := "測試"
+	alias := "Ah Meng"
+	testUmat := domain.Umat{
+		ID:            8888,
+		NamaIndonesia: "Test QR Umat",
+		NamaMandarin:  &mandarin,
+		Alias:         &alias,
+		FotangChiutao: "001",
+		FotangAktif:   "002",
+		JenisKelamin:  "L",
+	}
+
+	// Clean up and create test record
+	db.Exec("DELETE FROM T_BUS_UMAT WHERE id = ?", testUmat.ID)
+	if err := db.Create(&testUmat).Error; err != nil {
+		t.Fatalf("failed to create test umat: %v", err)
+	}
+	defer db.Exec("DELETE FROM T_BUS_UMAT WHERE id = ?", testUmat.ID)
+
+	catID := "B_FOTHANG"
+	val1 := "001"
+	desc1 := "Fotang Pusat Test"
+	val2 := "002"
+	desc2 := "Fotang Cabang Test"
+	bTrue := true
+
+	db.Exec("DELETE FROM T_APP_LOOKUP WHERE CategoryId = 'B_FOTHANG' AND LookupValue IN ('001', '002')")
+	db.Create(&domain.AppLookup{
+		LookupId:          "FT_TEST_001",
+		CategoryId:        &catID,
+		LookupValue:       &val1,
+		LookupDescription: &desc1,
+		Status:            &bTrue,
+	})
+	db.Create(&domain.AppLookup{
+		LookupId:          "FT_TEST_002",
+		CategoryId:        &catID,
+		LookupValue:       &val2,
+		LookupDescription: &desc2,
+		Status:            &bTrue,
+	})
+	defer db.Exec("DELETE FROM T_APP_LOOKUP WHERE CategoryId = 'B_FOTHANG' AND LookupValue IN ('001', '002')")
+
+	// 1. Test Get returns valid QRToken with umat. prefix
+	item, err := svc.Get("8888")
+	if err != nil {
+		t.Fatalf("svc.Get failed: %v", err)
+	}
+	if item.QRToken == nil || *item.QRToken == "" {
+		t.Fatalf("expected QRToken to be non-empty, got nil or empty")
+	}
+	if !strings.HasPrefix(*item.QRToken, "umat.") {
+		t.Errorf("expected QRToken to start with 'umat.', got '%s'", *item.QRToken)
+	}
+
+	// 2. Test VerifyQR success with all claims and fields returned from DB (with Fotang names from T_APP_LOOKUP)
+	res, err := svc.VerifyQR(*item.QRToken)
+	if err != nil {
+		t.Fatalf("svc.VerifyQR failed with valid token: %v", err)
+	}
+	if res == nil {
+		t.Fatalf("expected VerifyQRResponse, got nil")
+	}
+	if res.NamaIndonesia != "Test QR Umat" {
+		t.Errorf("expected nama_indonesia 'Test QR Umat', got '%s'", res.NamaIndonesia)
+	}
+	if res.NamaMandarin == nil || *res.NamaMandarin != mandarin {
+		t.Errorf("expected nama_mandarin '%s', got '%v'", mandarin, res.NamaMandarin)
+	}
+	if res.Alias == nil || *res.Alias != alias {
+		t.Errorf("expected alias '%s', got '%v'", alias, res.Alias)
+	}
+	if res.FotangCiuTao != "Fotang Pusat Test" {
+		t.Errorf("expected fotang_ciu_tao 'Fotang Pusat Test', got '%s'", res.FotangCiuTao)
+	}
+	if res.FotangAktif != "Fotang Cabang Test" {
+		t.Errorf("expected fotang_aktif 'Fotang Cabang Test', got '%s'", res.FotangAktif)
+	}
+	if res.Claims == nil {
+		t.Fatalf("expected claims to be non-nil")
+	}
+	if _, exists := res.Claims["nama_indonesia"]; exists {
+		t.Errorf("expected claims['nama_indonesia'] to NOT exist in claims, got '%v'", res.Claims["nama_indonesia"])
+	}
+	if _, exists := res.Claims["fotang_ciu_tao"]; exists {
+		t.Errorf("expected claims['fotang_ciu_tao'] to NOT exist in claims, got '%v'", res.Claims["fotang_ciu_tao"])
+	}
+	if _, exists := res.Claims["fotang_aktif"]; exists {
+		t.Errorf("expected claims['fotang_aktif'] to NOT exist in claims, got '%v'", res.Claims["fotang_aktif"])
+	}
+	if _, exists := res.Claims["id"]; exists {
+		t.Errorf("expected claims['id'] to NOT exist in claims, got '%v'", res.Claims["id"])
+	}
+
+	// 2b. Test VerifyQR without 'umat.' prefix also verifies successfully
+	rawToken := strings.TrimPrefix(*item.QRToken, "umat.")
+	resRaw, err := svc.VerifyQR(rawToken)
+	if err != nil {
+		t.Fatalf("svc.VerifyQR failed with raw token without prefix: %v", err)
+	}
+	if resRaw.NamaIndonesia != "Test QR Umat" {
+		t.Errorf("expected nama_indonesia 'Test QR Umat' for raw token, got '%s'", resRaw.NamaIndonesia)
+	}
+
+	// 3. Test VerifyQR error scenarios
+	// Scenario A: Empty token
+	if _, err := svc.VerifyQR(""); err == nil {
+		t.Errorf("expected error for empty token, got nil")
+	}
+
+	// Scenario B: Malformed token
+	if _, err := svc.VerifyQR("malformed.jwt.token"); err == nil {
+		t.Errorf("expected error for malformed token, got nil")
+	}
+
+	// Scenario C: Tampered token signature
+	tampered := *item.QRToken + "tampered"
+	if _, err := svc.VerifyQR(tampered); err == nil {
+		t.Errorf("expected error for tampered token signature, got nil")
+	}
+
+	// Scenario D: Token for non-existent umat
+	nonExistentUmat := domain.Umat{
+		ID:            999999,
+		NamaIndonesia: "Non Existent",
+		FotangChiutao: "001",
+		FotangAktif:   "002",
+	}
+	nonExistentToken, err := svc.GenerateQRToken(nonExistentUmat)
+	if err != nil {
+		t.Fatalf("failed to generate token for non-existent umat: %v", err)
+	}
+	if _, err := svc.VerifyQR(nonExistentToken); err == nil {
+		t.Errorf("expected error when umat not found in DB, got nil")
+	}
+}
+
+func TestUmatService_GenerateQRToken_ClaimsAndPrefix(t *testing.T) {
+	cfg := config.Config{
+		GinMode:   "test",
+		JWTSecret: "../../certs/dev-private-key.pem",
+	}
+	svc := &UmatService{cfg: cfg}
+
+	mandarin := "測試"
+	alias := "Alias"
+	kode := "KD01"
+	u := domain.Umat{
+		ID:            12345,
+		NamaIndonesia: "Test Person",
+		NamaMandarin:  &mandarin,
+		Alias:         &alias,
+		Kode:          &kode,
+		FotangChiutao: "FT01",
+		FotangAktif:   "FT02",
+	}
+
+	tokenStr, err := svc.GenerateQRToken(u)
+	if err != nil {
+		t.Fatalf("GenerateQRToken failed: %v", err)
+	}
+
+	if !strings.HasPrefix(tokenStr, "umat.") {
+		t.Fatalf("expected token to start with 'umat.', got: %s", tokenStr)
+	}
+
+	rawJWT := strings.TrimPrefix(tokenStr, "umat.")
+	vKey, method, err := cfg.GetJWTVerificationKey()
+	if err != nil {
+		t.Fatalf("failed to get verification key: %v", err)
+	}
+
+	parsedToken, err := jwt.Parse(rawJWT, func(tok *jwt.Token) (interface{}, error) {
+		if tok.Method.Alg() != method.Alg() {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return vKey, nil
+	})
+	if err != nil || !parsedToken.Valid {
+		t.Fatalf("failed to parse generated token: %v", err)
+	}
+
+	claims, ok := parsedToken.Claims.(jwt.MapClaims)
+	if !ok {
+		t.Fatalf("expected jwt.MapClaims, got: %T", parsedToken.Claims)
+	}
+
+	// sub must be present
+	subVal, ok := claims["sub"]
+	if !ok {
+		t.Errorf("expected 'sub' claim to be present")
+	} else if fmt.Sprintf("%v", subVal) != "12345" {
+		t.Errorf("expected sub 12345, got %v", subVal)
+	}
+
+	// profile claims must NOT be present
+	unwantedClaims := []string{"id", "nama_indonesia", "fotang_ciu_tao", "fotang_aktif", "nama_mandarin", "alias", "kode"}
+	for _, c := range unwantedClaims {
+		if val, exists := claims[c]; exists {
+			t.Errorf("claim '%s' should NOT exist in QRToken claims, found: %v", c, val)
+		}
+	}
+}
+

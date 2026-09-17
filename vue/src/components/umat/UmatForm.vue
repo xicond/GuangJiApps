@@ -25,6 +25,28 @@
             <UmatPhotoUpload :initial-url="props.initialData.image_path" @change="onPhotoChange" />
             <FieldErrors :errors="getFieldErrors('foto')" />
           </AppFormItem>
+
+          <!-- QR Code Section (shown when qr_token exists) -->
+          <div v-if="qrCodeSvg" class="qr-code-section">
+            <div class="qr-card">
+              <div class="qr-header">
+                <span class="qr-title">QR Code Absensi</span>
+                <el-tooltip content="Unduh QR Code format SVG" placement="top">
+                  <el-button type="primary" link size="small" :icon="Download" @click="downloadQRCode">
+                    SVG
+                  </el-button>
+                </el-tooltip>
+              </div>
+              <div class="qr-svg-wrapper" @click="showQrDialog = true" title="Klik untuk memperbesar">
+                <div v-html="qrCodeSvg" />
+              </div>
+              <div class="qr-footer">
+                <el-button text size="small" :icon="FullScreen" @click="showQrDialog = true">
+                  Perbesar
+                </el-button>
+              </div>
+            </div>
+          </div>
         </el-col>
         <el-col :xs="24" :sm="24" :md="18">
           <el-row :gutter="16">
@@ -187,7 +209,7 @@
           <el-col :xs="24" :sm="12" :md="8">
             <AppFormItem label="Tien Chuan Se (TCS)" prop="tcs" :error="hasFieldError('tcs') ? ' ' : undefined"
               required>
-              <LookupSelect v-model="formData.tcs" placeholder="Pilih TCS" :fetch-api="lookupApi.getLookupTcs"
+              <LookupSelect v-model="formData.tcs" placeholder="Cari TCS" :fetch-api="lookupApi.getLookupTcs"
                 :clearable="false" />
               <FieldErrors :errors="getFieldErrors('tcs')" />
             </AppFormItem>
@@ -371,7 +393,7 @@
         <el-row :gutter="16">
           <el-col :xs="24" :sm="12" :md="12">
             <AppFormItem label="Kelas Umum" prop="kelas_umum" :error="hasFieldError('kelas_umum') ? ' ' : undefined">
-              <LookupSelect v-model="formData.kelas_umum" placeholder="Pilih kelas umum"
+              <LookupSelect v-model="formData.kelas_umum" placeholder="Cari kelas umum"
                 :fetch-api="lookupApi.getLookupKelasUmum" />
               <FieldErrors :errors="getFieldErrors('kelas_umum')" />
             </AppFormItem>
@@ -380,7 +402,7 @@
           <el-col :xs="24" :sm="12" :md="12">
             <AppFormItem label="Kelas Khusus" prop="kelas_khusus"
               :error="hasFieldError('kelas_khusus') ? ' ' : undefined">
-              <LookupSelect v-model="formData.kelas_khusus" placeholder="Pilih kelas khusus"
+              <LookupSelect v-model="formData.kelas_khusus" placeholder="Cari kelas khusus"
                 :fetch-api="lookupApi.getLookupKelas" />
               <FieldErrors :errors="getFieldErrors('kelas_khusus')" />
             </AppFormItem>
@@ -401,7 +423,7 @@
               <el-date-picker v-model="formData.tanggal_sd3" type="date" placeholder="Tanggal Sidang Dharma Pemula"
                 format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!formData.sd3"
                 :single-panel="isMobile" />
-              <LookupSelect v-model="formData.tempat_sd3" placeholder="Pilih tempat Sidang Dharma Pemula"
+              <LookupSelect v-model="formData.tempat_sd3" placeholder="Cari fotang Sidang Dharma Pemula"
                 :fetch-api="fotangApi.getFotangLookup" :disabled="!formData.sd3" class="w-full mt-2" />
               <FieldErrors
                 :errors="getFieldErrors('sd3').concat(getFieldErrors('tanggal_sd3')).concat(getFieldErrors('tempat_sd3'))" />
@@ -420,7 +442,7 @@
               <el-date-picker v-model="formData.tanggal_sd2" type="date" placeholder="Tanggal Fo Kuei Li Cie Pan"
                 format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!formData.sd2"
                 :single-panel="isMobile" />
-              <LookupSelect v-model="formData.tempat_sd2" placeholder="Pilih tempat Fo Kuei Li Cie Pan"
+              <LookupSelect v-model="formData.tempat_sd2" placeholder="Cari fotang Fo Kuei Li Cie Pan"
                 :fetch-api="fotangApi.getFotangLookup" :disabled="!formData.sd2" class="w-full mt-2" />
               <FieldErrors
                 :errors="getFieldErrors('sd2').concat(getFieldErrors('tanggal_sd2')).concat(getFieldErrors('tempat_sd2'))" />
@@ -497,32 +519,32 @@
             </AppFormItem>
           </el-col>
 
-          <!-- Ching Khou -->
+          <!-- Ikrar Vegetarian -->
           <el-col :xs="24" :sm="12" :md="8">
             <AppFormItem prop="ching_khou"
               :error="hasFieldError('ching_khou') || hasFieldError('tanggal_ching_khou') ? ' ' : undefined">
               <template #label>
                 <div @click.stop>
-                  <el-checkbox v-model="formData.ching_khou">Ching Khou</el-checkbox>
+                  <el-checkbox v-model="formData.ching_khou">Ikrar Vegetarian</el-checkbox>
                 </div>
               </template>
-              <el-date-picker v-model="formData.tanggal_ching_khou" type="date" placeholder="Tanggal Ching Khou"
+              <el-date-picker v-model="formData.tanggal_ching_khou" type="date" placeholder="Tanggal Ikrar"
                 format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!formData.ching_khou"
                 :single-panel="isMobile" />
               <FieldErrors :errors="getFieldErrors('ching_khou').concat(getFieldErrors('tanggal_ching_khou'))" />
             </AppFormItem>
           </el-col>
 
-          <!-- An Cuo -->
+          <!-- Nama Cetya Rumah -->
           <el-col :xs="24" :sm="12" :md="8">
             <AppFormItem prop="tanggal_ancuo"
               :error="hasFieldError('tanggal_ancuo') || hasFieldError('nama_cetya_rumah') ? ' ' : undefined">
               <template #label>
                 <div @click.stop>
-                  <el-checkbox v-model="hasAnCuo">An Cuo</el-checkbox>
+                  <el-checkbox v-model="hasAnCuo">Cetya Rumah</el-checkbox>
                 </div>
               </template>
-              <el-date-picker v-model="formData.tanggal_ancuo" type="date" placeholder="Tanggal An Cuo"
+              <el-date-picker v-model="formData.tanggal_ancuo" type="date" placeholder="Tanggal An Than"
                 format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-full" :disabled="!hasAnCuo"
                 :single-panel="isMobile" />
               <AppFormItem prop="nama_cetya_rumah" class="w-full mt-2" style="margin-bottom: 0;">
@@ -585,6 +607,23 @@
       penanggung: 'Penanggung',
       alamat: 'Alamat'
     }" :multiple="false" @select="handleUmatSelected" :width="isMobile ? '90%' : '650px'" />
+
+  <!-- QR Code Modal Dialog -->
+  <el-dialog v-model="showQrDialog" title="QR Code Umat" width="340px" align-center destroy-on-close class="qr-modal">
+    <div class="qr-dialog-content">
+      <div class="qr-dialog-svg" v-html="qrCodeSvg" />
+      <div class="qr-dialog-info">
+        <h4 class="qr-dialog-name">{{ formData.nama_indonesia || 'Umat' }}</h4>
+        <p v-if="formData.alias" class="qr-dialog-alias">{{ formData.alias }}</p>
+        <p v-if="formData.kode" class="qr-dialog-code">Kode: {{ formData.kode }}</p>
+      </div>
+      <div class="qr-dialog-actions">
+        <el-button type="primary" :icon="Download" @click="downloadQRCode">
+          Unduh QR Code (SVG)
+        </el-button>
+      </div>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -592,7 +631,8 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useBreakpoints, breakpointsTailwind, useIntersectionObserver } from '@vueuse/core'
 import dayjs from 'dayjs'
 import type { FormInstance, FormRules } from 'element-plus'
-import { User, Phone, Calendar, Notebook, Check, MoreFilled } from '@element-plus/icons-vue'
+import { User, Phone, Calendar, Notebook, Check, MoreFilled, Download, FullScreen } from '@element-plus/icons-vue'
+import QRCode from 'qrcode'
 import type { Umat } from '../../types/umat'
 import LookupSelect from '../common/LookupSelect.vue'
 import AppFormItem from '../common/AppFormItem.vue'
@@ -767,6 +807,47 @@ watch(
   },
   { immediate: true, deep: true }
 )
+
+// QR Code SVG state & generator
+const qrCodeSvg = ref<string>('')
+const showQrDialog = ref<boolean>(false)
+
+watch(
+  () => formData.value.qr_token || props.initialData?.qr_token,
+  async (token) => {
+    if (token) {
+      try {
+        qrCodeSvg.value = await QRCode.toString(token, {
+          type: 'svg',
+          margin: 1,
+          errorCorrectionLevel: 'M',
+          width: 140
+        })
+      } catch (err) {
+        console.error('Failed to generate QR Code SVG:', err)
+        qrCodeSvg.value = ''
+      }
+    } else {
+      qrCodeSvg.value = ''
+    }
+  },
+  { immediate: true }
+)
+
+function downloadQRCode() {
+  if (!qrCodeSvg.value) return
+  const blob = new Blob([qrCodeSvg.value], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  const safeName = (formData.value.nama_indonesia || formData.value.kode || 'umat')
+    .replace(/[^a-zA-Z0-9_\-]/g, '_')
+  a.download = `qr_${safeName}.svg`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
 
 watch(
   () => formData.value.sd3,
@@ -1056,5 +1137,127 @@ function handleCancel() {
 
 .clickable-umat-input :deep(.el-input__inner) {
   cursor: pointer;
+}
+
+/* QR Code Section & Modal */
+.qr-code-section {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.qr-card {
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  padding: 0.75rem;
+  background-color: var(--el-fill-color-blank);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.qr-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: var(--el-color-primary-light-5);
+}
+
+.qr-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px dashed var(--el-border-color-lighter);
+}
+
+.qr-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--el-text-color-regular);
+}
+
+.qr-svg-wrapper {
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: #ffffff;
+  border-radius: 6px;
+  border: 1px solid var(--el-border-color-extra-light);
+  width: 100%;
+  max-width: 160px;
+}
+
+.qr-svg-wrapper :deep(svg) {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+.qr-footer {
+  margin-top: 0.35rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.qr-dialog-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0 1rem;
+  gap: 1rem;
+}
+
+.qr-dialog-svg {
+  padding: 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 240px;
+}
+
+.qr-dialog-svg :deep(svg) {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+.qr-dialog-info {
+  text-align: center;
+}
+
+.qr-dialog-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin: 0;
+}
+
+.qr-dialog-alias {
+  font-size: 0.9rem;
+  color: var(--el-text-color-secondary);
+  margin: 0.25rem 0 0;
+}
+
+.qr-dialog-code {
+  font-size: 0.85rem;
+  color: var(--el-color-primary);
+  margin: 0.25rem 0 0;
+  font-weight: 500;
+}
+
+.qr-dialog-actions {
+  margin-top: 0.5rem;
 }
 </style>

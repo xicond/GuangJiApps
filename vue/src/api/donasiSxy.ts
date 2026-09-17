@@ -28,6 +28,9 @@ export const donasiSxyApi = {
 
     const response = await apiClient.get<DonasiSxyListResponse>('/v1/donasi-sxy', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -40,7 +43,12 @@ export const donasiSxyApi = {
     id: number,
     signal?: AbortSignal
   ): Promise<DonasiSxySingleResponse> {
-    const response = await apiClient.get<DonasiSxySingleResponse>(`/v1/donasi-sxy/${id}`, { signal })
+    const response = await apiClient.get<DonasiSxySingleResponse>(`/v1/donasi-sxy/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 
@@ -90,6 +98,9 @@ export const donasiSxyApi = {
 
     const response = await apiClient.get<SxyReportListResponse>('/v1/donasi-sxy/report', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -111,6 +122,9 @@ export const donasiSxyApi = {
 
     const response = await apiClient.get<Blob>('/v1/donasi-sxy/report/excel', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'low'
+      },
       responseType: 'blob',
       signal
     })

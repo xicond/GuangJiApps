@@ -76,13 +76,16 @@
 
       <!-- Sub-model Lists -->
       <KelasPesertaTable :kelas-id="kelasId" :kode-kelas="kelasData?.kode_kelas" :start-date="kelasData?.start_date"
-        :end-date="kelasData?.end_date" />
-      <KelasPengabdiTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
-      <KelasTopikTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
-      <KelasKendaraanTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date" />
-      <KelasDonasiTable :kelas-id="kelasId" />
-      <KelasDonasiBarangTable :kelas-id="kelasId" />
-      <!-- <KelasPengeluaranTable :kelas-id="kelasId" /> -->
+        :end-date="kelasData?.end_date" readonly />
+      <KelasPengabdiTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date"
+        readonly />
+      <KelasTopikTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date"
+        readonly />
+      <KelasKendaraanTable :kelas-id="kelasId" :start-date="kelasData?.start_date" :end-date="kelasData?.end_date"
+        readonly />
+      <KelasDonasiTable :kelas-id="kelasId" readonly />
+      <KelasDonasiBarangTable :kelas-id="kelasId" readonly />
+      <!-- <KelasPengeluaranTable :kelas-id="kelasId" readonly /> -->
     </template>
   </div>
 </template>

@@ -26,6 +26,9 @@ export const adminSubWarehouseApi = {
 
     const response = await apiClient.get<AdminSubWarehouseListResponse>('/v1/admin-sub-warehouses', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -38,7 +41,12 @@ export const adminSubWarehouseApi = {
     id: number,
     signal?: AbortSignal
   ): Promise<AdminSubWarehouseSingleResponse> {
-    const response = await apiClient.get<AdminSubWarehouseSingleResponse>(`/v1/admin-sub-warehouses/${id}`, { signal })
+    const response = await apiClient.get<AdminSubWarehouseSingleResponse>(`/v1/admin-sub-warehouses/${id}`, {
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
     return response.data
   },
 

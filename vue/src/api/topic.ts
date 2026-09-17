@@ -26,6 +26,9 @@ export const topicApi = {
 
     const response = await apiClient.get<TopicListResponse>('/v1/topics', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data
@@ -63,6 +66,9 @@ export const topicApi = {
   ): Promise<TopicSingleResponse> {
     const response = await apiClient.get<TopicSingleResponse>('/v1/topic', {
       params: { code: id },
+      fetchOptions: {
+        priority: 'high'
+      },
       signal
     })
     return response.data

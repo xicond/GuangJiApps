@@ -30,27 +30,37 @@ import (
 	"github.com/mozillazg/go-pinyin"
 	"golang.org/x/image/draw"
 
+	"guangjiapps/gin/internal/config"
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
 type UmatService struct {
 	db                   *gorm.DB
+	cfg                  config.Config
 	resource             string
 	reportServerURL      string
 	reportServerUsername string
 	reportServerPassword string
 }
 
-func NewUmatService(db *gorm.DB) *UmatService {
+func NewUmatService(db *gorm.DB, cfgs ...config.Config) *UmatService {
 	if db == nil {
 		db = database.MustOpen("")
 	}
+	var cfg config.Config
+	if len(cfgs) > 0 {
+		cfg = cfgs[0]
+	} else {
+		cfg = config.Load()
+	}
 	return &UmatService{
 		db:                   db,
+		cfg:                  cfg,
 		resource:             "umats",
 		reportServerURL:      getReportServerURL(),
 		reportServerUsername: getReportServerUsername(),
@@ -706,11 +716,175 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 		u := int32(time.Now().Year() - item.TanggalLahir.Year())
 		item.Usia = &u
 	}
+
+	qrToken, err := s.GenerateQRToken(item)
+	if err == nil {
+		item.QRToken = &qrToken
+	} else {
+		log.Printf("[UmatService.Get] GenerateQRToken error: %v", err)
+	}
+
 	// Dont activate this, get from JenisKelaminInfo
 	/* if item.JenisKelaminInfo != nil && item.JenisKelaminInfo.LookupDescription != nil && *item.JenisKelaminInfo.LookupDescription != "" {
 		item.JenisKelamin = *item.JenisKelaminInfo.LookupDescription
 	} */
 	return item, nil
+}
+
+func (s *UmatService) GenerateQRToken(item domain.Umat) (string, error) {
+	key, method, err := s.cfg.GetJWTSigningKey()
+	if err != nil {
+		return "", fmt.Errorf("failed to get JWT signing key: %w", err)
+	}
+
+	claims := jwt.MapClaims{
+		"sub": item.ID,
+	}
+
+	token := jwt.NewWithClaims(method, claims)
+	signed, err := token.SignedString(key)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign JWT token: %w", err)
+	}
+
+	return "umat." + signed, nil
+}
+
+func (s *UmatService) VerifyQR(tokenString string) (*domain.VerifyQRResponse, error) {
+	tokenString = strings.TrimSpace(tokenString)
+	if tokenString == "" {
+		return nil, errors.New("qr_token is required")
+	}
+
+	tokenString = strings.TrimPrefix(tokenString, "umat.")
+	tokenString = strings.TrimSpace(tokenString)
+
+	vKey, method, err := s.cfg.GetJWTVerificationKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get JWT verification key: %w", err)
+	}
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if token.Method.Alg() != method.Alg() {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return vKey, nil
+	}, jwt.WithValidMethods([]string{
+		jwt.SigningMethodRS256.Alg(),
+		jwt.SigningMethodES256.Alg(),
+	}))
+
+	if err != nil || !token.Valid {
+		return nil, errors.New("invalid or expired qr_token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("invalid token claims")
+	}
+
+	var umatIDInt int32
+	parseID := func(val interface{}) int32 {
+		if val == nil {
+			return 0
+		}
+		switch v := val.(type) {
+		case float64:
+			return int32(v)
+		case float32:
+			return int32(v)
+		case int:
+			return int32(v)
+		case int32:
+			return v
+		case int64:
+			return int32(v)
+		case json.Number:
+			if n, err := v.Int64(); err == nil {
+				return int32(n)
+			}
+		case string:
+			if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+				return int32(n)
+			}
+		}
+		return 0
+	}
+
+	if sub, ok := claims["sub"]; ok {
+		umatIDInt = parseID(sub)
+	}
+	if umatIDInt == 0 {
+		if idVal, ok := claims["id"]; ok {
+			umatIDInt = parseID(idVal)
+		}
+	}
+
+	if umatIDInt == 0 {
+		return nil, errors.New("qr_token does not contain valid umat id")
+	}
+
+	var umat domain.Umat
+	if err := s.db.First(&umat, "id = ?", umatIDInt).Error; err != nil {
+		return nil, fmt.Errorf("umat not found: %w", err)
+	}
+
+	fotangCiuTaoName := umat.FotangChiutao
+	fotangAktifName := umat.FotangAktif
+
+	fotangCodes := make([]string, 0, 2)
+	if strings.TrimSpace(umat.FotangChiutao) != "" {
+		fotangCodes = append(fotangCodes, strings.TrimSpace(umat.FotangChiutao))
+	}
+	if strings.TrimSpace(umat.FotangAktif) != "" && strings.TrimSpace(umat.FotangAktif) != strings.TrimSpace(umat.FotangChiutao) {
+		fotangCodes = append(fotangCodes, strings.TrimSpace(umat.FotangAktif))
+	}
+
+	if len(fotangCodes) > 0 {
+		var lookups []domain.AppLookup
+		if err := s.db.Where("CategoryId = ? AND (LookupValue IN (?) OR LookupId IN (?))", "B_FOTHANG", fotangCodes, fotangCodes).
+			Order("Status DESC").
+			Find(&lookups).Error; err == nil {
+			fotangMap := make(map[string]string)
+			for _, l := range lookups {
+				name := ""
+				if l.LookupDescription != nil && strings.TrimSpace(*l.LookupDescription) != "" {
+					name = strings.TrimSpace(*l.LookupDescription)
+				} else if l.LookupValue != nil && strings.TrimSpace(*l.LookupValue) != "" {
+					name = strings.TrimSpace(*l.LookupValue)
+				}
+				if name != "" {
+					if l.LookupValue != nil && *l.LookupValue != "" {
+						if _, exists := fotangMap[strings.TrimSpace(*l.LookupValue)]; !exists {
+							fotangMap[strings.TrimSpace(*l.LookupValue)] = name
+						}
+					}
+					if l.LookupId != "" {
+						if _, exists := fotangMap[strings.TrimSpace(l.LookupId)]; !exists {
+							fotangMap[strings.TrimSpace(l.LookupId)] = name
+						}
+					}
+				}
+			}
+			if name, ok := fotangMap[strings.TrimSpace(umat.FotangChiutao)]; ok && name != "" {
+				fotangCiuTaoName = name
+			}
+			if name, ok := fotangMap[strings.TrimSpace(umat.FotangAktif)]; ok && name != "" {
+				fotangAktifName = name
+			}
+		}
+	}
+
+	res := &domain.VerifyQRResponse{
+		Claims:        claims,
+		NamaIndonesia: umat.NamaIndonesia,
+		NamaMandarin:  umat.NamaMandarin,
+		Alias:         umat.Alias,
+		FotangCiuTao:  fotangCiuTaoName,
+		FotangAktif:   fotangAktifName,
+	}
+
+	return res, nil
 }
 
 func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipart.FileHeader, c *gin.Context) (domain.Umat, error) {

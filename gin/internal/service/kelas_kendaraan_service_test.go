@@ -20,6 +20,8 @@ func TestKelasKendaraanService(t *testing.T) {
 	svc := NewKelasKendaraanService(db)
 	c := setupTestContext()
 
+	c.Set("userID", 12) // user 12 has SUBWHID 12 in T_WH_USER_MATRIX_MST
+
 	// 1. Validation error test - missing TrxId
 	_, err = svc.Create(domain.KelasKendaraan{}, c)
 	if err == nil {
@@ -68,7 +70,29 @@ func TestKelasKendaraanService(t *testing.T) {
 		t.Errorf("expected NoPolisi 'B 5678 EF', got %v", updated.NoPolisi)
 	}
 
-	// 5. Delete
+	// 5. List with matching context userID (mapped to subwhid 12 via AdminMatrix)
+	listItems, total, err := svc.List(c, strconv.Itoa(int(trxId)), 1, 10)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if total == 0 || len(listItems) == 0 {
+		t.Errorf("expected list items > 0, got total=%d, items=%d", total, len(listItems))
+	}
+
+	// List with different userID in context (mapped to different/empty subwhid)
+	cOther := setupTestContext()
+	cOther.Set("userID", 999999)
+	listFiltered, _, err := svc.List(cOther, strconv.Itoa(int(trxId)), 1, 10)
+	if err != nil {
+		t.Fatalf("List with other user context failed: %v", err)
+	}
+	for _, item := range listFiltered {
+		if item.DetailId == created.DetailId {
+			t.Errorf("did not expect created item in listFiltered for userID 999999")
+		}
+	}
+
+	// 6. Delete
 	err = svc.Delete(idStr, c)
 	if err != nil {
 		t.Fatalf("Delete failed: %v", err)

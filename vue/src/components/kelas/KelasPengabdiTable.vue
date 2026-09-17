@@ -12,7 +12,7 @@
               <el-tag v-if="isExpanded && !isMobile" size="small" type="info" class="ml-2">{{ total }} Pengabdi</el-tag>
             </div>
             <div class="header-actions" @click.stop>
-              <el-button type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
+              <el-button v-if="!readonly" type="primary" size="small" :icon="Plus" @click.stop="openAddDialog">
                 {{ isMobile ? '' : 'Tambah Pengabdi' }}
               </el-button>
               <el-button :icon="Refresh" circle size="small" title="Refresh Pengabdi" @click.stop="fetchPengabdi" />
@@ -59,7 +59,8 @@
 
             <el-table-column prop="keterangan" label="Keterangan" min-width="160" />
 
-            <el-table-column label="Aksi" width="90" align="center" :fixed="!isDesktop ? false : 'right'">
+            <el-table-column v-if="!readonly" label="Aksi" width="90" align="center"
+              :fixed="!isDesktop ? false : 'right'">
               <template #default="{ row }">
                 <el-button type="primary" circle size="small" :icon="Edit" @click="openEditDialog(row)" />
                 <el-popconfirm title="Yakin ingin menghapus pengabdi ini?" confirm-button-text="Ya, Hapus"
@@ -102,7 +103,7 @@
 
           <!-- Desktop & Tablet view: custom popup dialog trigger -->
           <div v-else class="desktop-umat-selector">
-            <el-input :model-value="selectedUmatLabel" placeholder="Pilih Umat..." readonly class="clickable-umat-input"
+            <el-input :model-value="selectedUmatLabel" placeholder="Cari Umat..." readonly class="clickable-umat-input"
               @click="openUmatPopup">
               <template #append>
                 <el-button :icon="MoreFilled" title="Buka Pencarian Umat" @click="openUmatPopup">
@@ -117,7 +118,7 @@
           <el-col :md="12" :sm="24">
             <el-form-item label="Tim Kerja" :error="hasFieldError('tim_kerja') ? ' ' : undefined">
               <LookupSelect v-model="form.tim_kerja" :fetch-api="lookupApi.getLookupTimKerja" value-key="lookup_value"
-                placeholder="Pilih Tim Kerja..." :clearable="false" @change="onTimKerjaChange" />
+                placeholder="Pilih Tim Kerja..." :clearable="false" @change="onTimKerjaChange" auto-populate />
               <FieldErrors :errors="getFieldErrors('tim_kerja')" />
             </el-form-item>
           </el-col>
@@ -125,7 +126,7 @@
             <el-form-item label="Sub Kerja" :error="hasFieldError('sub_kerja') ? ' ' : undefined">
               <LookupSelect ref="subKerjaSelectRef" :key="String(form.tim_kerja)" v-model="form.sub_kerja"
                 :fetch-api="fetchSubKerjaApi" :disabled="!form.tim_kerja" value-key="lookup_value"
-                placeholder="Pilih Sub Kerja..." />
+                placeholder="Cari Sub Kerja..." />
               <FieldErrors :errors="getFieldErrors('sub_kerja')" />
             </el-form-item>
           </el-col>
@@ -255,11 +256,17 @@ import type { KelasPengabdi } from '../../types/kelas'
 import type { Umat } from '../../types/umat'
 import type { LookupQueryParams } from '../../types/lookup'
 
-const props = defineProps<{
-  kelasId: string | number
-  startDate?: string
-  endDate?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    kelasId: string | number
+    startDate?: string
+    endDate?: string
+    readonly?: boolean
+  }>(),
+  {
+    readonly: false
+  }
+)
 
 // Initialize breakpoints (Tailwind or custom layout mapping)
 const breakpoints = useBreakpoints(breakpointsTailwind)
@@ -783,8 +790,8 @@ onUnmounted(() => {
 
 .pagination-container {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
+  /* justify-content: flex-end;
+  margin-top: 1rem; */
 }
 
 .desktop-umat-selector {

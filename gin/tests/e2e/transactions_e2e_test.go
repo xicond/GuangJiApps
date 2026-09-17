@@ -207,6 +207,24 @@ func TestKelas_EndToEnd(t *testing.T) {
 				Value("data").Object().
 				Value("detail_id").Number().IsEqual(float64(detailId))
 
+			// GET by id_peserta
+			e.GET("/v1/kelas/" + trxIdStr + "/peserta/by-idpeserta/" + strconv.Itoa(int(testUmatId))).
+				Expect().
+				Status(http.StatusOK).
+				JSON().Object().
+				Value("data").Object().
+				Value("detail_id").Number().IsEqual(float64(detailId))
+
+			// GET by id_peserta - 404 non-existent
+			e.GET("/v1/kelas/" + trxIdStr + "/peserta/by-idpeserta/999999").
+				Expect().
+				Status(http.StatusNotFound)
+
+			// GET by id_peserta - 404 invalid format
+			e.GET("/v1/kelas/" + trxIdStr + "/peserta/by-idpeserta/invalid-id").
+				Expect().
+				Status(http.StatusNotFound)
+
 			// PATCH invalid - 400
 			e.PATCH("/v1/kelas/" + trxIdStr + "/peserta/" + detailStr).
 				WithJSON(factory.KelasPeserta.InvalidUpdatePayload()).

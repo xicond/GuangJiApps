@@ -376,9 +376,9 @@ onUnmounted(() => {
   font-family: monospace;
 }
 
-.pagination-container {
+/* .pagination-container {
   display: flex;
-  /* justify-content: flex-end;
-  margin-top: 1rem; */
-}
+  justify-content: flex-end;
+  margin-top: 1rem;
+} */
 </style>

@@ -42,15 +42,15 @@
               </template>
             </el-table-column>
 
-            <el-table-column prop="fotang_ciutao_desc" label="Fotang Ciu Tao" min-width="150" />
+            <!-- <el-table-column prop="fotang_ciutao_desc" label="Fotang Ciu Tao" min-width="150" /> -->
 
             <el-table-column prop="fotang_aktif_desc" label="Fotang Aktif" min-width="150" />
 
             <el-table-column prop="tanggal_ciu_tao_int" label="Tgl Ciu Tao" width="120" align="center" />
 
-            <el-table-column prop="pengajak" label="Pengajak" min-width="140" />
+            <!-- <el-table-column prop="pengajak" label="Pengajak" min-width="140" /> -->
 
-            <el-table-column prop="penanggung" label="Penanggung" min-width="140" />
+            <!-- <el-table-column prop="penanggung" label="Penanggung" min-width="140" /> -->
 
             <el-table-column label="Status Lulus" width="140" align="center">
               <template #default="{ row }">
@@ -1027,11 +1027,11 @@ onUnmounted(() => {
   color: var(--el-text-color-placeholder);
 }
 
-.pagination-container {
+/* .pagination-container {
   display: flex;
-  /* justify-content: flex-end;
-  margin-top: 1rem; */
-}
+  justify-content: flex-end;
+  margin-top: 1rem;
+} */
 
 .desktop-umat-selector {
   width: 100%;

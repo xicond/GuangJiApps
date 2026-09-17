@@ -788,11 +788,11 @@ onUnmounted(() => {
   color: var(--el-text-color-secondary);
 }
 
-.pagination-container {
+/* .pagination-container {
   display: flex;
-  /* justify-content: flex-end;
-  margin-top: 1rem; */
-}
+  justify-content: flex-end;
+  margin-top: 1rem;
+} */
 
 .desktop-umat-selector {
   width: 100%;

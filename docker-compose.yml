@@ -63,7 +63,7 @@ services:
 
   gin-build:
     profiles: [ "build" ]
-    image: golang:1.25.13-alpine3.24
+    image: golang:1.27.1-alpine3.24
     container_name: gin_build
     working_dir: /src
     environment:

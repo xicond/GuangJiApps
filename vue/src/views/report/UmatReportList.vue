@@ -771,11 +771,11 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-.pagination-container {
+/* .pagination-container {
   display: flex;
-  /* justify-content: flex-end;
-  margin-top: 20px; */
-}
+  justify-content: flex-end;
+  margin-top: 1rem;
+} */
 
 .font-semibold {
   font-weight: 600;

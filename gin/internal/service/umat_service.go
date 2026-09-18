@@ -602,11 +602,8 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 
 	userID := getUserID(c)
 
-	hasPenanggung := payload.Penanggung != nil && string(*payload.Penanggung) != "" && string(*payload.Penanggung) != "0"
-	hasPengajak := payload.Pengajak != nil && string(*payload.Pengajak) != "" && string(*payload.Pengajak) != "0"
-
-	needPenanggung := hasPenanggung
-	needPengajak := hasPengajak
+	needPenanggung := (payload.Penanggung != nil && string(*payload.Penanggung) != "" && string(*payload.Penanggung) != "0") && (payload.PenanggungManual == nil || *payload.PenanggungManual == "")
+	needPengajak := (payload.Pengajak != nil && string(*payload.Pengajak) != "" && string(*payload.Pengajak) != "0") && (payload.PengajakManual == nil || *payload.PengajakManual == "")
 
 	// Goroutine 1: Execute SP_APP_GenerateId concurrently
 	wg.Go(func() {
@@ -718,34 +715,6 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 	if !item.TanggalLahir.IsZero() && item.TanggalLahir.Year() > 1900 {
 		u := int32(time.Now().Year() - item.TanggalLahir.Year())
 		item.Usia = &u
-	}
-
-	// Clean empty or zero Pengajak & Penanggung
-	if item.Pengajak != nil && (*item.Pengajak == "" || *item.Pengajak == "0") {
-		item.Pengajak = nil
-	}
-	if item.Penanggung != nil && (*item.Penanggung == "" || *item.Penanggung == "0") {
-		item.Penanggung = nil
-	}
-
-	// Fallback lookup: if pengajak ID is missing in database but PengajakManual name exists, try to resolve the ID
-	if item.Pengajak == nil && item.PengajakManual != nil && strings.TrimSpace(*item.PengajakManual) != "" {
-		var pengajakUmat domain.Umat
-		manualName := strings.TrimSpace(*item.PengajakManual)
-		if err := s.db.Select("id").Where("namaindonesia = ? OR alias = ? OR namamandarin = ?", manualName, manualName, manualName).Limit(1).Find(&pengajakUmat).Error; err == nil && pengajakUmat.ID > 0 {
-			fs := domain.FlexString(strconv.FormatInt(int64(pengajakUmat.ID), 10))
-			item.Pengajak = &fs
-		}
-	}
-
-	// Fallback lookup: if penanggung ID is missing in database but PenanggungManual name exists, try to resolve the ID
-	if item.Penanggung == nil && item.PenanggungManual != nil && strings.TrimSpace(*item.PenanggungManual) != "" {
-		var penanggungUmat domain.Umat
-		manualName := strings.TrimSpace(*item.PenanggungManual)
-		if err := s.db.Select("id").Where("namaindonesia = ? OR alias = ? OR namamandarin = ?", manualName, manualName, manualName).Limit(1).Find(&penanggungUmat).Error; err == nil && penanggungUmat.ID > 0 {
-			fs := domain.FlexString(strconv.FormatInt(int64(penanggungUmat.ID), 10))
-			item.Penanggung = &fs
-		}
 	}
 
 	qrToken, err := s.GenerateQRToken(item)
@@ -1007,11 +976,8 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 		wg            sync.WaitGroup
 	)
 
-	hasPenanggung := payload.Penanggung != nil && string(*payload.Penanggung) != "" && string(*payload.Penanggung) != "0"
-	hasPengajak := payload.Pengajak != nil && string(*payload.Pengajak) != "" && string(*payload.Pengajak) != "0"
-
-	needPenanggung := hasPenanggung
-	needPengajak := hasPengajak
+	needPenanggung := (payload.Penanggung != nil && string(*payload.Penanggung) != "") && (payload.PenanggungManual == nil || *payload.PenanggungManual == "")
+	needPengajak := (payload.Pengajak != nil && string(*payload.Pengajak) != "") && (payload.PengajakManual == nil || *payload.PengajakManual == "")
 
 	// Goroutine: Lookup Penanggung concurrently if needed
 	if needPenanggung {
@@ -1064,27 +1030,8 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 		return domain.Umat{}, errPengajak
 	}
 
-	if hasPenanggung {
-		item.Penanggung = payload.Penanggung
-		item.PenanggungManual = payload.PenanggungManual
-	} else if payload.PenanggungManual != nil && strings.TrimSpace(*payload.PenanggungManual) != "" {
-		item.Penanggung = nil
-		item.PenanggungManual = payload.PenanggungManual
-	} else {
-		item.Penanggung = nil
-		item.PenanggungManual = nil
-	}
-
-	if hasPengajak {
-		item.Pengajak = payload.Pengajak
-		item.PengajakManual = payload.PengajakManual
-	} else if payload.PengajakManual != nil && strings.TrimSpace(*payload.PengajakManual) != "" {
-		item.Pengajak = nil
-		item.PengajakManual = payload.PengajakManual
-	} else {
-		item.Pengajak = nil
-		item.PengajakManual = nil
-	}
+	item.PenanggungManual = payload.PenanggungManual
+	item.PengajakManual = payload.PengajakManual
 
 	// Legacy metadata mappings
 	item.ModAct = "U"                   // 'U' standard legacy flag for Update

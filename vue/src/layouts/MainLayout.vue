@@ -210,33 +210,34 @@ const cekInternetKilat = async () => {
     return false
   }
 
-  const nav = navigator as any
-  const koneksi = nav.connection || nav.mozConnection || nav.webkitConnection
-  let koneksiType = 'wifi'
-  console.log("connnection type", koneksi.type)
-  if (koneksi && koneksi.type) {
-    koneksiType = koneksi.type === 'cellular' ? 'cell' : 'wifi'
+  // safari iOS not implement navigator.connection, so this'd disabled
+  // const nav = navigator as any
+  // const koneksi = nav.connection || nav.mozConnection || nav.webkitConnection
+  // let koneksiType = 'wifi'
+  // console.log("connnection type", koneksi.type)
+  // if (koneksi && koneksi.type) {
+  //   koneksiType = koneksi.type === 'cellular' ? 'cell' : 'wifi'
+  // }
+
+  // if (koneksiType === 'cell') {
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 1100) // Timeout 200ms
+
+  try {
+    await fetch("https://cp.cloudflare.com/generate_204", {
+      method: "HEAD",
+      mode: "no-cors",
+      cache: "no-store",
+      signal: controller.signal
+    })
+    clearTimeout(timer)
+    return true // Internet aktif
+  } catch (err) {
+    clearTimeout(timer)
+    return false // Terblokir iOS atau masalah jaringan
   }
-
-  if (koneksiType === 'cell') {
-
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 200) // Timeout 200ms
-
-    try {
-      await fetch("https://cp.cloudflare.com/generate_204", {
-        method: "HEAD",
-        mode: "no-cors",
-        cache: "no-store",
-        signal: controller.signal
-      })
-      clearTimeout(timer)
-      return true // Internet aktif
-    } catch (err) {
-      clearTimeout(timer)
-      return false // Terblokir iOS atau masalah jaringan
-    }
-  }
+  // }
 
   return isOnline.value
 
@@ -289,13 +290,13 @@ const isMobile = breakpoints.smaller('md')   // True if width < 768px
 const isTablet = breakpoints.between('md', 'lg')
 
 watch(isOnline, () => {
-  if (!isMobile.value)
-    kelolaNotifikasiBlokir();
+  // if (!isMobile.value || !offlineNotificationHandle)
+  kelolaNotifikasiBlokir();
 }, { immediate: true }) // immediate: true untuk langsung mengecek status saat komponen dimuat
 
 // 5. Lifecycle Hooks untuk Event Listener
 onMounted(() => {
-  if (isMobile.value) return;
+  if (!isMobile.value) return;
 
   // Jalankan cek pertama kali saat halaman dimuat
   kelolaNotifikasiBlokir()

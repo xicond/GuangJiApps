@@ -1628,8 +1628,9 @@ func (s *UmatService) Ocr(file multipart.File, header *multipart.FileHeader, c *
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("OCR.space API error HTTP %d: %s", resp.StatusCode, string(respBody))
+		var errBuf bytes.Buffer
+		_, _ = io.Copy(&errBuf, io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("OCR.space API error HTTP %d: %s", resp.StatusCode, errBuf.String())
 	}
 
 	var result OCRSpaceResult

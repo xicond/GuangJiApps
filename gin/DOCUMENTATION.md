@@ -134,9 +134,32 @@
   - Added unit tests in `umat_service_test.go` ([umat_service_test.go](./gin/internal/service/umat_service_test.go)): `TestUmatService_GenerateQRToken_ClaimsAndPrefix` and updated `TestUmatService_QRTokenAndVerifyQR`.
   - Added E2E acceptance tests in `master_data_e2e_test.go` ([master_data_e2e_test.go](./gin/tests/e2e/master_data_e2e_test.go)) testing `GET /v1/umats/:id` returning `qr_token` and `POST /v1/umats/verify-qr` with HTTP 400 (empty/invalid) and HTTP 200 (valid token with verified claims and fields).
   - Updated Postman collection in `apps-gin.postman_collection.json` ([apps-gin.postman_collection.json](./gin/postman/apps-gin.postman_collection.json)) with sample `qr_token` in `Umat - Get By ID` and `Umat - Verify QR` endpoint with updated prefix and response claims.
+- 99: Filtered `KelasKendaraan` by `subwhid` from context in `KelasKendaraanService.List` ([kelas_kendaraan_service.go](./gin/internal/service/kelas_kendaraan_service.go)):
+  - Updated `KelasKendaraanService.List` signature to accept `c *gin.Context` (`func (s *KelasKendaraanService) List(c *gin.Context, trxID string, page int, limit int)`).
+  - Extracted `userID` from context (`getUserID(c)`) and looked up `SUBWHID` in `AdminMatrix` (`T_WH_USER_MATRIX_MST`).
+  - Added filter `fotang = ?` matching `subwhid` on `T_TRX_KELAS_KENDARAAN` query.
+  - Optimized `Count` and `Find` to run concurrently using `sync.WaitGroup` (`wg.Go`).
+  - Updated `router.go` endpoint `GET /kelas/:id/kendaraan` to pass context `c` to `kelasKendaraanService.List`.
+  - Updated `kelas_kendaraan_service_test.go` to verify subwhid filtering via `AdminMatrix` mapping for matching and non-matching user contexts. Verified with `go test` (**PASS**) and compiled via `docker compose run --rm gin-build` (**PASS**).
+
+- 101: Updated Fail2Ban Middleware debug mode check in `fail2ban.go` ([fail2ban.go](./gin/internal/api/middleware/fail2ban.go)) to use `gin.IsDebugging()` instead of undefined `cfg`. Updated `fail2ban_test.go` ([fail2ban_test.go](./gin/internal/api/middleware/fail2ban_test.go)) test IPs to public test-net IPs (`203.0.113.x`) to validate blocking behavior without being skipped by private network filtering (`parsedIP.IsPrivate()`). Verified with `go test -v ./internal/api/middleware -run TestFail2Ban` (**PASS**) and `docker compose run --rm gin-build` (**PASS**).
+
+- 103: Optimized Donasi SXY Report Stored Procedure (`SP_SXY_RPT_TRANSAKSI`) and Database Indexing:
+  - Diagnosed performance bottleneck on `GET /v1/donasi-sxy/report?page=1&limit=10` (query taking ~314ms to 1200ms+):
+    1. Unindexed 7-column sort (`ORDER BY a.tanggal, b.nama, b.mandarin, d.LookupDescription, c.nama, c.mandarin, a.nokwitansi`) forced SQL Server to materialize and sort all 45,239 records in memory/TempDB before pagination.
+    2. Paged CTE `PagedIDs` joined using `nokwitansi` (`varchar(50)`) instead of clustered primary key `id` (`int`), and unconditionally joined `T_SXY_MST_DONATUR`, `T_SXY_MST_PENGGALANG`, and `T_APP_LOOKUP` (with type mismatch `int` vs `varchar(50)`) even when no filters were applied.
+    3. `SqlGetTotal` unconditionally joined `T_SXY_MST_DONATUR` even when not filtering by `Fotang`.
+    4. Missing index on `T_SXY_TRANSAKSI` status and date ordering.
+    5. `OPTION (RECOMPILE)` forced recompilation on every single execution.
+  - Applied fixes:
+    1. Created nonclustered index: `CREATE NONCLUSTERED INDEX IX_T_SXY_TRANSAKSI_Status_Tanggal ON T_SXY_TRANSAKSI ([STATUS], [tanggal] DESC, [id] DESC)`.
+    2. Refactored `SP_SXY_RPT_TRANSAKSI`: updated CTE `PagedIDs` to select PK `a.id` and order by `a.tanggal DESC, a.id DESC` utilizing index seek/scan; dynamically joined `T_SXY_MST_DONATUR` only when `@Fotang > 0` in both `SqlGetTotal` and `PagedIDs`; removed redundant `LEFT JOIN` on `T_SXY_MST_PENGGALANG` from pagination subquery; removed `OPTION (RECOMPILE)` to enable plan caching; updated `dbo.SP_SXY_RPT_TRANSAKSI.StoredProcedure.sql` in UTF-16LE format.
+  - Verified benchmark results:
+    - Main paging query execution time dropped from 286ms down to 3ms.
+    - Total SP execution time dropped from ~346ms down to ~25ms.
+    - Gin API endpoint `GET /v1/donasi-sxy/report?page=1&limit=10` response latency dropped from ~314ms down to ~31ms (10x faster / 90% reduction).
 
 ## Next recommended steps
 - Replace the placeholder authentication service with SQL Server-backed authentication and stored procedure integration.
 - Add JWT/refresh-token handling and proper middleware.
-
 

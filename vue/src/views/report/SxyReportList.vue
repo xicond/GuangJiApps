@@ -142,7 +142,7 @@
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
           :layout="(!isMobile ? 'total, ->,' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next, jumper'"
-          :pager-count="isMobile ? 3 : 6" @size-change="handleSizeChange" @current-change="handlePageChange" />
+          :pager-count="isMobile ? 5 : 7" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
   </div>
@@ -314,7 +314,8 @@ async function fetchData() {
   if (currentAbortController) {
     currentAbortController.abort()
   }
-  currentAbortController = new AbortController()
+  const controller = new AbortController()
+  currentAbortController = controller
   loading.value = true
 
   try {
@@ -328,17 +329,23 @@ async function fetchData() {
         end_date: filters.end_date,
         fotang: filters.fotang
       },
-      currentAbortController.signal
+      controller.signal
     )
-    dataList.value = res.data || []
-    pagination.total = res.meta?.total || 0
-    totalJumlah.value = res.meta?.total_jumlah || 0
+    if (currentAbortController === controller) {
+      dataList.value = res.data || []
+      pagination.total = res.meta?.total || 0
+      totalJumlah.value = res.meta?.total_jumlah || 0
+    }
   } catch (err: any) {
-    if (err.name === 'CanceledError' || err.name === 'AbortError') return
-    console.error('Error fetching sxy report:', err)
-    ElMessage.error(err.response?.data?.error || err.message || 'Gagal memuat data laporan SXY')
+    if (err.name === 'CanceledError' || err.name === 'AbortError' || err?.code === 'ERR_CANCELED') return
+    if (currentAbortController === controller) {
+      console.error('Error fetching sxy report:', err)
+      ElMessage.error(err.response?.data?.error || err.message || 'Gagal memuat data laporan SXY')
+    }
   } finally {
-    loading.value = false
+    if (currentAbortController === controller) {
+      loading.value = false
+    }
   }
 }
 

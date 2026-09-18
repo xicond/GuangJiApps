@@ -35,7 +35,7 @@ func Open(dsn string) (*gorm.DB, error) {
 	}
 
 	// SetMaxIdleConns keeps connections pre-warmed to eliminate TCP handshake latency.
-	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxIdleConns(8)
 
 	// SetMaxOpenConns sets the maximum number of simultaneous open connections to MSSQL.
 	sqlDB.SetMaxOpenConns(50)
@@ -44,11 +44,11 @@ func Open(dsn string) (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 
 	// SetConnMaxIdleTime closes connections that have been sitting completely unused.
-	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(2 * time.Minute)
 
 	// Pre-warm connection pool asynchronously so active TCP sockets are established before traffic spikes
 	go func() {
-		for i := 0; i < 50; i++ {
+		for i := 0; i < 7; i++ {
 			go func() {
 				var dummy int
 				_ = db.Raw("SELECT 1").Scan(&dummy).Error

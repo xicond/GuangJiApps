@@ -94,7 +94,7 @@
         <el-table-column prop="jumlah" label="Jumlah (Rp)" min-width="150" align="right">
           <template #default="{ row }">
             <span class="font-semibold">{{ row.jumlah ? 'Rp ' + Number(row.jumlah).toLocaleString('id-ID') : '-'
-            }}</span>
+              }}</span>
           </template>
         </el-table-column>
 
@@ -129,7 +129,7 @@
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
           :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
           :layout="(!isMobile ? 'total, ->,' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          :pager-count="6" @size-change="handleSizeChange" @current-change="handlePageChange" />
+          :pager-count="5" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
 
@@ -311,9 +311,11 @@ async function fetchData() {
   if (currentAbortController) {
     currentAbortController.abort()
   }
-  currentAbortController = new AbortController()
+  const controller = new AbortController()
+  currentAbortController = controller
   loading.value = true
-  const [start_date, end_date] = filters.date_range || [null, null]
+
+  const [start_date, end_date] = filters.date_range || []
 
   try {
     const res = await donasiSxyApi.getDonasiSxys(
@@ -325,18 +327,25 @@ async function fetchData() {
         start_date: start_date || undefined,
         end_date: end_date || undefined
       },
-      currentAbortController.signal
+      controller.signal
     )
 
-    dataList.value = res.data || []
-    pagination.total = res.meta?.total || 0
+    if (currentAbortController === controller) {
+      dataList.value = res.data || []
+      pagination.total = res.meta?.total || 0
+    }
   } catch (err: unknown) {
     if (err instanceof Error && (err.name === 'CanceledError' || err.name === 'AbortError')) return
-    console.error('Error fetching data:', err)
-    const errObj = err as { response?: { data?: { error?: string } }; message?: string }
-    ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal memuat data')
+    const errObj = err as { code?: string; response?: { data?: { error?: string } }; message?: string }
+    if (errObj?.code === 'ERR_CANCELED') return
+    if (currentAbortController === controller) {
+      console.error('Error fetching data:', err)
+      ElMessage.error(errObj.response?.data?.error || errObj.message || 'Gagal memuat data')
+    }
   } finally {
-    loading.value = false
+    if (currentAbortController === controller) {
+      loading.value = false
+    }
   }
 }
 

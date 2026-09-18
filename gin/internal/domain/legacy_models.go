@@ -528,12 +528,82 @@ func (d DateOnly) MarshalJSON() ([]byte, error) {
 // Buat custom type untuk string fleksibel
 type FlexString string
 
+// Scan implements sql.Scanner to properly scan strings, integers, bytes, or null from database
+func (fs *FlexString) Scan(value interface{}) error {
+	if value == nil {
+		*fs = ""
+		return nil
+	}
+	switch v := value.(type) {
+	case string:
+		*fs = FlexString(strings.TrimSpace(v))
+	case []byte:
+		*fs = FlexString(strings.TrimSpace(string(v)))
+	case int64:
+		*fs = FlexString(strconv.FormatInt(v, 10))
+	case int32:
+		*fs = FlexString(strconv.FormatInt(int64(v), 10))
+	case int16:
+		*fs = FlexString(strconv.FormatInt(int64(v), 10))
+	case int8:
+		*fs = FlexString(strconv.FormatInt(int64(v), 10))
+	case int:
+		*fs = FlexString(strconv.Itoa(v))
+	case uint64:
+		*fs = FlexString(strconv.FormatUint(v, 10))
+	case uint32:
+		*fs = FlexString(strconv.FormatUint(uint64(v), 10))
+	case uint16:
+		*fs = FlexString(strconv.FormatUint(uint64(v), 10))
+	case uint8:
+		*fs = FlexString(strconv.FormatUint(uint64(v), 10))
+	case uint:
+		*fs = FlexString(strconv.FormatUint(uint64(v), 10))
+	case float64:
+		*fs = FlexString(strconv.FormatInt(int64(v), 10))
+	case float32:
+		*fs = FlexString(strconv.FormatInt(int64(v), 10))
+	default:
+		*fs = FlexString(strings.TrimSpace(fmt.Sprintf("%v", v)))
+	}
+	return nil
+}
+
+// Value implements driver.Valuer for persisting to database
+func (fs FlexString) Value() (driver.Value, error) {
+	str := strings.TrimSpace(string(fs))
+	if str == "" || str == "0" {
+		return nil, nil
+	}
+	return str, nil
+}
+
+// MarshalJSON returns string or null if empty
+func (fs FlexString) MarshalJSON() ([]byte, error) {
+	str := strings.TrimSpace(string(fs))
+	if str == "" || str == "0" {
+		return []byte("null"), nil
+	}
+	return json.Marshal(str)
+}
+
+// String returns string representation
+func (fs FlexString) String() string {
+	return string(fs)
+}
+
 // UnmarshalJSON menangani konversi otomatis dari int/float/string ke FlexString
 func (fs *FlexString) UnmarshalJSON(data []byte) error {
+	trimmed := strings.TrimSpace(string(data))
+	if trimmed == "null" || trimmed == "" || trimmed == `""` || trimmed == "0" || trimmed == `"0"` {
+		*fs = ""
+		return nil
+	}
+
 	// 1. Coba unmarshal sebagai string biasa
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
-		*fs = FlexString(s)
+		*fs = FlexString(strings.TrimSpace(s))
 		return nil
 	}
 

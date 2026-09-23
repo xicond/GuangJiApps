@@ -1479,3 +1479,17 @@ type KelasPesertaPrevious struct {
 	Penanggung       string `gorm:"column:penanggung" json:"penanggung"`
 }
 
+type UmatPopUpResponse struct {
+	Id               int32   `gorm:"column:id" json:"id"`
+	Kode             string  `gorm:"column:kode" json:"kode"`
+	Marga            *string `gorm:"column:marga" json:"marga"`
+	Alias            *string `gorm:"column:alias" json:"alias"`
+	NamaIndonesia    string  `gorm:"column:namaindonesia" json:"nama_indonesia"`
+	NamaMandarin     *string `gorm:"column:namamandarin" json:"nama_mandarin"`
+	Alamat           *string `gorm:"column:alamat" json:"alamat"`
+	FotangAktifDesc  *string `gorm:"column:fotangaktifdesc" json:"fotang_aktif_desc"`
+	FotangCiuTaoDesc *string `gorm:"column:fotangciutaodesc" json:"fotang_ciu_tao_desc"`
+	Pengajak         *string `gorm:"column:pengajak" json:"pengajak"`
+	Penanggung       *string `gorm:"column:penanggung" json:"penanggung"`
+}
+

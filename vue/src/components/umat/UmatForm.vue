@@ -241,14 +241,21 @@
 
 
           <el-col :xs="24" :sm="12" :md="8">
-            <AppFormItem v-if="formData.pengajak || !formData.pengajak_manual" label="Pengajak" prop="pengajak"
-              :error="hasFieldError('pengajak') ? ' ' : undefined" required>
+            <!-- 1. Jika ada pengajak_manual, utamakan input manual -->
+            <!--  <AppFormItem v-if="formData.pengajak_manual" label="Pengajak" prop="pengajak_manual"
+              :error="hasFieldError('pengajak_manual') ? ' ' : undefined" required>
+              <el-input v-model="formData.pengajak_manual" placeholder="Pengajak" />
+              <FieldErrors :errors="getFieldErrors('pengajak_manual')" />
+            </AppFormItem> -->
+
+            <!-- 2. Jika tidak ada pengajak_manual, tampilkan selector -->
+            <AppFormItem label="Pengajak" prop="pengajak" :error="hasFieldError('pengajak') ? ' ' : undefined" required>
               <!-- Mobile view: LookupSelect -->
-              <LookupSelect v-if="isMobile" v-model="formData.pengajak" placeholder="Cari & pilih pengajak"
+              <!-- <LookupSelect v-if="isMobile" v-model="formData.pengajak" placeholder="Cari & pilih pengajak"
                 :fetch-api="umatApi.getUmats" :get-item-api="umatApi.getUmatById" value-key="id"
-                label-key="nama_indonesia" :label-formatter="formatUmatLabel" :clearable="false" />
+                label-key="nama_indonesia" :label-formatter="formatUmatLabel" :clearable="false" /> -->
               <!-- Desktop & Tablet view: custom popup dialog trigger -->
-              <div v-else class="desktop-umat-selector">
+              <div class="desktop-umat-selector">
                 <el-input :model-value="selectedPengajakLabel" placeholder="Pilih Pengajak..." readonly
                   class="clickable-umat-input" @click="openPengajakPopup">
                   <template #append>
@@ -258,23 +265,25 @@
               </div>
               <FieldErrors :errors="getFieldErrors('pengajak')" />
             </AppFormItem>
-
-            <AppFormItem v-else label="Pengajak" prop="pengajak_manual"
-              :error="hasFieldError('pengajak_manual') ? ' ' : undefined" required>
-              <el-input v-model="formData.pengajak_manual" placeholder="Pengajak" />
-              <FieldErrors :errors="getFieldErrors('pengajak_manual')" />
-            </AppFormItem>
           </el-col>
 
           <el-col :xs="24" :sm="12" :md="8">
-            <AppFormItem v-if="formData.penanggung || !formData.penanggung_manual" label="Penanggung" prop="penanggung"
-              :error="hasFieldError('penanggung') ? ' ' : undefined" required>
+            <!-- 1. Jika ada penanggung_manual, utamakan input manual -->
+            <!-- <AppFormItem v-if="formData.penanggung_manual" label="Penanggung" prop="penanggung_manual"
+              :error="hasFieldError('penanggung_manual') ? ' ' : undefined" required>
+              <el-input v-model="formData.penanggung_manual" placeholder="Penanggung" />
+              <FieldErrors :errors="getFieldErrors('penanggung_manual')" />
+            </AppFormItem> -->
+
+            <!-- 2. Jika tidak ada penanggung_manual, tampilkan selector -->
+            <AppFormItem label="Penanggung" prop="penanggung" :error="hasFieldError('penanggung') ? ' ' : undefined"
+              required>
               <!-- Mobile view: LookupSelect -->
-              <LookupSelect v-if="isMobile" v-model="formData.penanggung" placeholder="Cari & pilih penanggung"
+              <!-- <LookupSelect v-if="isMobile" v-model="formData.penanggung" placeholder="Cari & pilih penanggung"
                 :fetch-api="umatApi.getUmats" :get-item-api="umatApi.getUmatById" value-key="id"
-                label-key="nama_indonesia" :label-formatter="formatUmatLabel" :clearable="false" />
+                label-key="nama_indonesia" :label-formatter="formatUmatLabel" :clearable="false" /> -->
               <!-- Desktop & Tablet view: custom popup dialog trigger -->
-              <div v-else class="desktop-umat-selector">
+              <div class="desktop-umat-selector">
                 <el-input :model-value="selectedPenanggungLabel" placeholder="Pilih Penanggung..." readonly
                   class="clickable-umat-input" @click="openPenanggungPopup">
                   <template #append>
@@ -283,12 +292,6 @@
                 </el-input>
               </div>
               <FieldErrors :errors="getFieldErrors('penanggung')" />
-            </AppFormItem>
-
-            <AppFormItem v-else label="Penanggung" prop="penanggung_manual"
-              :error="hasFieldError('penanggung_manual') ? ' ' : undefined" required>
-              <el-input v-model="formData.penanggung_manual" placeholder="Penanggung" />
-              <FieldErrors :errors="getFieldErrors('penanggung_manual')" />
             </AppFormItem>
           </el-col>
 
@@ -589,13 +592,13 @@
   </el-form>
 
   <!-- Custom Popup Dialog Selector for Umat (Desktop/Tablet) -->
-  <UmatPopupSelector v-model="umatPopupVisible" :title="popupTitle" :fetch-api="umatApi.getUmats"
+  <UmatPopupSelector v-model="umatPopupVisible" :title="popupTitle" :fetch-api="umatApi.getUmatsPopup"
     :fetch-fotang-api="lookupApi.getLookupFotang" :filter-name="{
-      namaindonesia: 'Nama Chiu Tao',
-      namamandarin: 'Nama Lain',
+      nama_indonesia: 'Nama Chiu Tao',
+      nama_mandarin: 'Nama Lain',
       alias: 'Alias / Pin Yin'
     }" :filter-fotang="{
-      fotang_chiutao: 'Fotang Ciu Tao',
+      fotang_ciu_tao: 'Fotang Ciu Tao',
       fotang_aktif: 'Fotang Aktif'
     }" :Columns="{
       kode: 'Kode',
@@ -606,7 +609,7 @@
       pengajak: 'Pengajak',
       penanggung: 'Penanggung',
       alamat: 'Alamat'
-    }" :multiple="false" @select="handleUmatSelected" :width="isMobile ? '90%' : '650px'" />
+    }" :multiple="false" @select="handleUmatSelected" :width="!isDesktop ? '90%' : '890px'" />
 
   <!-- QR Code Modal Dialog -->
   <el-dialog v-model="showQrDialog" title="QR Code Umat" width="340px" align-center destroy-on-close class="qr-modal">
@@ -666,7 +669,7 @@ const emit = defineEmits<{
 // Breakpoints layout calculation
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMobile = breakpoints.smaller('md')
-// const isDesktop = breakpoints.greaterOrEqual('lg')
+const isDesktop = breakpoints.greaterOrEqual('lg')
 
 const formRef = ref<FormInstance>()
 const photoFile = ref<Blob | null>(null)
@@ -924,19 +927,6 @@ function trimTargetFields(data: Partial<Umat>): Partial<Umat> {
   return trimmed as Partial<Umat>
 }
 
-// Watch props for initial data updates on edit page
-watch(
-  () => props.initialData,
-  (val) => {
-    if (val && Object.keys(val).length > 0) {
-      const trimmedVal = trimTargetFields(val)
-      formData.value = { ...formData.value, ...trimmedVal }
-      resolveInitialUmatNames()
-    }
-  },
-  { immediate: true, deep: true }
-)
-
 const umatPopupVisible = ref(false)
 const umatPopupTarget = ref<'pengajak' | 'penanggung'>('pengajak')
 
@@ -975,7 +965,9 @@ function handleUmatSelected(selected: Umat) {
 }
 
 async function resolveInitialUmatNames() {
-  if (formData.value.pengajak) {
+  if (formData.value.pengajak_manual) {
+    selectedPengajakLabel.value = String(formData.value.pengajak_manual)
+  } else if (formData.value.pengajak) {
     try {
       const res = await umatApi.getUmatById(formData.value.pengajak)
       if (res.data) {
@@ -990,7 +982,9 @@ async function resolveInitialUmatNames() {
     selectedPengajakLabel.value = ''
   }
 
-  if (formData.value.penanggung) {
+  if (formData.value.penanggung_manual) {
+    selectedPenanggungLabel.value = String(formData.value.penanggung_manual)
+  } else if (formData.value.penanggung) {
     try {
       const res = await umatApi.getUmatById(formData.value.penanggung)
       if (res.data) {
@@ -1005,6 +999,19 @@ async function resolveInitialUmatNames() {
     selectedPenanggungLabel.value = ''
   }
 }
+
+// Watch props for initial data updates on edit page
+watch(
+  () => props.initialData,
+  (val) => {
+    if (val && Object.keys(val).length > 0) {
+      const trimmedVal = trimTargetFields(val)
+      formData.value = { ...formData.value, ...trimmedVal }
+      resolveInitialUmatNames()
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 // Form Validation Rules
 const rules: FormRules = {

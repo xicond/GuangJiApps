@@ -32,6 +32,10 @@ func TestPing(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
+
+	if origin := w.Header().Get("Access-Control-Allow-Origin"); origin != "*" {
+		t.Errorf("expected Access-Control-Allow-Origin: *, got %q", origin)
+	}
 }
 
 func TestLogin(t *testing.T) {

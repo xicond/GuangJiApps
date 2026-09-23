@@ -198,6 +198,11 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('md')   // True if width < 768px
+const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+const isTablet = breakpoints.between('md', 'lg')
+
 // 1. State Jaringan & Notifikasi
 const isOnline = useOnline()
 const isRealInternet = ref(true)
@@ -208,6 +213,10 @@ const cekInternetKilat = async () => {
   if (!isOnline.value) {
     isRealInternet.value = false
     return false
+  }
+
+  if (isDesktop.value) {
+    return isOnline.value
   }
 
   // safari iOS not implement navigator.connection, so this'd disabled
@@ -248,7 +257,7 @@ const kelolaNotifikasiBlokir = async () => {
   const terhubung = await cekInternetKilat()
   isRealInternet.value = terhubung
 
-  if (!terhubung || !isOnline.value) {
+  if (!isOnline.value || !terhubung) {
     // KONDISI: Safari diblokir (Sistem online, internet nyata mati)
     if (!offlineNotificationHandle) {
       offlineNotificationHandle = ElNotification.warning({
@@ -278,16 +287,11 @@ const kelolaNotifikasiBlokir = async () => {
 // 4. Handler saat Browser Kembali Fokus
 const handleBrowserFocus = () => {
   // Hanya jalankan cek jika status dokumen terlihat (active/foreground)
-  if (document.visibilityState === 'visible') {
+  if (document.visibilityState === 'visible' && offlineNotificationHandle) {
     console.log("User kembali ke Safari, memeriksa status izin internet...")
     kelolaNotifikasiBlokir()
   }
 }
-
-const breakpoints = useBreakpoints(breakpointsTailwind)
-const isMobile = breakpoints.smaller('md')   // True if width < 768px
-// const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
-const isTablet = breakpoints.between('md', 'lg')
 
 watch(isOnline, () => {
   // if (!isMobile.value || !offlineNotificationHandle)
@@ -338,7 +342,7 @@ const NOTIFY_THROTTLE_MS = 5000
 watch(lastTestCompletedAt, () => {
 
 
-  if (speedMbps.value !== null && speedMbps.value < 1.6) {
+  if (speedMbps.value !== null && speedMbps.value < 1.1) {
     const now = Date.now()
     if (now - lastNotificationTime >= NOTIFY_THROTTLE_MS) {
       lastNotificationTime = now

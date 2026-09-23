@@ -168,3 +168,34 @@ export interface UmatReportResponse {
   meta: PaginatedMeta
   resource: string
 }
+
+export interface UmatPopUpItem {
+  id: number
+  kode: string
+  marga?: string | null
+  alias?: string | null
+  nama_indonesia: string
+  nama_mandarin?: string | null
+  alamat?: string | null
+  fotang_aktif_desc?: string | null
+  fotang_ciu_tao_desc?: string | null
+  pengajak?: string | null
+  penanggung?: string | null
+}
+
+export interface UmatPopUpQueryParams {
+  page?: number
+  limit?: number
+  nama_indonesia?: string
+  nama_mandarin?: string
+  alias?: string
+  fotang_aktif?: string | number
+  fotang_ciu_tao?: string | number
+}
+
+export interface UmatPopUpResponse {
+  data: UmatPopUpItem[]
+  meta: PaginatedMeta
+  resource: string
+}
+

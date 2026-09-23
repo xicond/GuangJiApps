@@ -46,9 +46,35 @@ apiClient.interceptors.request.use(
 
     const requestId = Math.random().toString(36).substring(2, 9)
     config.metadata = { requestId, startTime: Date.now() }
+
+    const signal = config.signal as AbortSignal | undefined
+    if (signal) {
+      const onAbort = () => {
+        if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+          const fullUrl = apiClient.getUri(config)
+          const msg = {
+            type: 'ABORT_REQUEST',
+            url: fullUrl
+          }
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage(msg)
+          } else {
+            navigator.serviceWorker.ready.then((reg) => {
+              reg.active?.postMessage(msg)
+            }).catch(() => { })
+          }
+        }
+      }
+      if (signal.aborted) {
+        onAbort()
+      } else if (typeof signal.addEventListener === 'function') {
+        signal.addEventListener('abort', onAbort, { once: true })
+      }
+    }
+
     const timer = setTimeout(() => {
       // Pastikan speed test tidak sedang berjalan dan sudah melewati throttle 5s
-      if (canRunTest()) {
+      if (config.fetchOptions?.priority !== 'low' && canRunTest()) {
         console.warn(`[Network Monitor] Request ke ${config.url} berjalan >= 1s. Memicu speed test...`)
         measureSpeedInOneSecond()
       }
@@ -71,6 +97,9 @@ apiClient.interceptors.response.use(
   (error) => {
     clearRequestTimer(error.config)
     if (error.response && error.response.status === 401) {
+      if (error.response.data?.error === 'invalid token') {
+        error.response.data.error = 'login expired'
+      }
       const authStore = useAuthStore()
       authStore.logout()
       if (router.currentRoute.value.name !== 'login') {

@@ -184,9 +184,20 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "User-Agent", "X-Requested-With"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "User-Agent", "X-Requested-With", "X-Request-Id"}
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
 	r.Use(cors.New(corsConfig))
+
+	r.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		if c.Request.Method == http.MethodOptions {
+			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			c.Header("Access-Control-Allow-Headers", "Origin, Content-Length, Content-Type, Authorization, User-Agent, X-Requested-With, X-Request-Id")
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	})
 
 	fail2ban := middleware.GetFail2Ban()
 	r.Use(fail2ban.Middleware())
@@ -644,6 +655,24 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 				"total": total,
 			},
 			"resource": "UmatReport",
+		})
+	})
+	protected.GET("/umats/popup", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_UMAT", UpdatedColumn: "moddate"}), func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		page, limit, filters := parsePaginationAndFilters(c)
+		items, total, err := umatService.PopUp(c, page, filters, limit)
+		if err != nil {
+			respondError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"data": items,
+			"meta": gin.H{
+				"page":  page,
+				"limit": limit,
+				"total": total,
+			},
+			"resource": "UmatPopUp",
 		})
 	})
 	protected.GET("/umats/report/excel", func(c *gin.Context) {
@@ -2035,7 +2064,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasKendaraanService.List(c.Param("id"), page, limit)
+		items, total, err := kelasKendaraanService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return

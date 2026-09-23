@@ -10,7 +10,7 @@ const THROTTLE_MS = 5000
 export function useQuickStreamSpeedTest() {
     const measureSpeedInOneSecond = async (
         timeLimitMs = 300, // Batasi tepat 300ms
-        fileUrl = 'https://speed.cloudflare.com/__down?bytes=1130000' // Gunakan file besar agar tidak habis duluan
+        fileUrl = 'https://httpbin.org/bytes/1130000?' // Gunakan file besar agar tidak habis duluan
     ) => {
         const now = Date.now()
         if (isTesting.value || (now - lastTestTime < THROTTLE_MS)) {
@@ -20,7 +20,7 @@ export function useQuickStreamSpeedTest() {
         isTesting.value = true
 
         const controller = new AbortController()
-        const startTime = performance.now()
+        let startTime = performance.now()
         let receivedBytes = 0
 
         // Timer untuk membatalkan fetch tepat setelah timeLimitMs
@@ -44,7 +44,7 @@ export function useQuickStreamSpeedTest() {
             } else {
                 timer = setTimeout(() => {
                     controller.abort()
-                }, timeLimitMs)
+                }, timeLimitMs * 3)
             }
         }, timeLimitMs)
 
@@ -55,6 +55,7 @@ export function useQuickStreamSpeedTest() {
                 priority: 'high',
                 signal: controller.signal // Menghubungkan pembatalan ke fetch
             })
+            startTime = performance.now()
 
             if (!response.body) throw new Error('ReadableStream tidak didukung.')
 

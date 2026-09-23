@@ -275,6 +275,106 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 	return items, total, nil
 }
 
+func (s *UmatService) PopUp(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.UmatPopUpResponse, int64, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	namaIndo := getFilterOrDefault(filters, []string{"nama_indonesia"}, "")
+	namaMandarin := getFilterOrDefault(filters, []string{"nama_mandarin"}, "")
+	alias := getFilterOrDefault(filters, []string{"alias"}, "")
+	fotangAktif := toInt(getFilterOrDefault(filters, []string{"fotang_aktif"}, "0"))
+	fotangChiuTao := toInt(getFilterOrDefault(filters, []string{"fotang_ciu_tao"}, "0"))
+
+	/* sortDirection := getFilterOrDefault(filters, []string{"sort_direction", "sortDirection", "order", "direction"}, "ASCENDING")
+	if strings.ToUpper(sortDirection) == "DESC" || strings.ToUpper(sortDirection) == "DESCENDING" {
+		sortDirection = "DESCENDING"
+	} else {
+		sortDirection = "ASCENDING"
+	} */
+	sortDirection := "ASCENDING"
+	// sortExpression := getFilterOrDefault(filters, []string{"sort_expression", "sortExpression", "sort", "sortBy"}, "namaindonesia")
+
+	rows, err := s.db.Raw("EXEC dbo.SP_BUS_UMAT_SEARCH_POPUP ?, ?, ?, ?, ?, ?, ?, ?, ?",
+		limit,
+		page,
+		nil,
+		sortDirection,
+		namaIndo,
+		namaMandarin,
+		alias,
+		fotangAktif,
+		fotangChiuTao,
+	).Rows()
+	if err != nil {
+		return nil, 0, fmt.Errorf("database query error: %w", err)
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, 0, fmt.Errorf("database columns error: %w", err)
+	}
+
+	items := make([]domain.UmatPopUpResponse, 0, limit)
+	var total int64
+
+	for rows.Next() {
+		var item domain.UmatPopUpResponse
+		v := reflect.ValueOf(&item).Elem()
+		t := v.Type()
+
+		valuePtrs := make([]interface{}, len(cols))
+		var totalRowScan int64
+
+		for i, colName := range cols {
+			cleanCol := strings.ToLower(strings.TrimSpace(colName))
+
+			switch cleanCol {
+			case "totalrow", "total_row":
+				valuePtrs[i] = &nullFieldScanner{target: &totalRowScan}
+			case "rowno", "row_no":
+				var dummy int64
+				valuePtrs[i] = &nullFieldScanner{target: &dummy}
+			default:
+				matched := false
+				for j := 0; j < t.NumField(); j++ {
+					field := t.Field(j)
+					gormTag := field.Tag.Get("gorm")
+
+					if strings.Contains(strings.ToLower(gormTag), "column:"+cleanCol) ||
+						strings.ToLower(field.Name) == cleanCol {
+						fieldVal := v.Field(j)
+						valuePtrs[i] = &nullFieldScanner{target: fieldVal.Addr().Interface()}
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					var dummy interface{}
+					valuePtrs[i] = &dummy
+				}
+			}
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			log.Printf("[ERROR] Umat PopUp rows.Scan error: %v", err)
+			continue
+		}
+
+		if totalRowScan != 0 {
+			total = totalRowScan
+		}
+
+		items = append(items, item)
+	}
+
+	return items, total, nil
+}
+
 func sanitizeFilename(name string) string {
 	name = strings.ReplaceAll(name, "\\", "/")
 	name = filepath.Base(name)

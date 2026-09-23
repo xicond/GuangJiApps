@@ -708,3 +708,40 @@ func TestUmatService_GenerateQRToken_ClaimsAndPrefix(t *testing.T) {
 	}
 }
 
+func TestUmatService_PopUp(t *testing.T) {
+	db, err := database.Open("")
+	if err != nil {
+		t.Skipf("skipping test, DB not available: %v", err)
+		return
+	}
+
+	svc := NewUmatService(db)
+	c := setupTestContext()
+
+	// Test 1: Query without filters
+	items, total, err := svc.PopUp(c, 1, map[string]string{}, 5)
+	if err != nil {
+		t.Fatalf("failed to call PopUp: %v", err)
+	}
+	if total < 0 {
+		t.Errorf("expected total >= 0, got %d", total)
+	}
+
+	// Test 2: Query with filters
+	filters := map[string]string{
+		"nama_indonesia": "Budi",
+		"fotang_aktif":   "0",
+		"fotang_ciu_tao": "0",
+	}
+	filteredItems, filteredTotal, err := svc.PopUp(c, 1, filters, 5)
+	if err != nil {
+		t.Fatalf("failed to call PopUp with filters: %v", err)
+	}
+	if filteredTotal < 0 {
+		t.Errorf("expected filteredTotal >= 0, got %d", filteredTotal)
+	}
+	_ = items
+	_ = filteredItems
+}
+
+

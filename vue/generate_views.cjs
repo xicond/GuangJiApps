@@ -659,7 +659,7 @@ ${tableColumnsMarkup}
           :page-sizes="[10, 20, 50, 100]"
           :total="pagination.total"
           :layout="(!isMobile ? 'total, ->,' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
-          :pager-count="6"
+          :pager-count="5"
           @size-change="handleSizeChange"
           @current-change="handlePageChange"
         />

@@ -44,6 +44,33 @@ func TestE2E_MasterData(t *testing.T) {
 			Status(http.StatusOK).
 			Header("Content-Type").Contains("spreadsheetml")
 
+		// GET PopUp
+		e.GET("/v1/umats/popup").
+			WithHeader("Authorization", auth).
+			WithQuery("page", 1).
+			WithQuery("limit", 5).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object().
+			ContainsKey("data").
+			Value("meta").Object().
+			Value("total").Number().Ge(0)
+
+		// GET PopUp with filters
+		e.GET("/v1/umats/popup").
+			WithHeader("Authorization", auth).
+			WithQuery("page", 1).
+			WithQuery("limit", 5).
+			WithQuery("nama_indonesia", "Budi").
+			WithQuery("fotang_aktif", 0).
+			WithQuery("fotang_ciu_tao", 0).
+			Expect().
+			Status(http.StatusOK).
+			JSON().Object().
+			ContainsKey("data").
+			Value("meta").Object().
+			Value("total").Number().Ge(0)
+
 		// POST 400
 		e.POST("/v1/umats").
 			WithHeader("Authorization", auth).

@@ -5,7 +5,9 @@ import type {
   UmatListResponse,
   UmatSingleResponse,
   UmatReportQueryParams,
-  UmatReportResponse
+  UmatReportResponse,
+  UmatPopUpQueryParams,
+  UmatPopUpResponse
 } from '../types/umat'
 
 export const umatApi = {
@@ -30,6 +32,35 @@ export const umatApi = {
     })
 
     const response = await apiClient.get<UmatListResponse>('/v1/umats', {
+      params: cleanParams,
+      fetchOptions: {
+        priority: 'high'
+      },
+      signal
+    })
+    return response.data
+  },
+
+  /**
+   * Fetch paginated list of umats for popup selector via SP_BUS_UMAT_SEARCH_POPUP.
+   */
+  async getUmatsPopup(
+    params: UmatPopUpQueryParams = {},
+    signal?: AbortSignal
+  ): Promise<UmatPopUpResponse> {
+    const cleanParams: Record<string, any> = {
+      page: params.page || 1,
+      limit: params.limit || 10
+    }
+
+    Object.keys(params).forEach((key) => {
+      const val = (params as any)[key]
+      if (val !== undefined && val !== null && val !== '') {
+        cleanParams[key] = val
+      }
+    })
+
+    const response = await apiClient.get<UmatPopUpResponse>('/v1/umats/popup', {
       params: cleanParams,
       fetchOptions: {
         priority: 'high'
@@ -151,9 +182,6 @@ export const umatApi = {
 
     const response = await apiClient.get<UmatReportResponse>('/v1/umats/report', {
       params: cleanParams,
-      fetchOptions: {
-        priority: 'high'
-      },
       signal
     })
     return response.data

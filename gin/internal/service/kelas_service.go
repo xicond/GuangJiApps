@@ -128,10 +128,10 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 		"fotang":             true,
 	}
 
-	var kelas string = "0"
-	var start_date string = "2018-07-01"
-	var end_date string = "2026-07-25"
-	var fotang string = "0"
+	var kelas = "0"
+	var start_date = "2018-07-01"
+	var end_date = "2026-07-25"
+	var fotang = "0"
 
 	for field, value := range filters {
 		if value == "" {

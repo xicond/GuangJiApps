@@ -1,3 +1,11 @@
+"""Postman UAT Test and Mock Example Generator.
+
+This script parses the base Postman collection (apps-gin.postman_collection.json.bak),
+attaches comprehensive UAT test assertion scripts (status checks, schema validation,
+performance benchmarks), generates mock example responses for all endpoints, and produces
+the enriched apps-gin.postman_collection.json.
+"""
+
 import json
 import copy
 
@@ -759,7 +767,7 @@ def build_collection():
                 req = item.get('request', {})
                 method = req.get('method', 'GET')
                 total_processed += 1
-                
+
                 # Configure specific item
                 configure_item(item, folder_name, name, method, req, MOCK)
 

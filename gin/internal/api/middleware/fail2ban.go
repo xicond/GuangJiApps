@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Firewall name
 const FixedRuleName = "Golang_Block_0"
 
 // ReadBlockedIPsFromNetsh queries Windows Firewall rule "Golang_Block_0" to parse existing blocked remote IPs.
@@ -126,7 +127,7 @@ func SyncBlockedIPs_Netsh(allIPs []string) error {
 //
 // Returns:
 //   - error: non-nil if firewall command fails.
-func BlockIP_Netsh(ip string) error {
+func BlockIPNetsh(ip string) error {
 	return GetFail2Ban().blockIP(ip)
 }
 

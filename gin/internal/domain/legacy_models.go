@@ -1100,8 +1100,17 @@ func (KelasPeserta) TableName() string {
 	return "T_TRX_KELAS_PESERTA"
 }
 
-// UnmarshalJSON custom unmarshaler for KelasPeserta to enforce single umat ID
+// UnmarshalJSON implements custom JSON unmarshaling for KelasPeserta,
+// ensuring id_peserta is parsed as a single integer and rejecting arrays.
+//
+// Parameters:
+//   - data: raw JSON bytes.
+//
+// Returns:
+//   - error: non-nil if JSON is invalid or id_peserta is invalid.
 func (p *KelasPeserta) UnmarshalJSON(data []byte) error {
+	// auxKelasPeserta is an auxiliary deserialization struct that temporarily captures
+	// raw JSON payload representations of single participant attributes before type coercion.
 	type auxKelasPeserta struct {
 		DetailId        int32           `json:"detail_id"`
 		TrxId           int32           `json:"trx_id"`

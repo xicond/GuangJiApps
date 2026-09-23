@@ -4,7 +4,7 @@
 
 #/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd123" -C
 
-CONTAINER_NAME="mssql_server"
+#CONTAINER_NAME="mssql_server"
 SA_PASSWORD="YourStrong@Passw0rd123"
 DB_NAME="guangji"
 BACKUP_FILE="/var/opt/mssql/backup/db_20260907"

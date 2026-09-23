@@ -417,11 +417,11 @@ func (s *DonasiSxyService) Report(page int, filters map[string]string, limit int
 		"fotang":     true,
 	}
 
-	var donatur int = 0
-	var penggalang int = 0
-	var startDate interface{} = nil
-	var endDate interface{} = nil
-	var fotang int = 0
+	var donatur int
+	var penggalang int
+	var startDate interface{}
+	var endDate interface{}
+	var fotang int
 
 	for field, value := range filters {
 		if value == "" {

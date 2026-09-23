@@ -276,8 +276,13 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 }
 
 func (s *UmatService) PopUp(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.UmatPopUpResponse, int64, error) {
+	const defaultLimit = 10
+	const maxLimit = 1000
+
 	if limit <= 0 {
-		limit = 10
+		limit = defaultLimit
+	} else if limit > maxLimit {
+		limit = maxLimit
 	}
 	if page <= 0 {
 		page = 1

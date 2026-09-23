@@ -26,6 +26,7 @@ This project is a complete modernization and migration from a legacy **.NET Fram
     - [Frontend (Vue 3 / TypeScript)](#frontend-vue-3--typescript)
     - [Documentation \& Workflow](#documentation--workflow)
   - [Postman API Collection \& Testing](#postman-api-collection--testing)
+  - [License](#license)
 
 ---
 
@@ -313,3 +314,19 @@ A complete Postman test suite and environment configuration is maintained under 
   - **Auto-Login Pre-Request Script**: Automatically detects missing tokens, executes login with default credentials, and sets the `Authorization` header.
   - **HTTP 401 Auto-Retry**: Automatically re-authenticates and retries the original request if an authorization token expires.
   - **Full UAT Coverage**: 100% of endpoints include automated test assertions and mock response examples.
+
+---
+
+## License
+
+This software is governed by a **Custom Proprietary & Restricted License**, available in 3 language editions:
+- [English (en)](./LICENSE.md)
+- [Bahasa Indonesia (id)](./LICENSE.id.md)
+- [简体中文 (zh)](./LICENSE.zh.md)
+
+Key Terms:
+- Specifically designated for authorized non-profit foundations with prior written permission from the Developer.
+- Testing, integration evaluations, and security audits within authorized environments are permitted.
+- Duplication, public cloning, redistribution, commercialization, or derivative distribution of this repository is strictly prohibited without prior written consent from the Developer.
+
+

@@ -24,8 +24,8 @@ def forge_token(user_id: int, hours_valid: int = 24) -> str:
         "exp": int((now + timedelta(hours=hours_valid)).timestamp()),
         "iat": int(now.timestamp())
     }
-    token = pyjwt.encode(payload, priv_key, algorithm="RS256")
-    return token
+    token_jwt = pyjwt.encode(payload, priv_key, algorithm="RS256")
+    return token_jwt
 
 if __name__ == "__main__":
     print("[*] Validating JWT forgery using committed private key")

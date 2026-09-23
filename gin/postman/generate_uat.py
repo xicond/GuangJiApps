@@ -950,19 +950,19 @@ def configure_item(item, folder, name, method, req, MOCK):
         elif "Admin Groups" in name:
             res_key = "admin_group"
             res_label = "Admin Group"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Group Menu Mappings" in name:
             res_key = "group_menu"
             res_label = "Group Menu Mapping"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Admin Sub Warehouses" in name:
             res_key = "admin_sub_warehouse"
             res_label = "Admin Sub Warehouse"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Admins" in name:
             res_key = "admin"
             res_label = "Admin"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
 
     # 3. MASTER DATA FOLDER
     elif folder == "Master Data":
@@ -1004,19 +1004,19 @@ def configure_item(item, folder, name, method, req, MOCK):
         elif "Umat" in name:
             res_key = "umat"
             res_label = "Umat"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Topics" in name:
             res_key = "topic"
             res_label = "Topic"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Kelas Master" in name:
             res_key = "kelas_master"
             res_label = "KelasMaster"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Activity" in name or "Activities" in name:
             res_key = "activity"
             res_label = "Activity"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Tim Kerja" in name:
             if "Lookup" in name:
                 tests = make_get_lookup_test("Tim Kerja")
@@ -1026,19 +1026,19 @@ def configure_item(item, folder, name, method, req, MOCK):
             else:
                 res_key = "tim_kerja"
                 res_label = "Tim Kerja"
-                handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+                handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Tahun Ciu Tao" in name:
             res_key = "tahun_ciu_tao"
             res_label = "Tahun Ciu Tao"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Penggalang Dana" in name:
             res_key = "penggalang_dana"
             res_label = "Penggalang Dana"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Sxy Donatur" in name:
             res_key = "sxy_donatur"
             res_label = "Sxy Donatur"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Fotang" in name:
             tests = make_get_lookup_test("Fotang")
             responses = [
@@ -1078,7 +1078,7 @@ def configure_item(item, folder, name, method, req, MOCK):
         elif "Donasi Sxy" in name:
             res_key = "donasi_sxy"
             res_label = "Donasi Sxy"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif name == "Kelas - Lookup":
             tests = make_get_lookup_test("Kelas")
             responses = [
@@ -1108,7 +1108,7 @@ def configure_item(item, folder, name, method, req, MOCK):
         elif "Kelas Peserta" in name:
             res_key = "kelas_peserta"
             res_label = "KelasPeserta"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
         elif "Kelas Pengabdi" in name:
             if method == "GET":
                 tests = make_get_list_test("Kelas Pengabdi")
@@ -1178,7 +1178,7 @@ def configure_item(item, folder, name, method, req, MOCK):
         elif "Kelas" in name:
             res_key = "kelas"
             res_label = "Kelas"
-            handle_crud(item, name, method, req, res_key, res_label, MOCK, tests, responses)
+            handle_crud(name, method, req, res_key, res_label, MOCK, tests, responses)
 
     # Attach tests and responses to item
     if tests:
@@ -1186,11 +1186,10 @@ def configure_item(item, folder, name, method, req, MOCK):
     if responses:
         item["response"] = responses
 
-def handle_crud(item, name, method, req, res_key, res_label, MOCK, tests_out, responses_out):
+def handle_crud(name, method, req, res_key, res_label, MOCK, tests_out, responses_out):
     """Configure standard CRUD tests and mock responses for RESTful resources.
 
     Args:
-        item (dict): Current item dictionary.
         name (str): Request name.
         method (str): HTTP method.
         req (dict): Postman request dictionary.

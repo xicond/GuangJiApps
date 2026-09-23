@@ -8,6 +8,12 @@ import (
 	"guangjiapps/gin/tests/e2e/factory"
 )
 
+// TestE2E_AdminManagement performs complete end-to-end integration testing across administrative domains,
+// including departments listing, administrator account CRUD lifecycle, admin roles/groups, group menu mappings,
+// and sub-warehouse management.
+//
+// Parameters:
+//   - t: active testing.T pointer.
 func TestE2E_AdminManagement(t *testing.T) {
 	e, auth := newAuthExpect(t)
 

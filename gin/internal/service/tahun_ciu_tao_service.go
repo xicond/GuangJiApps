@@ -62,7 +62,7 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 		"date":           "date",
 	}
 
-	var tahun string = ""
+	var tahun string
 	var dateVal *time.Time = nil
 
 	for field, value := range filters {

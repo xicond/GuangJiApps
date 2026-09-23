@@ -6,6 +6,11 @@ import (
 	"testing"
 )
 
+// TestE2E_LookupService validates all static and dynamic system lookup endpoints (200),
+// confirming proper array data structures and resource identifiers, as well as 401 unauthenticated enforcement.
+//
+// Parameters:
+//   - t: active testing.T pointer.
 func TestE2E_LookupService(t *testing.T) {
 	e, auth := newAuthExpect(t)
 

@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+// TestE2E_Ping verifies application health and responsiveness via the /ping endpoint.
+//
+// Parameters:
+//   - t: active testing.T pointer.
 func TestE2E_Ping(t *testing.T) {
 	e := newExpect(t)
 
@@ -15,6 +19,11 @@ func TestE2E_Ping(t *testing.T) {
 		Value("message").String().IsEqual("pong")
 }
 
+// TestE2E_Login tests authentication flows including successful credential exchange (200),
+// malformed request payload (400), and invalid login credentials (401).
+//
+// Parameters:
+//   - t: active testing.T pointer.
 func TestE2E_Login(t *testing.T) {
 	e := newExpect(t)
 
@@ -58,6 +67,10 @@ func TestE2E_Login(t *testing.T) {
 	})
 }
 
+// TestE2E_ChangePassword verifies password update payload validation and error handling.
+//
+// Parameters:
+//   - t: active testing.T pointer.
 func TestE2E_ChangePassword(t *testing.T) {
 	e, auth := newAuthExpect(t)
 

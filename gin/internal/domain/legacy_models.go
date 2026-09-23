@@ -240,7 +240,9 @@ func (AdminSubWarehouse) TableName() string { return "T_WH_SUBWH_MST" }
 // 2. CORE SYSTEM & MASTER RECORD MODELS
 // ==========================================
 
-// Umat represents table [dbo].[T_BUS_UMAT]
+// Umat represents the core congregation member master record mapped to table [dbo].[T_BUS_UMAT].
+// It records personal demographics, religious initiation (ciu tao) milestones, vows (qing kou / ikrar),
+// training classes (SD2 / SD3), and branch temple affiliations.
 type Umat struct {
 	ID                   int32       `gorm:"primaryKey;autoIncrement:false;column:id;autoIncrement:false" json:"id"`
 	Kode                 *string     `gorm:"column:kode" json:"kode" validate:"omitempty,max=50"`
@@ -317,10 +319,12 @@ type Umat struct {
 	QRToken             *string   `gorm:"-" json:"qr_token,omitempty"`
 }
 
+// VerifyQRRequest encapsulates the inbound payload for verifying a scanned congregation member QR token.
 type VerifyQRRequest struct {
 	QRToken string `json:"qr_token" validate:"required"`
 }
 
+// VerifyQRResponse represents the decoded verification payload returned to the client upon scanning a valid QR token.
 type VerifyQRResponse struct {
 	Claims        map[string]interface{} `json:"claims"`
 	NamaIndonesia string                 `json:"nama_indonesia"`
@@ -369,6 +373,7 @@ func (u *Umat) UnmarshalJSON(data []byte) error {
 
 func (Umat) TableName() string { return "T_BUS_UMAT" }
 
+// UmatFoto stores binary photographic documents or uploaded member portrait files mapped to table [dbo].[T_BUS_UMAT_FOTO].
 type UmatFoto struct {
 	FileID      int32      `gorm:"column:FileID;primaryKey;autoIncrement:false" json:"file_id"`
 	Id          *int32     `gorm:"column:Id" json:"id"`
@@ -387,6 +392,7 @@ func (UmatFoto) TableName() string {
 	return "T_BUS_UMAT_FOTO"
 }
 
+// AppLookup represents a generic key-value dictionary item mapped to table [dbo].[T_APP_LOOKUP].
 type AppLookup struct {
 	LookupId          string    `gorm:"primaryKey;autoIncrement:false;column:LookupId;type:varchar(25);not null" json:"lookup_id" validate:"omitempty,max=25"`
 	CategoryId        *string   `gorm:"column:CategoryId;type:varchar(25)" json:"category_id,omitempty" validate:"omitempty,max=25"`
@@ -405,6 +411,7 @@ func (AppLookup) TableName() string {
 	return "T_APP_LOOKUP"
 }
 
+// AppLookupCategory represents a lookup classification header mapped to table [dbo].[T_APP_LOOKUPCATEGORY].
 type AppLookupCategory struct {
 	CategoryId          string    `gorm:"primaryKey;autoIncrement:false;column:CategoryId;type:varchar(25);not null" json:"category_id" validate:"omitempty,max=25"`
 	CategoryType        string    `gorm:"column:CategoryType;type:char(1);not null" json:"category_type" validate:"omitempty,max=1"`
@@ -420,7 +427,7 @@ func (AppLookupCategory) TableName() string {
 	return "T_APP_LOOKUPCATEGORY"
 }
 
-// Topic represents table [dbo].[T_BUS_TOPIC]
+// Topic represents Dharma lecture / study topic definitions mapped to table [dbo].[T_BUS_TOPIC].
 type Topic struct {
 	TopicCode     string   `gorm:"primaryKey;autoIncrement:false;column:TopicCode" json:"topic_code" validate:"required,max=20"`
 	TopicName     string   `gorm:"column:TopicName" json:"topic_name" validate:"required,max=300"`
@@ -436,7 +443,7 @@ type Topic struct {
 
 func (Topic) TableName() string { return "T_BUS_TOPIC" }
 
-// Activity represents table [dbo].[T_BUS_EVENT]
+// Activity represents event and ritual activity definitions mapped to table [dbo].[T_BUS_EVENT].
 type Activity struct {
 	EventCode     string   `gorm:"primaryKey;autoIncrement:false;column:EventCode" json:"event_code" validate:"required,max=10"`
 	EventName     string   `gorm:"column:EventName" json:"event_name" validate:"required,max=100"`
@@ -450,8 +457,9 @@ type Activity struct {
 	EventCategoryInfo *AppLookup `gorm:"foreignKey:EventCategory;references:LookupValue;constraint:false" json:"event_category_info,omitempty" validate:"-"`
 }
 
-func (Activity) TableName() string { return "T_BUS_EVENT" } // TimKerja represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_POSISI'
+func (Activity) TableName() string { return "T_BUS_EVENT" }
 
+// TimKerja represents work team / servant committee role lookup entries mapped to [dbo].[T_APP_LOOKUP] with CategoryId = 'B_POSISI'.
 type TimKerja struct {
 	LookupId          string   `gorm:"primaryKey;autoIncrement:false;column:LookupId" json:"lookup_id" validate:"omitempty,max=25"`
 	CategoryId        string   `gorm:"column:CategoryId;default:B_POSISI" json:"category_id" validate:"omitempty,max=25"`
@@ -463,7 +471,7 @@ type TimKerja struct {
 	ModDate           DateTime `gorm:"column:ModDate" json:"mod_date"`
 }
 
-func (TimKerja) TableName() string { return "T_APP_LOOKUP" } // TahunCiuTao represents table [dbo].[T_BUS_TAHUN_CIUTAO]
+func (TimKerja) TableName() string { return "T_APP_LOOKUP" }
 
 // DateOnly represents a date without time information (YYYY-MM-DD), compatible with MSSQL date/datetime columns.
 type DateOnly struct {
@@ -911,6 +919,7 @@ func (ib IntBool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(bool(ib))
 }
 
+// TahunCiuTao represents the Chinese lunar calendar conversion year mapping for initiation ceremonies mapped to table [dbo].[T_BUS_TAHUN_CIUTAO].
 type TahunCiuTao struct {
 	TahunMandarin string   `gorm:"primaryKey;autoIncrement:false;column:TahunMandarin" json:"tahun_mandarin" validate:"required,max=20"`
 	StartDate     DateOnly `gorm:"column:StartDate" json:"start_date"`
@@ -922,8 +931,9 @@ type TahunCiuTao struct {
 	Description   string   `gorm:"column:description" json:"description" validate:"omitempty,max=50"`
 }
 
-func (TahunCiuTao) TableName() string { return "T_BUS_TAHUN_CIUTAO" } // PenggalangDana represents table [dbo].[T_SXY_MST_PENGGALANG]
+func (TahunCiuTao) TableName() string { return "T_BUS_TAHUN_CIUTAO" }
 
+// PenggalangDana represents charity fund collector / coordinator master records mapped to table [dbo].[T_SXY_MST_PENGGALANG].
 type PenggalangDana struct {
 	ID            int32    `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	No            string   `gorm:"column:no" json:"no" validate:"required,max=50"`
@@ -941,6 +951,8 @@ type PenggalangDana struct {
 	UpdatedBy     int32    `gorm:"column:updatedby" json:"updated_by"`
 	UpdatedDate   DateTime `gorm:"column:updateddate" json:"updated_date"`
 }
+
+// PenggalangDanaResponse represents the response projection for fundraiser search results.
 type PenggalangDanaResponse struct {
 	ID            int32  `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	No            string `gorm:"column:no" json:"no"`
@@ -955,8 +967,9 @@ type PenggalangDanaResponse struct {
 	Email         string `gorm:"column:email" json:"email"`
 }
 
-func (PenggalangDana) TableName() string { return "T_SXY_MST_PENGGALANG" } // SxyDonatur represents table [dbo].[T_SXY_MST_DONATUR]
+func (PenggalangDana) TableName() string { return "T_SXY_MST_PENGGALANG" }
 
+// SxyDonatur represents donor profile master records for charity donations mapped to table [dbo].[T_SXY_MST_DONATUR].
 type SxyDonatur struct {
 	ID            int32    `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	No            string   `gorm:"column:no" json:"no" validate:"required,max=10"`
@@ -975,6 +988,7 @@ type SxyDonatur struct {
 	UpdatedDate   DateTime `gorm:"column:updateddate" json:"updated_date"`
 }
 
+// SxyDonaturResponse represents the response projection for donor search results.
 type SxyDonaturResponse struct {
 	ID            int32    `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	No            string   `gorm:"column:no" json:"no"`
@@ -994,6 +1008,7 @@ type SxyDonaturResponse struct {
 	UpdatedDate   DateTime `gorm:"column:updateddate" json:"updated_date"`
 }
 
+// SxyDonasiReport represents individual donation transaction rows in financial reports.
 type SxyDonasiReport struct {
 	NoKwitansi      string   `gorm:"column:nokwitansi" json:"no_kwitansi"`
 	Tanggal         DateOnly `gorm:"column:tanggal" json:"tanggal"`
@@ -1011,8 +1026,7 @@ type SxyDonasiReport struct {
 
 func (SxyDonatur) TableName() string { return "T_SXY_MST_DONATUR" }
 
-// ==========================================// 3. SPECIAL CUSTOM TYPE & DONATION MODELS// ==========================================// Kelas represents records inside [dbo].[T_APP_LOOKUP] filtered by CategoryId = 'B_KELASKHUSUS'
-
+// Kelas represents class session header records mapped to table [dbo].[T_TRX_KELAS].
 type Kelas struct {
 	TrxId      int32     `gorm:"primaryKey;autoIncrement:false;column:trxid;type:int;not null" json:"trx_id,omitempty"`
 	KodeKelas  *string   `gorm:"column:kodekelas;type:varchar(3)" json:"kode_kelas,omitempty" validate:"required,max=3"`
@@ -1038,8 +1052,9 @@ type Kelas struct {
 	FotangName *AppLookup `gorm:"foreignKey:KodeFotang;references:LookupValue;constraint:false" json:"fotang_name,omitempty" validate:"-"` // CategoryId = B_FOTHANG
 }
 
-func (Kelas) TableName() string { return "T_TRX_KELAS" } // DonasiSxy represents table [dbo].[T_SXY_TRANSAKSI]
+func (Kelas) TableName() string { return "T_TRX_KELAS" }
 
+// KelasResponse represents the serialized projection of class session data with descriptions.
 type KelasResponse struct {
 	TrxId      string   `gorm:"column:trxid" json:"trx_id"`
 	KodeKelas  string   `gorm:"column:kodekelas" json:"kode_kelas"`
@@ -1053,6 +1068,8 @@ type KelasResponse struct {
 	FotangDesc string   `gorm:"column:FotangDesc" json:"fotang_desc"`
 }
 
+// KelasPeserta represents an individual attendee/participant enrolled in a specific class (T_TRX_KELAS_PESERTA).
+// It stores participation details, contributions, meals/lodging logistics, graduation status, and links to Umat and Kelas.
 type KelasPeserta struct {
 	DetailId        int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId           int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
@@ -1164,6 +1181,8 @@ func (p *KelasPeserta) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// KelasPesertaBulkRequest represents the payload for enrolling multiple participants into a class session in bulk.
+// It accepts a list of Umat IDs alongside shared logistical attributes (meals, lodging, etc.).
 type KelasPesertaBulkRequest struct {
 	TrxId           int32    `json:"trx_id" validate:"required"`
 	IdPeserta       []int32  `json:"id_peserta" validate:"required,min=1"`
@@ -1258,6 +1277,8 @@ func (p *KelasPesertaBulkRequest) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// KelasPesertaList represents a flattened participant projection for data table listings,
+// combining attendee transaction details with member profile information.
 type KelasPesertaList struct {
 	DetailId        string  `gorm:"column:detailid" json:"detailid"`
 	TrxId           string  `gorm:"column:trxid" json:"trx_id"`
@@ -1280,6 +1301,8 @@ type KelasPesertaList struct {
 	MakananMalam    string  `gorm:"column:MakananMalam" json:"makanan_malam"`
 }
 
+// KelasPesertaResponse represents the detailed view response of a class participant,
+// including pledge indicators (Ikrar 1-6), temple origin, and graduation remarks.
 type KelasPesertaResponse struct {
 	DetailId         string   `gorm:"column:detailid" json:"detailid"`
 	TrxId            string   `gorm:"column:trxid" json:"trx_id"`
@@ -1301,6 +1324,8 @@ type KelasPesertaResponse struct {
 	Ikrar6           IntBool  `gorm:"column:ikrar6" json:"ikrar6"`
 }
 
+// KelasPengabdi represents a volunteer, committee member, or temple server assigned to a class event (T_TRX_KELAS_PENGABDI).
+// It captures work division assignments, duty schedules, contributions, and logistical requirements.
 type KelasPengabdi struct {
 	DetailId       int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId          int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
@@ -1337,6 +1362,8 @@ func (KelasPengabdi) TableName() string {
 	return "T_TRX_KELAS_PENGABDI"
 }
 
+// KelasTopik represents a curriculum topic or lecture session scheduled within a class event (T_TRX_KELAS_TOPIK).
+// It specifies speaker, translator, session sequence, duration, and related topic metadata.
 type KelasTopik struct {
 	DetailId      int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId         int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
@@ -1364,6 +1391,8 @@ func (KelasTopik) TableName() string {
 	return "T_TRX_KELAS_TOPIK"
 }
 
+// KelasKendaraan represents a vehicle allocated for class logistical transportation (T_TRX_KELAS_KENDARAAN).
+// It tracks vehicle plate numbers, driver details, originating temples, and operational notes.
 type KelasKendaraan struct {
 	DetailId      int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId         int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
@@ -1385,6 +1414,7 @@ func (KelasKendaraan) TableName() string {
 	return "T_TRX_KELAS_KENDARAAN"
 }
 
+// KelasDonasi represents a monetary donation contribution dedicated to supporting a specific class event (T_TRX_KELAS_DONASI).
 type KelasDonasi struct {
 	DetailId int32     `gorm:"primaryKey;autoIncrement:false;column:DetailId;type:int;not null" json:"detail_id"`
 	TrxId    int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
@@ -1402,6 +1432,7 @@ func (KelasDonasi) TableName() string {
 	return "T_TRX_KELAS_DONASI"
 }
 
+// KelasDonasiBarang represents an in-kind (item/goods) donation contributed for a class event (T_TRX_KELAS_DONASI_BARANG).
 type KelasDonasiBarang struct {
 	DetailId int32     `gorm:"primaryKey;autoIncrement:false;column:DetailId;type:int;not null" json:"detail_id"`
 	TrxId    int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
@@ -1419,6 +1450,7 @@ func (KelasDonasiBarang) TableName() string {
 	return "T_TRX_KELAS_DONASI_BARANG"
 }
 
+// KelasPengeluaran represents an operational expense incurred by a working committee during a class event (T_TRX_KELAS_PENGELUARAN).
 type KelasPengeluaran struct {
 	DetailId   int32     `gorm:"primaryKey;autoIncrement:false;column:detailid;type:int;not null" json:"detail_id"`
 	TrxId      int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
@@ -1437,6 +1469,7 @@ func (KelasPengeluaran) TableName() string {
 	return "T_TRX_KELAS_PENGELUARAN"
 }
 
+// KelasMusik represents musical items, hymns, or performances scheduled during a class session (T_TRX_MUSIK).
 type KelasMusik struct {
 	DetailId   int32     `gorm:"primaryKey;autoIncrement:false;column:DetailId;type:int;not null" json:"detail_id"`
 	TrxId      int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
@@ -1456,6 +1489,7 @@ func (KelasMusik) TableName() string {
 	return "T_TRX_MUSIK"
 }
 
+// KelasAbsensi represents an attendance record for a participant on a specific date during a class cycle (T_TRX_KELAS_ABSENSI).
 type KelasAbsensi struct {
 	Id        int32     `gorm:"primaryKey;autoIncrement:false;column:Id;type:int;not null" json:"id"`
 	TrxId     int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
@@ -1473,6 +1507,8 @@ func (KelasAbsensi) TableName() string {
 	return "T_TRX_KELAS_ABSENSI"
 }
 
+// DonasiSxy represents a general charitable transaction or donation receipt in the SXY charity system (T_SXY_TRANSAKSI).
+// It records donor references, fundraiser tracking, donation types, bank transfer dates, and receipt numbers.
 type DonasiSxy struct {
 	ID              int32    `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	NoKwitansi      string   `gorm:"column:nokwitansi" json:"no_kwitansi" validate:"required,max=50"`
@@ -1495,6 +1531,8 @@ type DonasiSxy struct {
 
 func (DonasiSxy) TableName() string { return "T_SXY_TRANSAKSI" }
 
+// DonasiSxyResponse represents the projection DTO for charitable transactions,
+// enriched with resolved donor, fundraiser, and donation category descriptions.
 type DonasiSxyResponse struct {
 	ID                int32     `gorm:"primaryKey;autoIncrement:false;column:id" json:"id"`
 	NoKwitansi        string    `gorm:"column:nokwitansi" json:"no_kwitansi"`
@@ -1513,6 +1551,7 @@ type DonasiSxyResponse struct {
 	EmailPenggalang   *string   `gorm:"column:emailpenggalang" json:"email_penggalang"`
 }
 
+// WorkMapping defines the organizational mapping between departmental divisions and sub-divisions (T_BUS_WORK_MAPPING).
 type WorkMapping struct {
 	ID        int64  `gorm:"primaryKey;autoIncrement:false;column:Id;autoIncrement" json:"id"`
 	Divisi    string `gorm:"column:Divisi;type:varchar(50)" json:"divisi"`
@@ -1522,6 +1561,8 @@ type WorkMapping struct {
 
 func (WorkMapping) TableName() string { return "T_BUS_WORK_MAPPING" }
 
+// UmatReport represents a comprehensive flat reporting model for congregant (Umat) records,
+// containing spiritual initiation milestones (Chiu Tao), vows (Ikrar 1-6), contact details, and pagination metadata.
 type UmatReport struct {
 	// RowNo                int64    `gorm:"column:RowNo" json:"row_no"`
 	Id                   int32    `gorm:"column:id" json:"id"`
@@ -1569,6 +1610,7 @@ type UmatReport struct {
 	TotalRow             int64    `gorm:"column:TotalRow" json:"total_row"`
 }
 
+// KelasPesertaPrevious represents historical participant records retrieved to aid quick re-enrollment across classes.
 type KelasPesertaPrevious struct {
 	IdPeserta        int32  `gorm:"column:idpeserta" json:"id_peserta"`
 	Id               int32  `gorm:"column:id" json:"id"`
@@ -1586,6 +1628,7 @@ type KelasPesertaPrevious struct {
 	Penanggung       string `gorm:"column:penanggung" json:"penanggung"`
 }
 
+// UmatPopUpResponse represents a lightweight member record used in modal popup selectors and lookups.
 type UmatPopUpResponse struct {
 	Id               int32   `gorm:"column:id" json:"id"`
 	Kode             string  `gorm:"column:kode" json:"kode"`

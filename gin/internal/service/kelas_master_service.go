@@ -197,6 +197,7 @@ func (s *KelasMasterService) List(page int, filters map[string]string, limit int
 		query = query.Where("Status = ?", true)
 	}
 
+	// FilterRule defines the database column and matching strategy (exact vs LIKE) for query filtering.
 	type FilterRule struct {
 		Column string
 		IsLike bool

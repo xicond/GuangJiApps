@@ -8,6 +8,12 @@ import (
 	"guangjiapps/gin/tests/e2e/factory"
 )
 
+// TestE2E_MasterData tests end-to-end CRUD operations and reporting endpoints across all primary master datasets,
+// including Umat (congregants), topics, master classes, activities, tim kerja (work teams),
+// tahun ciu tao (lunar years), penggalang dana (fundraisers), and SXY donatur (charitable donors).
+//
+// Parameters:
+//   - t: active testing.T pointer.
 func TestE2E_MasterData(t *testing.T) {
 	e, auth := newAuthExpect(t)
 

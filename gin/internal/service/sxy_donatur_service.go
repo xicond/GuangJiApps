@@ -65,9 +65,9 @@ func (s *SxyDonaturService) List(page int, filters map[string]string, limit int)
 		"fotang":             "fotang",
 	}
 
-	var nama string = ""
-	var mandarin string = ""
-	var fotang int = 0
+	var nama string
+	var mandarin string
+	var fotang int
 
 	for field, value := range filters {
 		if value == "" {

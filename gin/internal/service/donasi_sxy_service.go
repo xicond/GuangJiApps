@@ -130,10 +130,10 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 		// "donatur_nama": true,
 	}
 
-	var no_kwitansi string = ""
+	var no_kwitansi string
 	var start_date *string = nil
 	var end_date *string = nil
-	var donatur string = ""
+	var donatur string
 
 	for field, value := range filters {
 		if value == "" {

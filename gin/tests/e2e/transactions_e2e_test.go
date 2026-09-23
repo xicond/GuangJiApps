@@ -11,6 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestKelas_EndToEnd executes end-to-end integration tests for class management (/v1/kelas),
+// covering class lifecycle and its complete logistical sub-resources (participants, volunteers,
+// lecture topics, vehicles, monetary donations, in-kind donations, expenses, music, and daily attendance).
+//
+// Parameters:
+//   - t: active testing.T pointer.
 func TestKelas_EndToEnd(t *testing.T) {
 	e := getAuthenticatedExpect(t)
 
@@ -409,6 +415,11 @@ func TestKelas_EndToEnd(t *testing.T) {
 	})
 }
 
+// TestDonasiSxy_EndToEnd executes end-to-end integration tests for SXY charitable transactions (/v1/donasi-sxy),
+// validating query filtering, detail lookups, creation, updates, and deletion.
+//
+// Parameters:
+//   - t: active testing.T pointer.
 func TestDonasiSxy_EndToEnd(t *testing.T) {
 	e := getAuthenticatedExpect(t)
 

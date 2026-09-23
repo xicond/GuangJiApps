@@ -2,6 +2,12 @@ import json
 import copy
 
 def build_collection():
+    """Build and enrich Postman collection with UAT tests and mock sample responses.
+
+    Reads base collection from apps-gin.postman_collection.json.bak, processes each endpoint
+    with assertion tests and sample responses, and writes the output back to
+    apps-gin.postman_collection.json.
+    """
     with open('/Users/xicond/Workspace/www/GuangJiApps/gin/postman/apps-gin.postman_collection.json.bak', 'r') as f:
         col = json.load(f)
 
@@ -738,6 +744,12 @@ def build_collection():
     total_processed = 0
 
     def process_items(items, folder_name=""):
+        """Recursively traverse collection items and configure each endpoint request.
+
+        Args:
+            items (list[dict]): List of Postman item structures or subfolders.
+            folder_name (str, optional): Name of the parent folder. Defaults to "".
+        """
         nonlocal total_processed
         for item in items:
             if 'item' in item:
@@ -760,6 +772,14 @@ def build_collection():
     print("apps-gin.postman_collection.json successfully updated!")
 
 def make_test(lines):
+    """Generate a Postman test event script structure from a list of test assertions.
+
+    Args:
+        lines (list[str]): List of JavaScript assertion and execution code strings.
+
+    Returns:
+        list[dict]: Postman collection v2.1.0 test event structure.
+    """
     return [
         {
             "listen": "test",
@@ -771,6 +791,20 @@ def make_test(lines):
     ]
 
 def make_sample_response(name, original_req, code, status_text, body_data, is_binary=False, filename=""):
+    """Construct a Postman sample response structure for documentation and mocking.
+
+    Args:
+        name (str): Label for the saved example response.
+        original_req (dict): The original Postman request dictionary.
+        code (int): HTTP status code (e.g., 200, 201, 400).
+        status_text (str): HTTP status string (e.g., "OK", "Created", "Bad Request").
+        body_data (dict): JSON response body data.
+        is_binary (bool, optional): Whether response is a binary file (e.g. Excel). Defaults to False.
+        filename (str, optional): Target filename for attachments. Defaults to "".
+
+    Returns:
+        dict: Postman response structure for the example.
+    """
     headers = []
     if is_binary:
         headers = [
@@ -796,6 +830,16 @@ def make_sample_response(name, original_req, code, status_text, body_data, is_bi
     }
 
 def configure_item(item, folder, name, method, req, MOCK):
+    """Configure tests and sample response examples for a single Postman collection item.
+
+    Args:
+        item (dict): The Postman request item object to mutate.
+        folder (str): Name of the parent folder.
+        name (str): Endpoint request name.
+        method (str): HTTP method (GET, POST, PATCH, DELETE, etc.).
+        req (dict): Postman request dictionary.
+        MOCK (dict): Mock payload dictionary for resources.
+    """
     # Default containers
     responses = []
     tests = []
@@ -1143,6 +1187,19 @@ def configure_item(item, folder, name, method, req, MOCK):
         item["response"] = responses
 
 def handle_crud(item, name, method, req, res_key, res_label, MOCK, tests_out, responses_out):
+    """Configure standard CRUD tests and mock responses for RESTful resources.
+
+    Args:
+        item (dict): Current item dictionary.
+        name (str): Request name.
+        method (str): HTTP method.
+        req (dict): Postman request dictionary.
+        res_key (str): Lookup key in MOCK dictionary.
+        res_label (str): Human-readable resource name for test assertions.
+        MOCK (dict): Mock payload dictionary.
+        tests_out (list): List to append test assertion blocks to.
+        responses_out (list): List to append mock response objects to.
+    """
     data_dict = MOCK[res_key]
     resource_name = data_dict["resource"]
 
@@ -1196,6 +1253,14 @@ def handle_crud(item, name, method, req, res_key, res_label, MOCK, tests_out, re
         responses_out.append(make_sample_response("400 Bad Request - Error", req, 400, "Bad Request", err_body))
 
 def make_get_list_test(resource_name):
+    """Generate Postman test script assertions for paginated list endpoints.
+
+    Args:
+        resource_name (str): Human-readable resource name.
+
+    Returns:
+        list[str]: JavaScript test assertion lines.
+    """
     return [
         'pm.test("UAT - Status code is 200 OK", function () {',
         '    pm.response.to.have.status(200);',
@@ -1222,6 +1287,14 @@ def make_get_list_test(resource_name):
     ]
 
 def make_get_detail_test(resource_name):
+    """Generate Postman test script assertions for single entity detail endpoints.
+
+    Args:
+        resource_name (str): Human-readable resource name.
+
+    Returns:
+        list[str]: JavaScript test assertion lines.
+    """
     return [
         'pm.test("UAT - Status code is 200 OK", function () {',
         '    pm.response.to.have.status(200);',
@@ -1243,6 +1316,14 @@ def make_get_detail_test(resource_name):
     ]
 
 def make_get_lookup_test(resource_name):
+    """Generate Postman test script assertions for lookup/dropdown endpoints.
+
+    Args:
+        resource_name (str): Human-readable resource name.
+
+    Returns:
+        list[str]: JavaScript test assertion lines.
+    """
     return [
         'pm.test("UAT - Status code is 200 OK", function () {',
         '    pm.response.to.have.status(200);',
@@ -1260,6 +1341,14 @@ def make_get_lookup_test(resource_name):
     ]
 
 def make_get_excel_test(report_name):
+    """Generate Postman test script assertions for Excel report export endpoints.
+
+    Args:
+        report_name (str): Human-readable report name.
+
+    Returns:
+        list[str]: JavaScript test assertion lines.
+    """
     return [
         'pm.test("UAT - Status code is 200 OK", function () {',
         '    pm.response.to.have.status(200);',
@@ -1282,6 +1371,14 @@ def make_get_excel_test(report_name):
     ]
 
 def make_post_create_test(resource_name):
+    """Generate Postman test script assertions for entity creation endpoints.
+
+    Args:
+        resource_name (str): Human-readable resource name.
+
+    Returns:
+        list[str]: JavaScript test assertion lines.
+    """
     return [
         'pm.test("UAT - Status code is 201 Created or 200 OK", function () {',
         '    pm.expect(pm.response.code).to.be.oneOf([200, 201]);',
@@ -1299,6 +1396,14 @@ def make_post_create_test(resource_name):
     ]
 
 def make_patch_update_test(resource_name):
+    """Generate Postman test script assertions for entity update endpoints.
+
+    Args:
+        resource_name (str): Human-readable resource name.
+
+    Returns:
+        list[str]: JavaScript test assertion lines.
+    """
     return [
         'pm.test("UAT - Status code is 200 OK", function () {',
         '    pm.response.to.have.status(200);',
@@ -1316,6 +1421,14 @@ def make_patch_update_test(resource_name):
     ]
 
 def make_delete_test(resource_name):
+    """Generate Postman test script assertions for entity deletion endpoints.
+
+    Args:
+        resource_name (str): Human-readable resource name.
+
+    Returns:
+        list[str]: JavaScript test assertion lines.
+    """
     return [
         'pm.test("UAT - Status code is 200 OK", function () {',
         '    pm.response.to.have.status(200);',

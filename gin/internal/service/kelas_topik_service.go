@@ -15,11 +15,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasTopikService manages lecture topic schedules, speakers, and translation details for a class session.
 type KelasTopikService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewKelasTopikService initializes a new KelasTopikService instance.
+//
+// Parameters:
+//   - db: *gorm.DB database connection pool (defaults to primary if nil)
+//
+// Returns:
+//   - *KelasTopikService: initialized service pointer
 func NewKelasTopikService(db *gorm.DB) *KelasTopikService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -27,6 +35,14 @@ func NewKelasTopikService(db *gorm.DB) *KelasTopikService {
 	return &KelasTopikService{db: db, resource: "kelas_topik"}
 }
 
+// validateTopikLookups verifies foreign key existence for class, topic master, and speaker records.
+//
+// Parameters:
+//   - db: *gorm.DB database connection
+//   - payload: *domain.KelasTopik entity payload to validate
+//
+// Returns:
+//   - error: *ValidationError with error details if validation fails, or nil
 func validateTopikLookups(db *gorm.DB, payload *domain.KelasTopik) error {
 	type lookupCheck struct {
 		fieldName string
@@ -118,6 +134,17 @@ func validateTopikLookups(db *gorm.DB, payload *domain.KelasTopik) error {
 	return nil
 }
 
+// List queries class topic schedules filtered by class transaction ID with pagination.
+//
+// Parameters:
+//   - trxID: string representation of the class transaction ID
+//   - page: page number (1-based)
+//   - limit: page size limit
+//
+// Returns:
+//   - []domain.KelasTopik: list of class topics
+//   - int64: total matching count
+//   - error: database error if query fails
 func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.KelasTopik, int64, error) {
 	var items []domain.KelasTopik
 	var total int64
@@ -152,6 +179,15 @@ func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.Ke
 	return items, total, nil
 }
 
+// Create adds a new topic schedule item to a class session.
+//
+// Parameters:
+//   - payload: domain.KelasTopik entity payload to create
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasTopik: created entity with generated DetailId
+//   - error: validation, ID generation, or database error if failed
 func (s *KelasTopikService) Create(payload domain.KelasTopik, c *gin.Context) (domain.KelasTopik, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.KelasTopik{}, fmt.Errorf("Validation failed: %w", err)
@@ -188,6 +224,14 @@ func (s *KelasTopikService) Create(payload domain.KelasTopik, c *gin.Context) (d
 	return payload, nil
 }
 
+// Get retrieves a single class topic schedule record by detail ID.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//
+// Returns:
+//   - domain.KelasTopik: retrieved topic schedule entity
+//   - error: not found or database error
 func (s *KelasTopikService) Get(id string) (domain.KelasTopik, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -203,6 +247,16 @@ func (s *KelasTopikService) Get(id string) (domain.KelasTopik, error) {
 	return item, nil
 }
 
+// Update modifies an existing class topic schedule item.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//   - payload: domain.KelasTopik entity containing updated fields
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasTopik: updated entity
+//   - error: validation, not found, or database error if failed
 func (s *KelasTopikService) Update(id string, payload domain.KelasTopik, c *gin.Context) (domain.KelasTopik, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -274,6 +328,14 @@ func (s *KelasTopikService) Update(id string, payload domain.KelasTopik, c *gin.
 	return item, nil
 }
 
+// Delete soft-deletes a class topic schedule item (Status = false).
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - error: not found or database error if failed
 func (s *KelasTopikService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

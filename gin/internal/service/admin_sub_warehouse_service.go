@@ -13,11 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// AdminSubWarehouseService manages sub-warehouse locations and assignments.
 type AdminSubWarehouseService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewAdminSubWarehouseService initializes a new instance of AdminSubWarehouseService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *AdminSubWarehouseService: An initialized instance of AdminSubWarehouseService.
 func NewAdminSubWarehouseService(db *gorm.DB) *AdminSubWarehouseService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -25,6 +33,17 @@ func NewAdminSubWarehouseService(db *gorm.DB) *AdminSubWarehouseService {
 	return &AdminSubWarehouseService{db: db, resource: "admin-sub-warehouses"}
 }
 
+// List retrieves a paginated list of sub-warehouse master records matching the given filter criteria.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter conditions (e.g. "full_name", "pic", "doc_code", "sub_wh_type").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.AdminSubWarehouse: Slice of sub-warehouse records.
+//   - int64: Total count of records matching the filters.
+//   - error: Error if the database query fails.
 func (s *AdminSubWarehouseService) List(page int, filters map[string]string, limit int) ([]domain.AdminSubWarehouse, int64, error) {
 	var items []domain.AdminSubWarehouse
 	var total int64
@@ -102,6 +121,15 @@ func (s *AdminSubWarehouseService) List(page int, filters map[string]string, lim
 	return items, total, nil
 }
 
+// Create inserts a new sub-warehouse master record into the database, computing the next SubWhId.
+//
+// Parameters:
+//   - payload: The sub-warehouse record to create (domain.AdminSubWarehouse).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.AdminSubWarehouse: The newly created sub-warehouse record.
+//   - error: Error if validation fails or database insert fails.
 func (s *AdminSubWarehouseService) Create(payload domain.AdminSubWarehouse, c *gin.Context) (domain.AdminSubWarehouse, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.AdminSubWarehouse{}, fmt.Errorf("Validation failed: %w", err)
@@ -130,6 +158,14 @@ func (s *AdminSubWarehouseService) Create(payload domain.AdminSubWarehouse, c *g
 	return payload, nil
 }
 
+// Get fetches a single sub-warehouse record by its SubWhId.
+//
+// Parameters:
+//   - id: The primary key (SubWhId) of the sub-warehouse as a string.
+//
+// Returns:
+//   - domain.AdminSubWarehouse: The retrieved sub-warehouse record.
+//   - error: Error if ID format is invalid or record is not found.
 func (s *AdminSubWarehouseService) Get(id string) (domain.AdminSubWarehouse, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -145,6 +181,16 @@ func (s *AdminSubWarehouseService) Get(id string) (domain.AdminSubWarehouse, err
 	return item, nil
 }
 
+// Update updates an existing sub-warehouse master record and records the modifying user ID and timestamp.
+//
+// Parameters:
+//   - id: The primary key (SubWhId) of the sub-warehouse to update as a string.
+//   - payload: Updated sub-warehouse fields (domain.AdminSubWarehouse).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.AdminSubWarehouse: The updated sub-warehouse record.
+//   - error: Error if the record is not found or database update fails.
 func (s *AdminSubWarehouseService) Update(id string, payload domain.AdminSubWarehouse, c *gin.Context) (domain.AdminSubWarehouse, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -174,6 +220,14 @@ func (s *AdminSubWarehouseService) Update(id string, payload domain.AdminSubWare
 	return item, nil
 }
 
+// Delete removes a sub-warehouse record from the database.
+//
+// Parameters:
+//   - id: The primary key (SubWhId) of the sub-warehouse to delete as a string.
+//   - c: Gin context carrying HTTP request metadata.
+//
+// Returns:
+//   - error: Error if the record is not found or database delete fails.
 func (s *AdminSubWarehouseService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

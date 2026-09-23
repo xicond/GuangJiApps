@@ -14,11 +14,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasKendaraanService manages transport vehicle logs and parking details for a class session.
 type KelasKendaraanService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewKelasKendaraanService initializes a new KelasKendaraanService instance.
+//
+// Parameters:
+//   - db: *gorm.DB database connection pool (defaults to primary if nil)
+//
+// Returns:
+//   - *KelasKendaraanService: initialized service pointer
 func NewKelasKendaraanService(db *gorm.DB) *KelasKendaraanService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -26,6 +34,18 @@ func NewKelasKendaraanService(db *gorm.DB) *KelasKendaraanService {
 	return &KelasKendaraanService{db: db, resource: "kelas_kendaraan"}
 }
 
+// List retrieves paginated vehicle records for a class session scoped to user's branch warehouse.
+//
+// Parameters:
+//   - c: *gin.Context containing user auth session for branch isolation
+//   - trxID: string representation of the class transaction ID
+//   - page: page number (1-based)
+//   - limit: page size limit
+//
+// Returns:
+//   - []domain.KelasKendaraan: list of registered vehicles
+//   - int64: total matching count
+//   - error: database error if query fails
 func (s *KelasKendaraanService) List(c *gin.Context, trxID string, page int, limit int) ([]domain.KelasKendaraan, int64, error) {
 	var items []domain.KelasKendaraan
 	var total int64
@@ -89,6 +109,15 @@ func (s *KelasKendaraanService) List(c *gin.Context, trxID string, page int, lim
 	return items, total, nil
 }
 
+// Create inserts a new vehicle record for a class session with concurrent ID generation and branch resolution.
+//
+// Parameters:
+//   - payload: domain.KelasKendaraan entity data to insert
+//   - c: *gin.Context containing user auth session for branch and audit metadata
+//
+// Returns:
+//   - domain.KelasKendaraan: created vehicle entity with generated DetailId
+//   - error: validation, ID generation, or database error if failed
 func (s *KelasKendaraanService) Create(payload domain.KelasKendaraan, c *gin.Context) (domain.KelasKendaraan, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.KelasKendaraan{}, fmt.Errorf("Validation failed: %w", err)
@@ -144,6 +173,14 @@ func (s *KelasKendaraanService) Create(payload domain.KelasKendaraan, c *gin.Con
 	return payload, nil
 }
 
+// Get retrieves a single vehicle record by detail ID.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//
+// Returns:
+//   - domain.KelasKendaraan: retrieved vehicle entity
+//   - error: not found or database error
 func (s *KelasKendaraanService) Get(id string) (domain.KelasKendaraan, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -159,6 +196,16 @@ func (s *KelasKendaraanService) Get(id string) (domain.KelasKendaraan, error) {
 	return item, nil
 }
 
+// Update modifies an existing vehicle record.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//   - payload: domain.KelasKendaraan entity containing updated fields
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasKendaraan: updated entity
+//   - error: not found or database error if failed
 func (s *KelasKendaraanService) Update(id string, payload domain.KelasKendaraan, c *gin.Context) (domain.KelasKendaraan, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -209,6 +256,14 @@ func (s *KelasKendaraanService) Update(id string, payload domain.KelasKendaraan,
 	return item, nil
 }
 
+// Delete soft-deletes a vehicle record (Status = false).
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - error: not found or database error if failed
 func (s *KelasKendaraanService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

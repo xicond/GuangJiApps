@@ -28,10 +28,21 @@ import (
 	"guangjiapps/gin/internal/service"
 )
 
+// Router embeds the root Gin Engine and encapsulates all endpoint mappings and middlewares.
 type Router struct {
 	*gin.Engine
 }
 
+// parsePaginationAndFilters extracts pagination controls (page, limit clamped to 1-1000)
+// and additional query filter key-value pairs from request query parameters.
+//
+// Parameters:
+//   - c: active Gin request context.
+//
+// Returns:
+//   - int: sanitized page number (minimum 1).
+//   - int: sanitized limit count (default 10, max 1000).
+//   - map[string]string: map of query filter parameters excluding page and limit.
 func parsePaginationAndFilters(c *gin.Context) (int, int, map[string]string) {
 	const defaultLimit = 10
 	const maxLimit = 1000
@@ -60,6 +71,11 @@ func parsePaginationAndFilters(c *gin.Context) (int, int, map[string]string) {
 	return page, limit, filters
 }
 
+// FilterSuccessLogMiddleware provides production-grade request logging that suppresses
+// verbose 2xx/3xx access logs while surfacing panics with stack traces and HTTP 4xx/5xx errors.
+//
+// Returns:
+//   - gin.HandlerFunc: error-focused logging middleware.
 func FilterSuccessLogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -109,6 +125,10 @@ func FilterSuccessLogMiddleware() gin.HandlerFunc {
 	}
 }
 
+// ForwardedHeaderMiddleware inspects and sanitizes reverse proxy headers (X-Forwarded-Proto, X-Forwarded-For).
+//
+// Returns:
+//   - gin.HandlerFunc: header normalization middleware.
 func ForwardedHeaderMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
@@ -137,6 +157,16 @@ func ForwardedHeaderMiddleware() gin.HandlerFunc {
 	}
 }
 
+// NewRouter initializes all service dependencies, configures middlewares (CORS, RateLimiting,
+// Fail2Ban, Auth), and registers all public and authenticated REST endpoints on the Gin Engine.
+//
+// Parameters:
+//   - authService: service handling authentication and JWT tokens.
+//   - db: GORM database handle connected to MSSQL.
+//   - cfg: application configuration.
+//
+// Returns:
+//   - *Router: configured Router instance embedding the Gin Engine.
 func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config) *Router {
 	adminService := service.NewAdminService(db)
 	adminGroupService := service.NewAdminGroupService(db)
@@ -2769,6 +2799,12 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 }
 
 // ParseJSONError parses low-level JSON unmarshaling, syntax, and payload errors into user-friendly messages.
+//
+// Parameters:
+//   - err: raw error from JSON decoding/binding.
+//
+// Returns:
+//   - map[string]string: map of field names to specific error descriptions.
 func ParseJSONError(err error) map[string]string {
 	errorsMap := make(map[string]string)
 	if err == nil {
@@ -2823,6 +2859,13 @@ func ParseJSONError(err error) map[string]string {
 	return errorsMap
 }
 
+// FormatValidationError extracts field-specific error messages from validation, binding, or JSON errors.
+//
+// Parameters:
+//   - err: raw error (validator.ValidationErrors, *service.ValidationError, or JSON error).
+//
+// Returns:
+//   - map[string][]string: mapping of invalid field names to slices of violation messages.
 func FormatValidationError(err error) map[string][]string {
 	if err == nil {
 		return make(map[string][]string)
@@ -2864,6 +2907,14 @@ func FormatValidationError(err error) map[string][]string {
 	return errorsMap
 }
 
+// getPathAndMethod extracts the URL path and HTTP method from the Gin context safely.
+//
+// Parameters:
+//   - c: active Gin request context.
+//
+// Returns:
+//   - string: request path.
+//   - string: HTTP method.
 func getPathAndMethod(c *gin.Context) (string, string) {
 	if c == nil || c.Request == nil {
 		return "", ""
@@ -2875,6 +2926,11 @@ func getPathAndMethod(c *gin.Context) (string, string) {
 	return path, c.Request.Method
 }
 
+// respondValidationError formats and writes an HTTP 400 Bad Request response with detailed field errors.
+//
+// Parameters:
+//   - c: active Gin request context.
+//   - err: error object describing validation failure.
 func respondValidationError(c *gin.Context, err error) {
 	// path, method := getPathAndMethod(c)
 	// log.Printf("[API VALIDATION ERROR 400] path=%s method=%s err=%v", path, method, err)
@@ -2908,6 +2964,11 @@ func respondValidationError(c *gin.Context, err error) {
 	})
 }
 
+// respondError inspects error type and contents, mapping them to appropriate HTTP 400, 404, or 500 JSON responses.
+//
+// Parameters:
+//   - c: active Gin request context.
+//   - err: error to serialize and respond with.
 func respondError(c *gin.Context, err error) {
 	if err == nil {
 		return

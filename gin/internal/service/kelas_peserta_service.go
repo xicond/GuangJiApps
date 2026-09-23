@@ -16,11 +16,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasPesertaService manages participant (peserta) enrollments and attendance within a class session.
 type KelasPesertaService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewKelasPesertaService initializes a new KelasPesertaService instance.
+//
+// Parameters:
+//   - db: *gorm.DB database connection pool (defaults to primary if nil)
+//
+// Returns:
+//   - *KelasPesertaService: initialized service pointer
 func NewKelasPesertaService(db *gorm.DB) *KelasPesertaService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -28,6 +36,14 @@ func NewKelasPesertaService(db *gorm.DB) *KelasPesertaService {
 	return &KelasPesertaService{db: db, resource: "kelas_peserta"}
 }
 
+// validatePesertaLookups verifies foreign keys and lookup values for class participants.
+//
+// Parameters:
+//   - db: *gorm.DB database connection
+//   - payload: *domain.KelasPesertaBulkRequest containing participant IDs and lookup values
+//
+// Returns:
+//   - error: *ValidationError with error details if validation fails, or nil
 func validatePesertaLookups(db *gorm.DB, payload *domain.KelasPesertaBulkRequest) error {
 	type lookupCheck struct {
 		fieldName string
@@ -133,6 +149,18 @@ func validatePesertaLookups(db *gorm.DB, payload *domain.KelasPesertaBulkRequest
 	return nil
 }
 
+// List queries participants of a class session using stored procedure with pagination.
+//
+// Parameters:
+//   - id: class TrxId string
+//   - c: *gin.Context containing user auth session for branch isolation
+//   - page: page number (1-based)
+//   - limit: page size limit
+//
+// Returns:
+//   - []domain.KelasPesertaResponse: list of participant records
+//   - int64: total matching count
+//   - error: query or scan error if failed
 func (s *KelasPesertaService) List(id string, c *gin.Context, page int, limit int) ([]domain.KelasPesertaResponse, int64, error) {
 	var items []domain.KelasPesertaResponse
 
@@ -247,6 +275,20 @@ func (s *KelasPesertaService) List(id string, c *gin.Context, page int, limit in
 	return items, total, nil
 }
 
+// updateUmatSDPemula updates umat status, graduation date, and ikrar attributes for SD Pemula (004) classes.
+//
+// Parameters:
+//   - tx: *gorm.DB transaction instance
+//   - idPeserta: umat participant ID
+//   - trxId: kelas transaction ID
+//   - detailId: current participant detail record ID
+//   - lulus: graduation boolean pointer
+//   - umat: optional domain.Umat payload containing ikrar updates
+//   - userID: modifying admin user ID
+//   - now: audit timestamp
+//
+// Returns:
+//   - error: database error if update fails
 func updateUmatSDPemula(tx *gorm.DB, idPeserta int32, trxId int32, detailId int32, lulus *bool, umat *domain.Umat, userID int32, now domain.DateTime) error {
 	if idPeserta == 0 || trxId == 0 {
 		return nil
@@ -340,6 +382,15 @@ func updateUmatSDPemula(tx *gorm.DB, idPeserta int32, trxId int32, detailId int3
 	return nil
 }
 
+// Create registers a single participant in a class session.
+//
+// Parameters:
+//   - payload: domain.KelasPeserta entity payload
+//   - c: *gin.Context containing user auth session
+//
+// Returns:
+//   - domain.KelasPeserta: created participant entity with generated DetailId
+//   - error: validation, ID generation, or database error if failed
 func (s *KelasPesertaService) Create(payload domain.KelasPeserta, c *gin.Context) (domain.KelasPeserta, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.KelasPeserta{}, fmt.Errorf("Validation failed: %w", err)
@@ -405,6 +456,15 @@ func (s *KelasPesertaService) Create(payload domain.KelasPeserta, c *gin.Context
 	return payload, nil
 }
 
+// CreateBulk registers multiple participants in a class session in a single database transaction.
+//
+// Parameters:
+//   - payload: domain.KelasPesertaBulkRequest containing participant IDs and shared properties
+//   - c: *gin.Context containing user auth session
+//
+// Returns:
+//   - []domain.KelasPeserta: slice of created participant records
+//   - error: validation, ID generation, or transaction error if failed
 func (s *KelasPesertaService) CreateBulk(payload domain.KelasPesertaBulkRequest, c *gin.Context) ([]domain.KelasPeserta, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return nil, fmt.Errorf("Validation failed: %w", err)
@@ -508,6 +568,14 @@ func (s *KelasPesertaService) CreateBulk(payload domain.KelasPesertaBulkRequest,
 	return results, nil
 }
 
+// Get retrieves a single participant record by detail ID with preloaded Umat data.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//
+// Returns:
+//   - domain.KelasPeserta: participant entity
+//   - error: not found or database error
 func (s *KelasPesertaService) Get(id string) (domain.KelasPeserta, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -523,6 +591,15 @@ func (s *KelasPesertaService) Get(id string) (domain.KelasPeserta, error) {
 	return item, nil
 }
 
+// GetByIdPerserta retrieves a participant record by umat ID and optional class transaction ID.
+//
+// Parameters:
+//   - idPeserta: string representation of the idpeserta foreign key
+//   - trxIds: optional class transaction IDs to filter by
+//
+// Returns:
+//   - domain.KelasPeserta: participant entity
+//   - error: not found or database error
 func (s *KelasPesertaService) GetByIdPerserta(idPeserta string, trxIds ...string) (domain.KelasPeserta, error) {
 	parsedInt, err := strconv.Atoi(idPeserta)
 	if err != nil {
@@ -544,10 +621,29 @@ func (s *KelasPesertaService) GetByIdPerserta(idPeserta string, trxIds ...string
 	return item, nil
 }
 
+// GetByIdPeserta is an alias for GetByIdPerserta fixing the typo in method naming.
+//
+// Parameters:
+//   - idPeserta: string representation of the idpeserta foreign key
+//   - trxIds: optional class transaction IDs to filter by
+//
+// Returns:
+//   - domain.KelasPeserta: participant entity
+//   - error: not found or database error
 func (s *KelasPesertaService) GetByIdPeserta(idPeserta string, trxIds ...string) (domain.KelasPeserta, error) {
 	return s.GetByIdPerserta(idPeserta, trxIds...)
 }
 
+// Update modifies an existing participant record and synchronizes SD Pemula status if applicable.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//   - payload: domain.KelasPeserta entity containing updated fields
+//   - c: *gin.Context containing user auth session
+//
+// Returns:
+//   - domain.KelasPeserta: updated entity
+//   - error: validation, not found, or database error if failed
 func (s *KelasPesertaService) Update(id string, payload domain.KelasPeserta, c *gin.Context) (domain.KelasPeserta, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -668,6 +764,14 @@ func (s *KelasPesertaService) Update(id string, payload domain.KelasPeserta, c *
 	return item, nil
 }
 
+// Delete soft-deletes a participant record (Status = false) and reverts SD Pemula status if appropriate.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//   - c: *gin.Context containing user auth session
+//
+// Returns:
+//   - error: not found or database error if failed
 func (s *KelasPesertaService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -706,6 +810,18 @@ func (s *KelasPesertaService) Delete(id string, c *gin.Context) error {
 	})
 }
 
+// LoadPrevious loads participants eligible from previous class levels using stored procedure.
+//
+// Parameters:
+//   - id: string representation of current class TrxId
+//   - c: *gin.Context containing user auth session
+//   - page: pagination page number
+//   - limit: page size limit
+//
+// Returns:
+//   - []domain.KelasPesertaPrevious: list of eligible candidates from earlier classes
+//   - int64: total eligible count
+//   - error: query error if failed
 func (s *KelasPesertaService) LoadPrevious(id string, c *gin.Context, page int, limit int) ([]domain.KelasPesertaPrevious, int64, error) {
 	if limit <= 0 {
 		limit = 10

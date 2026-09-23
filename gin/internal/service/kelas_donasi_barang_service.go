@@ -13,11 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasDonasiBarangService manages in-kind/goods donation records for a class event.
 type KelasDonasiBarangService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewKelasDonasiBarangService initializes a new KelasDonasiBarangService instance.
+//
+// Parameters:
+//   - db: *gorm.DB database connection pool (defaults to primary if nil)
+//
+// Returns:
+//   - *KelasDonasiBarangService: initialized service pointer
 func NewKelasDonasiBarangService(db *gorm.DB) *KelasDonasiBarangService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -25,6 +33,17 @@ func NewKelasDonasiBarangService(db *gorm.DB) *KelasDonasiBarangService {
 	return &KelasDonasiBarangService{db: db, resource: "kelas_donasi_barang"}
 }
 
+// List queries active in-kind donations for a class session with pagination.
+//
+// Parameters:
+//   - trxID: string representation of the class transaction ID
+//   - page: page number (1-based)
+//   - limit: page size limit
+//
+// Returns:
+//   - []domain.KelasDonasiBarang: list of in-kind donation items
+//   - int64: total matching count
+//   - error: database error if query fails
 func (s *KelasDonasiBarangService) List(trxID string, page int, limit int) ([]domain.KelasDonasiBarang, int64, error) {
 	var items []domain.KelasDonasiBarang
 	var total int64
@@ -56,6 +75,15 @@ func (s *KelasDonasiBarangService) List(trxID string, page int, limit int) ([]do
 	return items, total, nil
 }
 
+// Create records a new in-kind donation for a class session after validation and ID generation.
+//
+// Parameters:
+//   - payload: domain.KelasDonasiBarang entity data to insert
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasDonasiBarang: created in-kind donation item with generated DetailId
+//   - error: validation, ID generation, or database error if failed
 func (s *KelasDonasiBarangService) Create(payload domain.KelasDonasiBarang, c *gin.Context) (domain.KelasDonasiBarang, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.KelasDonasiBarang{}, fmt.Errorf("Validation failed: %w", err)
@@ -88,6 +116,14 @@ func (s *KelasDonasiBarangService) Create(payload domain.KelasDonasiBarang, c *g
 	return payload, nil
 }
 
+// Get retrieves a single in-kind donation record by detail ID.
+//
+// Parameters:
+//   - id: string representation of the DetailId primary key
+//
+// Returns:
+//   - domain.KelasDonasiBarang: retrieved in-kind donation entity
+//   - error: not found or database error
 func (s *KelasDonasiBarangService) Get(id string) (domain.KelasDonasiBarang, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -103,6 +139,16 @@ func (s *KelasDonasiBarangService) Get(id string) (domain.KelasDonasiBarang, err
 	return item, nil
 }
 
+// Update modifies an existing in-kind donation record.
+//
+// Parameters:
+//   - id: string representation of the DetailId primary key
+//   - payload: domain.KelasDonasiBarang entity containing updated fields
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasDonasiBarang: updated entity
+//   - error: not found or database error if failed
 func (s *KelasDonasiBarangService) Update(id string, payload domain.KelasDonasiBarang, c *gin.Context) (domain.KelasDonasiBarang, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -141,6 +187,14 @@ func (s *KelasDonasiBarangService) Update(id string, payload domain.KelasDonasiB
 	return item, nil
 }
 
+// Delete soft-deletes an in-kind donation record (Status = false).
+//
+// Parameters:
+//   - id: string representation of the DetailId primary key
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - error: not found or database error if failed
 func (s *KelasDonasiBarangService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

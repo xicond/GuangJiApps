@@ -118,7 +118,7 @@ func FormatFieldName(s string) string {
 // 1. ADMIN & AUTHORIZATION MODELS
 // ==========================================
 
-// Admin represents table [dbo].[T_Login_Mst]
+// Admin represents an administrative user account mapped to table [dbo].[T_Login_Mst].
 type Admin struct {
 	ID           int32    `gorm:"primaryKey;column:LoginId" json:"id"`
 	Username     string   `gorm:"column:Username" json:"username" validate:"required,max=50"`
@@ -139,8 +139,10 @@ type Admin struct {
 	Department *DepartmentMst `gorm:"foreignKey:DepartmentId;references:DepartmentId;constraint:false" json:"department,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for Admin.
 func (Admin) TableName() string { return "T_Login_Mst" }
 
+// AdminMatrix represents the warehouse user access matrix mapped to table [dbo].[T_WH_USER_MATRIX_MST].
 type AdminMatrix struct {
 	CruID       int64  `gorm:"primaryKey;autoIncrement:false;column:CRUID;type:bigint;not null" json:"cru_id"`
 	LoginId     *int64 `gorm:"column:LOGINID;type:bigint" json:"login_id,omitempty"`
@@ -148,12 +150,12 @@ type AdminMatrix struct {
 	SubWhId     *int64 `gorm:"column:SUBWHID;type:bigint" json:"sub_wh_id,omitempty"`
 }
 
-// TableName menentukan nama tabel secara eksplisit di database
+// TableName returns the underlying MSSQL database table name for AdminMatrix.
 func (AdminMatrix) TableName() string {
 	return "T_WH_USER_MATRIX_MST"
 }
 
-// SubMenuItem represents child menu items returned from SP_Login_View_Mapping_Group
+// SubMenuItem represents child menu items returned from SP_Login_View_Mapping_Group.
 type SubMenuItem struct {
 	MenuID   int    `gorm:"column:MenuId" json:"menu_id"`
 	ParentID int    `gorm:"column:ParentId" json:"parent_id"`
@@ -164,14 +166,14 @@ type SubMenuItem struct {
 	Sequence int    `gorm:"column:Sequence" json:"sequence"`
 }
 
-// MainMenuItem represents item from SP_Login_Create_Xml
+// MainMenuItem represents a top-level menu category containing nested submenu items.
 type MainMenuItem struct {
 	MenuID   int           `gorm:"column:MenuId" json:"menu_id"`
 	MainMenu string        `gorm:"column:MainMenu" json:"main_menu"`
 	SubMenu  []SubMenuItem `gorm:"-" json:"sub_menu"`
 }
 
-// AdminGroup represents table [dbo].[T_Login_Group]
+// AdminGroup represents a user role/group with CRUD permissions mapped to table [dbo].[T_Login_Group].
 type AdminGroup struct {
 	GroupId     int32  `gorm:"primaryKey;column:GroupId" json:"group_id"`
 	GroupName   string `gorm:"column:GroupName" json:"group_name" validate:"required,max=50"`
@@ -183,8 +185,10 @@ type AdminGroup struct {
 	GroupDesc   string `gorm:"column:GroupDesc" json:"group_desc" validate:"omitempty,max=350"`
 }
 
+// TableName returns the underlying MSSQL database table name for AdminGroup.
 func (AdminGroup) TableName() string { return "T_Login_Group" }
 
+// DepartmentMst represents organizational department master data mapped to table [dbo].[T_BUS_DEPARTMENT_MST].
 type DepartmentMst struct {
 	DepartmentId   int16     `gorm:"primaryKey;autoIncrement:false;column:DepartmentId;type:smallint;not null" json:"department_id"`
 	DepartmentCode *string   `gorm:"column:DepartmentCode;type:varchar(25)" json:"department_code" validate:"omitempty,max=25"`
@@ -195,11 +199,12 @@ type DepartmentMst struct {
 	ModDate        *DateTime `gorm:"column:ModDate;type:datetime" json:"mod_date"`
 }
 
+// TableName returns the underlying MSSQL database table name for DepartmentMst.
 func (DepartmentMst) TableName() string {
 	return "T_BUS_DEPARTMENT_MST"
 }
 
-// GroupMenuMapping represents table [dbo].[T_Login_Menu]
+// GroupMenuMapping represents authorization menu route assignments mapped to table [dbo].[T_Login_Menu].
 type GroupMenuMapping struct {
 	MenuId       int32  `gorm:"primaryKey;column:MenuId" json:"menu_id"`
 	ParentId     int32  `gorm:"column:ParentId" json:"parent_id"`
@@ -211,9 +216,10 @@ type GroupMenuMapping struct {
 	FlagActive   bool   `gorm:"column:FlagActive" json:"flag_active"`
 }
 
+// TableName returns the underlying MSSQL database table name for GroupMenuMapping.
 func (GroupMenuMapping) TableName() string { return "T_Login_Menu" }
 
-// AdminSubWarehouse represents table [dbo].[T_WH_SUBWH_MST]
+// AdminSubWarehouse represents warehouse subdivision master entity mapped to table [dbo].[T_WH_SUBWH_MST].
 type AdminSubWarehouse struct {
 	SubWhId         int32    `gorm:"primaryKey;autoIncrement:false;column:SUBWHID" json:"sub_wh_id"`
 	WhId            int64    `gorm:"column:WHID" json:"wh_id"`
@@ -227,6 +233,7 @@ type AdminSubWarehouse struct {
 	SubWhType       string   `gorm:"column:SubWhType" json:"sub_wh_type" validate:"omitempty,max=3"`
 }
 
+// TableName returns the underlying MSSQL database table name for AdminSubWarehouse.
 func (AdminSubWarehouse) TableName() string { return "T_WH_SUBWH_MST" }
 
 // ==========================================
@@ -458,11 +465,18 @@ type TimKerja struct {
 
 func (TimKerja) TableName() string { return "T_APP_LOOKUP" } // TahunCiuTao represents table [dbo].[T_BUS_TAHUN_CIUTAO]
 
+// DateOnly represents a date without time information (YYYY-MM-DD), compatible with MSSQL date/datetime columns.
 type DateOnly struct {
 	time.Time
 }
 
-// Scan mendeteksi data dari database SQL Server
+// Scan implements sql.Scanner to parse date values from database records into DateOnly.
+//
+// Parameters:
+//   - value: database value (time.Time, string, []byte).
+//
+// Returns:
+//   - error: non-nil if conversion or date parsing fails.
 func (d *DateOnly) Scan(value interface{}) error {
 	if value == nil {
 		return nil
@@ -480,6 +494,7 @@ func (d *DateOnly) Scan(value interface{}) error {
 	}
 }
 
+// parseString parses diverse date string layouts into the embedded time.Time instance.
 func (d *DateOnly) parseString(s string) error {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -500,7 +515,11 @@ func (d *DateOnly) parseString(s string) error {
 	return fmt.Errorf("cannot parse date string %q into DateOnly", s)
 }
 
-// Value untuk menyimpan kembali ke database jika diperlukan
+// Value implements driver.Valuer for persisting DateOnly as a YYYY-MM-DD date string to the database.
+//
+// Returns:
+//   - driver.Value: formatted date string or nil if zero time.
+//   - error: nil.
 func (d DateOnly) Value() (driver.Value, error) {
 	if d.IsZero() {
 		return nil, nil
@@ -508,7 +527,13 @@ func (d DateOnly) Value() (driver.Value, error) {
 	return d.Format("2006-01-02"), nil
 }
 
-// UnmarshalJSON mendeteksi format string JSON (misal "2026-07-27" atau "2026-07-27T00:00:00Z")
+// UnmarshalJSON parses JSON date strings (YYYY-MM-DD or RFC3339) into DateOnly.
+//
+// Parameters:
+//   - b: raw JSON byte slice.
+//
+// Returns:
+//   - error: non-nil if date format cannot be resolved.
 func (d *DateOnly) UnmarshalJSON(b []byte) error {
 	s := strings.Trim(string(b), `"`)
 	if s == "" || s == "null" {
@@ -517,7 +542,11 @@ func (d *DateOnly) UnmarshalJSON(b []byte) error {
 	return d.parseString(s)
 }
 
-// MarshalJSON memotong format jam dan hanya menampilkan YYYY-MM-DD
+// MarshalJSON formats DateOnly as a JSON string in YYYY-MM-DD format (or null if zero).
+//
+// Returns:
+//   - []byte: JSON-encoded date string or null.
+//   - error: non-nil if serialization fails.
 func (d DateOnly) MarshalJSON() ([]byte, error) {
 	if d.IsZero() {
 		return json.Marshal(nil)
@@ -525,10 +554,17 @@ func (d DateOnly) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.Format("2006-01-02"))
 }
 
-// Buat custom type untuk string fleksibel
+// FlexString is a flexible string type that gracefully accepts numbers, floats, strings, or nulls
+// during JSON unmarshaling and database scanning, converting them into standard string format.
 type FlexString string
 
-// Scan implements sql.Scanner to properly scan strings, integers, bytes, or null from database
+// Scan implements sql.Scanner to properly scan strings, integers, bytes, or null from database.
+//
+// Parameters:
+//   - value: database value of any primitive scalar type.
+//
+// Returns:
+//   - error: nil on successful coercion.
 func (fs *FlexString) Scan(value interface{}) error {
 	if value == nil {
 		*fs = ""
@@ -569,7 +605,11 @@ func (fs *FlexString) Scan(value interface{}) error {
 	return nil
 }
 
-// Value implements driver.Valuer for persisting to database
+// Value implements driver.Valuer for persisting to database, treating empty or "0" as NULL.
+//
+// Returns:
+//   - driver.Value: string or nil.
+//   - error: nil.
 func (fs FlexString) Value() (driver.Value, error) {
 	str := strings.TrimSpace(string(fs))
 	if str == "" || str == "0" {
@@ -578,7 +618,11 @@ func (fs FlexString) Value() (driver.Value, error) {
 	return str, nil
 }
 
-// MarshalJSON returns string or null if empty
+// MarshalJSON serializes FlexString as a JSON string, emitting null if empty or "0".
+//
+// Returns:
+//   - []byte: JSON-encoded string or null.
+//   - error: non-nil if serialization fails.
 func (fs FlexString) MarshalJSON() ([]byte, error) {
 	str := strings.TrimSpace(string(fs))
 	if str == "" || str == "0" {
@@ -587,12 +631,21 @@ func (fs FlexString) MarshalJSON() ([]byte, error) {
 	return json.Marshal(str)
 }
 
-// String returns string representation
+// String returns the underlying string representation of FlexString.
+//
+// Returns:
+//   - string: string value.
 func (fs FlexString) String() string {
 	return string(fs)
 }
 
-// UnmarshalJSON menangani konversi otomatis dari int/float/string ke FlexString
+// UnmarshalJSON handles automatic conversion from int, float, string, or null JSON tokens into FlexString.
+//
+// Parameters:
+//   - data: raw JSON bytes.
+//
+// Returns:
+//   - error: nil on successful coercion.
 func (fs *FlexString) UnmarshalJSON(data []byte) error {
 	trimmed := strings.TrimSpace(string(data))
 	if trimmed == "null" || trimmed == "" || trimmed == `""` || trimmed == "0" || trimmed == `"0"` {
@@ -626,20 +679,38 @@ func (fs *FlexString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// DateTime adalah tipe kustom untuk menangani serialisasi/deserialisasi waktu dengan format "YYYY-MM-DD HH:mm:ss"
+// DateTime is a custom timestamp type handling serialization and deserialization
+// in standard SQL datetime format ("YYYY-MM-DD HH:mm:ss") and ISO8601.
 type DateTime struct {
 	time.Time
 }
 
+// NewDateTime constructs a DateTime wrapper from a time.Time instance.
+//
+// Parameters:
+//   - t: standard time.Time instance.
+//
+// Returns:
+//   - DateTime: wrapped timestamp.
 func NewDateTime(t time.Time) DateTime {
 	return DateTime{Time: t}
 }
 
+// NowDateTime constructs a DateTime wrapper initialized to the current time.
+//
+// Returns:
+//   - DateTime: current timestamp.
 func NowDateTime() DateTime {
 	return DateTime{Time: time.Now()}
 }
 
-// Scan mendeteksi data dari database SQL Server
+// Scan implements sql.Scanner to parse SQL Server datetime columns into DateTime.
+//
+// Parameters:
+//   - value: database value (time.Time, string, []byte).
+//
+// Returns:
+//   - error: non-nil if conversion or datetime parsing fails.
 func (dt *DateTime) Scan(value interface{}) error {
 	if value == nil {
 		return nil
@@ -657,6 +728,7 @@ func (dt *DateTime) Scan(value interface{}) error {
 	}
 }
 
+// parseString attempts to parse a datetime string against multiple known layouts.
 func (dt *DateTime) parseString(s string) error {
 	s = strings.TrimSpace(s)
 	if s == "" || s == "null" {
@@ -682,7 +754,11 @@ func (dt *DateTime) parseString(s string) error {
 	return fmt.Errorf("cannot parse date string %q into DateTime", s)
 }
 
-// Value untuk menyimpan kembali ke database jika diperlukan
+// Value implements driver.Valuer for persisting DateTime to database in "YYYY-MM-DD HH:mm:ss" format.
+//
+// Returns:
+//   - driver.Value: formatted datetime string or nil if zero time.
+//   - error: nil.
 func (dt DateTime) Value() (driver.Value, error) {
 	if dt.IsZero() {
 		return nil, nil
@@ -690,7 +766,13 @@ func (dt DateTime) Value() (driver.Value, error) {
 	return dt.Format("2006-01-02 15:04:05"), nil
 }
 
-// UnmarshalJSON mendeteksi format string JSON (misal "2022-10-08 09:12:39" atau "2022-10-08T09:12:39.423Z")
+// UnmarshalJSON parses JSON timestamps ("YYYY-MM-DD HH:mm:ss" or RFC3339) into DateTime.
+//
+// Parameters:
+//   - b: raw JSON byte slice.
+//
+// Returns:
+//   - error: non-nil if timestamp format cannot be parsed.
 func (dt *DateTime) UnmarshalJSON(b []byte) error {
 	s := strings.Trim(string(b), `"`)
 	if s == "" || s == "null" {
@@ -699,7 +781,11 @@ func (dt *DateTime) UnmarshalJSON(b []byte) error {
 	return dt.parseString(s)
 }
 
-// MarshalJSON menampilkan format YYYY-MM-DD HH:mm:ss
+// MarshalJSON formats DateTime as a JSON string in "YYYY-MM-DD HH:mm:ss" format.
+//
+// Returns:
+//   - []byte: JSON-encoded datetime string or null.
+//   - error: non-nil if serialization fails.
 func (dt DateTime) MarshalJSON() ([]byte, error) {
 	if dt.IsZero() {
 		return json.Marshal(nil)
@@ -707,10 +793,17 @@ func (dt DateTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(dt.Format("2006-01-02 15:04:05"))
 }
 
-// IntBool adalah tipe kustom untuk mengubah int/bit/string (0/1) dari DB menjadi bool di Go
+// IntBool is a custom boolean type that seamlessly coerces integer (0/1), bit, string ("true"/"false"/"1"/"0"),
+// or boolean database values and JSON payloads into a Go bool.
 type IntBool bool
 
-// Scan mengonversi nilai dari database (bool/int/int64/uint8/[]byte/string/etc) ke bool
+// Scan implements sql.Scanner to convert database values (bit, int, string, etc.) into IntBool.
+//
+// Parameters:
+//   - value: database scalar value.
+//
+// Returns:
+//   - error: non-nil if type cannot be converted to bool.
 func (ib *IntBool) Scan(value interface{}) error {
 	if value == nil {
 		*ib = false
@@ -756,7 +849,11 @@ func (ib *IntBool) Scan(value interface{}) error {
 	return nil
 }
 
-// Value mengonversi kembali bool ke database jika diperlukan
+// Value implements driver.Valuer to convert IntBool into integer 1 or 0 for SQL bit/int columns.
+//
+// Returns:
+//   - driver.Value: int 1 or 0.
+//   - error: nil.
 func (ib IntBool) Value() (driver.Value, error) {
 	if ib {
 		return 1, nil
@@ -764,7 +861,13 @@ func (ib IntBool) Value() (driver.Value, error) {
 	return 0, nil
 }
 
-// UnmarshalJSON mendeteksi format boolean (true/false), integer (1/0), string ("1"/"0"/"true"/"false"), atau null
+// UnmarshalJSON parses JSON booleans, integers (0/1), strings ("1"/"0"/"true"), or null into IntBool.
+//
+// Parameters:
+//   - b: raw JSON byte slice.
+//
+// Returns:
+//   - error: non-nil if JSON format cannot be parsed into a boolean.
 func (ib *IntBool) UnmarshalJSON(b []byte) error {
 	s := strings.TrimSpace(string(b))
 	if s == "" || s == "null" {
@@ -799,7 +902,11 @@ func (ib *IntBool) UnmarshalJSON(b []byte) error {
 	return fmt.Errorf("cannot unmarshal %s into IntBool", s)
 }
 
-// MarshalJSON mengembalikan boolean true/false untuk JSON output
+// MarshalJSON returns standard JSON boolean true or false.
+//
+// Returns:
+//   - []byte: JSON boolean literal.
+//   - error: non-nil if serialization fails.
 func (ib IntBool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(bool(ib))
 }

@@ -22,6 +22,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasService manages class event cycles, schedules, attendance, and SSRS roster reports.
 type KelasService struct {
 	db                   *gorm.DB
 	resource             string
@@ -30,6 +31,13 @@ type KelasService struct {
 	reportServerPassword string
 }
 
+// NewKelasService initializes a new instance of KelasService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *KelasService: An initialized instance of KelasService.
 func NewKelasService(db *gorm.DB) *KelasService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -43,6 +51,10 @@ func NewKelasService(db *gorm.DB) *KelasService {
 	}
 }
 
+// getReportServerURL retrieves the base SSRS report server URL from environment variables.
+//
+// Returns:
+//   - string: Normalized base URL or "http://localhost" fallback.
 func getReportServerURL() string {
 	if url := os.Getenv("REPORT_BASE_URL"); url != "" {
 		return strings.TrimRight(url, "/")
@@ -50,10 +62,18 @@ func getReportServerURL() string {
 	return "http://localhost"
 }
 
+// getReportServerUsername retrieves the report server authentication username from environment.
+//
+// Returns:
+//   - string: The configured username string.
 func getReportServerUsername() string {
 	return os.Getenv("REPORT_USERNAME")
 }
 
+// getReportServerPassword retrieves the report server authentication password from environment.
+//
+// Returns:
+//   - string: The configured password string.
 func getReportServerPassword() string {
 	return os.Getenv("REPORT_PASSWORD")
 }
@@ -76,6 +96,18 @@ var copyBufferPool = sync.Pool{
 	},
 }
 
+// List executes SP_TRX_KELAS_SEARCH_DATA to search and paginate class event cycles matching filter criteria.
+//
+// Parameters:
+//   - page: Target page number (1-based index).
+//   - filters: Filter parameters map (e.g. "kelas", "start_date", "end_date", "fotang").
+//   - c: Gin context carrying HTTP session user metadata.
+//   - limit: Maximum number of records per page.
+//
+// Returns:
+//   - []domain.KelasResponse: Slice of class event response records.
+//   - int64: Total count of matching records.
+//   - error: Error if database query fails.
 func (s *KelasService) List(page int, filters map[string]string, c *gin.Context, limit int) ([]domain.KelasResponse, int64, error) {
 	var items []domain.KelasResponse
 	var total int64
@@ -220,10 +252,28 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 	return items, total, nil
 }
 
+// Lookup retrieves active special class options under CategoryId = B_KELASKHUSUS.
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of class master lookups.
+//   - int64: Total count.
+//   - error: Error if query fails.
 func (s *KelasService) Lookup(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_KELASKHUSUS", page, limit, filters)
 }
 
+// getUserID extracts the authenticated user ID as int32 from the Gin context or defaults to 1.
+//
+// Parameters:
+//   - c: Gin context carrying session context.
+//
+// Returns:
+//   - int32: Authenticated user's ID.
 func getUserID(c *gin.Context) int32 {
 	if c != nil {
 		if val, exists := c.Get("userID"); exists {
@@ -244,6 +294,16 @@ func getUserID(c *gin.Context) int32 {
 	return 1
 }
 
+// validateKelasLookups validates class category, temple, and level lookups against active master lookups in parallel.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB).
+//   - kodeKelas: Pointer to class code string.
+//   - kodeFotang: Pointer to temple code string.
+//   - level: Pointer to class level code string.
+//
+// Returns:
+//   - error: ValidationError if any referenced lookup is invalid; nil if valid.
 func validateKelasLookups(db *gorm.DB, kodeKelas *string, kodeFotang *string, level *string) error {
 	type lookupCheck struct {
 		fieldName  string
@@ -313,6 +373,14 @@ func validateKelasLookups(db *gorm.DB, kodeKelas *string, kodeFotang *string, le
 	return nil
 }
 
+// Report fetches and streams an SSRS class roster / transaction report in Excel format to the client.
+//
+// Parameters:
+//   - trxId: Class transaction cycle identifier.
+//   - c: Gin context used to extract query parameters and stream the HTTP response.
+//
+// Returns:
+//   - error: Error if report retrieval or streaming fails.
 func (s *KelasService) Report(trxId string /* , subWhId string */, c *gin.Context) error {
 	if trxId == "" && c != nil {
 		trxId = c.Param("id")
@@ -460,6 +528,17 @@ func (s *KelasService) Report(trxId string /* , subWhId string */, c *gin.Contex
 	return nil
 }
 
+// formatDigestAuth constructs the HTTP Digest Authorization header value according to RFC 2617.
+//
+// Parameters:
+//   - authHeader: raw WWW-Authenticate header string from server
+//   - username: auth username
+//   - password: auth password
+//   - method: HTTP request method (e.g. GET)
+//   - uri: request URI path
+//
+// Returns:
+//   - string: formatted Authorization header string
 func formatDigestAuth(authHeader, username, password, method, uri string) string {
 	parts := parseHeaderParts(authHeader)
 	realm := parts["realm"]
@@ -497,6 +576,13 @@ func formatDigestAuth(authHeader, username, password, method, uri string) string
 	return digest
 }
 
+// parseHeaderParts parses key-value directives from a WWW-Authenticate Digest header.
+//
+// Parameters:
+//   - header: raw header string
+//
+// Returns:
+//   - map[string]string: parsed key-value pairs
 func parseHeaderParts(header string) map[string]string {
 	result := make(map[string]string)
 	if !strings.HasPrefix(header, "Digest ") {
@@ -515,6 +601,15 @@ func parseHeaderParts(header string) map[string]string {
 	return result
 }
 
+// Create inserts a new Kelas transaction header record after validation and ID generation.
+//
+// Parameters:
+//   - payload: domain.Kelas entity data to create
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.Kelas: created entity with generated ID and audit info
+//   - error: validation, ID generation, or database error if failed
 func (s *KelasService) Create(payload domain.Kelas, c *gin.Context) (domain.Kelas, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.Kelas{}, fmt.Errorf("Validation failed: %w", err)
@@ -550,6 +645,14 @@ func (s *KelasService) Create(payload domain.Kelas, c *gin.Context) (domain.Kela
 	return payload, nil
 }
 
+// Get retrieves a single Kelas record by its primary key with preloaded lookup relations.
+//
+// Parameters:
+//   - id: string representation of the TrxId primary key
+//
+// Returns:
+//   - domain.Kelas: retrieved entity
+//   - error: record not found or query error
 func (s *KelasService) Get(id string) (domain.Kelas, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -568,6 +671,16 @@ func (s *KelasService) Get(id string) (domain.Kelas, error) {
 	return item, nil
 }
 
+// Update modifies an existing Kelas transaction record.
+//
+// Parameters:
+//   - id: string representation of the TrxId primary key
+//   - payload: domain.Kelas entity containing updated fields
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.Kelas: updated entity
+//   - error: validation, not found, or database error if failed
 func (s *KelasService) Update(id string, payload domain.Kelas, c *gin.Context) (domain.Kelas, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -653,6 +766,14 @@ func (s *KelasService) Update(id string, payload domain.Kelas, c *gin.Context) (
 	return item, nil
 }
 
+// Delete marks a Kelas record as deleted (soft delete via Status = false).
+//
+// Parameters:
+//   - id: string representation of the TrxId primary key
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - error: not found or database error if failed
 func (s *KelasService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -683,6 +804,13 @@ func (s *KelasService) Delete(id string, c *gin.Context) error {
 	return nil
 }
 
+// ToInt32 safely converts an interface value to int32.
+//
+// Parameters:
+//   - val: generic input value to convert
+//
+// Returns:
+//   - int32: converted numeric value, or 0 if conversion fails or val is nil
 func ToInt32(val interface{}) int32 {
 	if val == nil {
 		return 0

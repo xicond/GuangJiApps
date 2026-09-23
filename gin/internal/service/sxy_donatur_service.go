@@ -15,11 +15,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// SxyDonaturService manages SXY donor profiles and lookup operations.
 type SxyDonaturService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewSxyDonaturService initializes a new instance of SxyDonaturService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *SxyDonaturService: An initialized instance of SxyDonaturService.
 func NewSxyDonaturService(db *gorm.DB) *SxyDonaturService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -27,6 +35,17 @@ func NewSxyDonaturService(db *gorm.DB) *SxyDonaturService {
 	return &SxyDonaturService{db: db, resource: "sxy-donatur"}
 }
 
+// List executes SP_SXY_DONATUR_SEARCH_DATA to search and paginate SXY donor records.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter parameters (e.g. "nama", "mandarin", "fotang").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.SxyDonaturResponse: Slice of donor records matching the query.
+//   - int64: Total count of matching records.
+//   - error: Error if stored procedure query fails.
 func (s *SxyDonaturService) List(page int, filters map[string]string, limit int) ([]domain.SxyDonaturResponse, int64, error) {
 	var items []domain.SxyDonaturResponse
 	var total int64
@@ -155,6 +174,11 @@ func (s *SxyDonaturService) List(page int, filters map[string]string, limit int)
 	return items, total, nil
 }
 
+// MapRowToStruct populates target struct fields from a map of column names to values via reflection.
+//
+// Parameters:
+//   - rowMap: Map of column names to raw database values.
+//   - target: Pointer to the destination struct to populate.
 func MapRowToStruct(rowMap map[string]interface{}, target interface{}) {
 	v := reflect.ValueOf(target).Elem()
 	t := v.Type()
@@ -198,6 +222,13 @@ func MapRowToStruct(rowMap map[string]interface{}, target interface{}) {
 	}
 }
 
+// toInt64 converts arbitrary numeric, byte slice, or string values to int64.
+//
+// Parameters:
+//   - val: The raw interface value to convert.
+//
+// Returns:
+//   - int64: Converted integer value or 0 if conversion fails.
 func toInt64(val interface{}) int64 {
 	if val == nil {
 		return 0
@@ -227,6 +258,15 @@ func toInt64(val interface{}) int64 {
 	}
 }
 
+// Create inserts a new SXY donor record after auto-generating an ID using SP_APP_GenerateId.
+//
+// Parameters:
+//   - payload: Donor record to create (domain.SxyDonatur).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.SxyDonatur: The newly created donor record.
+//   - error: Error if ID generation fails, validation fails, or database insert fails.
 func (s *SxyDonaturService) Create(payload domain.SxyDonatur, c *gin.Context) (domain.SxyDonatur, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.SxyDonatur{}, fmt.Errorf("Validation failed: %w", err)
@@ -256,6 +296,14 @@ func (s *SxyDonaturService) Create(payload domain.SxyDonatur, c *gin.Context) (d
 	return payload, nil
 }
 
+// Get fetches a single SXY donor by primary key ID.
+//
+// Parameters:
+//   - id: The primary key of the donor as a string.
+//
+// Returns:
+//   - domain.SxyDonatur: The retrieved donor record.
+//   - error: Error if ID format is invalid or record is not found.
 func (s *SxyDonaturService) Get(id string) (domain.SxyDonatur, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -271,6 +319,16 @@ func (s *SxyDonaturService) Get(id string) (domain.SxyDonatur, error) {
 	return item, nil
 }
 
+// Update updates an existing SXY donor record's details.
+//
+// Parameters:
+//   - id: The primary key of the donor to update as a string.
+//   - payload: Updated donor fields (domain.SxyDonatur).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.SxyDonatur: The updated donor record.
+//   - error: Error if the record is not found or database update fails.
 func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur, c *gin.Context) (domain.SxyDonatur, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -303,6 +361,14 @@ func (s *SxyDonaturService) Update(id string, payload domain.SxyDonatur, c *gin.
 	return item, nil
 }
 
+// Delete deactivates an SXY donor record (soft delete via Status = false).
+//
+// Parameters:
+//   - id: The primary key of the donor to deactivate.
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - error: Error if the record is not found or database update fails.
 func (s *SxyDonaturService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

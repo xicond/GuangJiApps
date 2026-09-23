@@ -13,11 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// GroupMenuService manages navigation menu items and group menu access mappings.
 type GroupMenuService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewGroupMenuService initializes a new instance of GroupMenuService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *GroupMenuService: An initialized instance of GroupMenuService.
 func NewGroupMenuService(db *gorm.DB) *GroupMenuService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -25,6 +33,17 @@ func NewGroupMenuService(db *gorm.DB) *GroupMenuService {
 	return &GroupMenuService{db: db, resource: "group-menu-mappings"}
 }
 
+// List retrieves a paginated list of active group menu mappings matching the given filter criteria.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter conditions (e.g. "menu_name", "page_url", "parent_id").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.GroupMenuMapping: Slice of menu mapping records.
+//   - int64: Total count of records matching the filters.
+//   - error: Error if the database query fails.
 func (s *GroupMenuService) List(page int, filters map[string]string, limit int) ([]domain.GroupMenuMapping, int64, error) {
 	var items []domain.GroupMenuMapping
 	var total int64
@@ -101,6 +120,15 @@ func (s *GroupMenuService) List(page int, filters map[string]string, limit int) 
 	return items, total, nil
 }
 
+// Create inserts a new menu item mapping into the database with default hierarchy sequence values.
+//
+// Parameters:
+//   - payload: The menu mapping record to create (domain.GroupMenuMapping).
+//   - c: Gin context carrying HTTP request metadata.
+//
+// Returns:
+//   - domain.GroupMenuMapping: The newly created menu mapping record.
+//   - error: Error if validation fails or database insert fails.
 func (s *GroupMenuService) Create(payload domain.GroupMenuMapping, c *gin.Context) (domain.GroupMenuMapping, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.GroupMenuMapping{}, fmt.Errorf("Validation failed: %w", err)
@@ -121,6 +149,14 @@ func (s *GroupMenuService) Create(payload domain.GroupMenuMapping, c *gin.Contex
 	return payload, nil
 }
 
+// Get fetches a single group menu mapping by its MenuId.
+//
+// Parameters:
+//   - id: The primary key (MenuId) of the menu mapping as a string.
+//
+// Returns:
+//   - domain.GroupMenuMapping: The retrieved menu mapping record.
+//   - error: Error if ID format is invalid or record is not found.
 func (s *GroupMenuService) Get(id string) (domain.GroupMenuMapping, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -136,6 +172,16 @@ func (s *GroupMenuService) Get(id string) (domain.GroupMenuMapping, error) {
 	return item, nil
 }
 
+// Update updates an existing menu mapping's attributes.
+//
+// Parameters:
+//   - id: The primary key (MenuId) of the menu mapping to update as a string.
+//   - payload: Updated menu mapping fields (domain.GroupMenuMapping).
+//   - c: Gin context carrying HTTP request metadata.
+//
+// Returns:
+//   - domain.GroupMenuMapping: The updated menu mapping record.
+//   - error: Error if the record is not found or database update fails.
 func (s *GroupMenuService) Update(id string, payload domain.GroupMenuMapping, c *gin.Context) (domain.GroupMenuMapping, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -164,6 +210,14 @@ func (s *GroupMenuService) Update(id string, payload domain.GroupMenuMapping, c 
 	return item, nil
 }
 
+// Delete deactivates a menu mapping (soft delete via FlagActive = false).
+//
+// Parameters:
+//   - id: The primary key (MenuId) of the menu mapping to deactivate.
+//   - c: Gin context carrying HTTP request metadata.
+//
+// Returns:
+//   - error: Error if the record is not found or database update fails.
 func (s *GroupMenuService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

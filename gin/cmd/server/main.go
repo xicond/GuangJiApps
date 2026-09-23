@@ -18,6 +18,8 @@ import (
 	"guangjiapps/gin/internal/service"
 )
 
+// main initializes configuration, database pools, authentication services,
+// HTTP routes, and manages the graceful shutdown lifecycle of the Gin web server.
 func main() {
 	// 1. Tangkap port dari argument flag CLI (misal: --port=111)
 	//    Cek apakah port dikirim lewat argumen, jika tidak baru cek os.Getenv, jika tidak baru pakai default

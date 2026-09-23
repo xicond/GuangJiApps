@@ -13,11 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasAbsensiService manages attendance log entries for class sessions and participants.
 type KelasAbsensiService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewKelasAbsensiService initializes a new KelasAbsensiService instance.
+//
+// Parameters:
+//   - db: *gorm.DB database connection pool (defaults to primary if nil)
+//
+// Returns:
+//   - *KelasAbsensiService: initialized service pointer
 func NewKelasAbsensiService(db *gorm.DB) *KelasAbsensiService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -25,6 +33,17 @@ func NewKelasAbsensiService(db *gorm.DB) *KelasAbsensiService {
 	return &KelasAbsensiService{db: db, resource: "kelas_absensi"}
 }
 
+// List queries active attendance records for a class session with pagination.
+//
+// Parameters:
+//   - trxID: string representation of the class transaction ID
+//   - page: page number (1-based)
+//   - limit: page size limit
+//
+// Returns:
+//   - []domain.KelasAbsensi: list of attendance records
+//   - int64: total matching count
+//   - error: database error if query fails
 func (s *KelasAbsensiService) List(trxID string, page int, limit int) ([]domain.KelasAbsensi, int64, error) {
 	var items []domain.KelasAbsensi
 	var total int64
@@ -56,6 +75,15 @@ func (s *KelasAbsensiService) List(trxID string, page int, limit int) ([]domain.
 	return items, total, nil
 }
 
+// Create inserts a new attendance entry for a class session after validation and ID generation.
+//
+// Parameters:
+//   - payload: domain.KelasAbsensi entity data to insert
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasAbsensi: created attendance record with generated Id
+//   - error: validation, ID generation, or database error if failed
 func (s *KelasAbsensiService) Create(payload domain.KelasAbsensi, c *gin.Context) (domain.KelasAbsensi, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.KelasAbsensi{}, fmt.Errorf("Validation failed: %w", err)
@@ -88,6 +116,14 @@ func (s *KelasAbsensiService) Create(payload domain.KelasAbsensi, c *gin.Context
 	return payload, nil
 }
 
+// Get retrieves a single attendance record by primary key ID.
+//
+// Parameters:
+//   - id: string representation of the Id primary key
+//
+// Returns:
+//   - domain.KelasAbsensi: retrieved attendance entity
+//   - error: not found or database error
 func (s *KelasAbsensiService) Get(id string) (domain.KelasAbsensi, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -103,6 +139,16 @@ func (s *KelasAbsensiService) Get(id string) (domain.KelasAbsensi, error) {
 	return item, nil
 }
 
+// Update modifies an existing attendance record.
+//
+// Parameters:
+//   - id: string representation of the Id primary key
+//   - payload: domain.KelasAbsensi entity containing updated fields
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasAbsensi: updated entity
+//   - error: not found or database error if failed
 func (s *KelasAbsensiService) Update(id string, payload domain.KelasAbsensi, c *gin.Context) (domain.KelasAbsensi, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -144,6 +190,14 @@ func (s *KelasAbsensiService) Update(id string, payload domain.KelasAbsensi, c *
 	return item, nil
 }
 
+// Delete soft-deletes an attendance record (Status = false).
+//
+// Parameters:
+//   - id: string representation of the Id primary key
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - error: not found or database error if failed
 func (s *KelasAbsensiService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

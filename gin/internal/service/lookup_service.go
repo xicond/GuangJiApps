@@ -11,11 +11,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// LookupService provides common master lookup retrieval methods for all lookup categories in the system.
 type LookupService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewLookupService initializes a new instance of LookupService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *LookupService: An initialized instance of LookupService.
 func NewLookupService(db *gorm.DB) *LookupService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -23,62 +31,228 @@ func NewLookupService(db *gorm.DB) *LookupService {
 	return &LookupService{db: db, resource: "lookup"}
 }
 
+// Lookup fetches records from T_APP_LOOKUP for a specific category with pagination and options.
+//
+// Parameters:
+//   - categoryID: Category identifier (e.g. "B_GENDER", "B_STATUS").
+//   - page: Target page number (1-based).
+//   - limit: Records per page.
+//   - opts: Optional filter map (map[string]string) or custom subquery (*gorm.DB).
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count of matching records.
+//   - error: Error if database query fails.
 func (s *LookupService) Lookup(categoryID string, page int, limit int, opts ...interface{}) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, categoryID, page, limit, opts...)
 }
 
+// LookupWaktuCiuTao retrieves active initiation time period lookups (B_WAKTUCIUTAO).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupWaktuCiuTao(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_WAKTUCIUTAO", page, limit, filters)
 }
 
+// LookupGender retrieves active gender lookups (B_GENDER).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupGender(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_GENDER", page, limit, filters)
 }
 
+// LookupTcs retrieves active TCS (initiator) lookups (B_TCS).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupTcs(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_TCS", page, limit, filters)
 }
 
+// LookupFotang retrieves active temple lookups (B_FOTHANG).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupFotang(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_FOTHANG", page, limit, filters)
 }
 
+// LookupKelas retrieves active special class lookups (B_KELASKHUSUS).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupKelas(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_KELASKHUSUS", page, limit, filters)
 }
 
+// LookupPendidikan retrieves active education level lookups (B_PENDIDIKAN).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupPendidikan(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_PENDIDIKAN", page, limit, filters)
 }
 
+// LookupKelasUmum retrieves active general class lookups (B_KELASUMUM).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupKelasUmum(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_KELASUMUM", page, limit, filters)
 }
 
+// LookupPekerjaan retrieves active occupation lookups (B_PEKERJAAN).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupPekerjaan(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_PEKERJAAN", page, limit, filters)
 }
 
+// LookupKeluarga retrieves active family relationship lookups (B_KELUARGA).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupKeluarga(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_KELUARGA", page, limit, filters)
 }
 
+// LookupKelasLevel retrieves active class level lookups (B_KLS_LEVEL).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupKelasLevel(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_KLS_LEVEL", page, limit, filters)
 }
 
+// LookupStatus retrieves active status lookups (B_STATUS).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupStatus(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_STATUS", page, limit, filters)
 }
 
+// LookupKategoriTopic retrieves active topic category lookups (B_KATEGORI_TOPIK).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupKategoriTopic(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_KATEGORI_TOPIK", page, limit, filters)
 }
 
+// LookupKategoriEvent retrieves active event category lookups (B_KATEGORI_EVENT).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupKategoriEvent(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_KATEGORI_EVENT", page, limit, filters)
 }
 
+// LookupTipeSumbangan retrieves active donation type lookups (SXY_TIPESUMBANGAN).
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count.
+//   - error: Query error if any.
 func (s *LookupService) LookupTipeSumbangan(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "SXY_TIPESUMBANGAN", page, limit, filters)
 }
@@ -86,6 +260,18 @@ func (s *LookupService) LookupTipeSumbangan(filters map[string]string, page int,
 // Lookup fetches records from T_APP_LOOKUP for a given CategoryId with optional filters, pagination, and subQuery customizations.
 // If limit <= 0, all records are returned without pagination (page is ignored).
 // opts can optionally include a map[string]string (filters) and/or a *gorm.DB or func(*gorm.DB) *gorm.DB to customize the subQuery.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB).
+//   - categoryID: Category identifier (e.g. "B_GENDER", "B_STATUS").
+//   - page: Target page number (1-based index).
+//   - limit: Maximum number of records per page (<= 0 for all).
+//   - opts: Variadic options (filters map and/or subquery modifier).
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count of matching records.
+//   - error: Error if database query fails.
 func Lookup(db *gorm.DB, categoryID string, page int, limit int, opts ...interface{}) ([]domain.AppLookup, int64, error) {
 	if db == nil {
 		return nil, 0, errors.New("database connection is nil")

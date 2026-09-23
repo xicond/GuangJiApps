@@ -14,11 +14,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasMasterService manages class master definitions stored in T_APP_LOOKUP under the B_KELASKHUSUS category.
 type KelasMasterService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewKelasMasterService initializes a new instance of KelasMasterService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *KelasMasterService: An initialized instance of KelasMasterService.
 func NewKelasMasterService(db *gorm.DB) *KelasMasterService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -28,6 +36,11 @@ func NewKelasMasterService(db *gorm.DB) *KelasMasterService {
 
 // getNextLookupValue calculates the next sequential LookupValue and LookupId for B_KELASKHUSUS.
 // Example: existing max "022" -> nextVal "023", nextId "B_KELASKHUSUS023"
+//
+// Returns:
+//   - string: Zero-padded 3-digit sequence string (e.g. "023").
+//   - string: Prefixed lookup identifier string (e.g. "B_KELASKHUSUS023").
+//   - error: Error if database query fails.
 func (s *KelasMasterService) getNextLookupValue() (string, string, error) {
 	var values []string
 	if err := s.db.Table("T_APP_LOOKUP").
@@ -63,6 +76,14 @@ func (s *KelasMasterService) getNextLookupValue() (string, string, error) {
 	return nextVal, nextId, nil
 }
 
+// validateDescription verifies class description presence, length constraints, and uniqueness.
+//
+// Parameters:
+//   - description: The candidate class description name to check.
+//   - excludeId: Optional LookupId to exclude from duplicate detection during updates.
+//
+// Returns:
+//   - error: ValidationError if description is invalid or already exists; nil if valid.
 func (s *KelasMasterService) validateDescription(description string, excludeId string) error {
 	name := strings.TrimSpace(description)
 	if name == "" {
@@ -95,6 +116,14 @@ func (s *KelasMasterService) validateDescription(description string, excludeId s
 	return nil
 }
 
+// validateKelasMaster executes struct tag validation and business uniqueness checks for class master lookups.
+//
+// Parameters:
+//   - payload: The class master record to validate (domain.AppLookup).
+//   - excludeId: Optional LookupId to exclude from uniqueness collision checks.
+//
+// Returns:
+//   - error: ValidationError if any validation rules fail; nil if valid.
 func (s *KelasMasterService) validateKelasMaster(payload domain.AppLookup, excludeId string) error {
 	details := make(map[string][]string)
 
@@ -130,6 +159,17 @@ func (s *KelasMasterService) validateKelasMaster(payload domain.AppLookup, exclu
 	return nil
 }
 
+// List retrieves a paginated list of class master records matching the given filter criteria.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter parameters (e.g. "status", "name", "code").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of class master lookup records.
+//   - int64: Total count of matching records.
+//   - error: Error if database query fails.
 func (s *KelasMasterService) List(page int, filters map[string]string, limit int) ([]domain.AppLookup, int64, error) {
 	var items []domain.AppLookup
 	var total int64
@@ -224,6 +264,14 @@ func (s *KelasMasterService) List(page int, filters map[string]string, limit int
 	return items, total, nil
 }
 
+// Get fetches a single class master record by LookupId or LookupValue.
+//
+// Parameters:
+//   - id: The LookupId or LookupValue of the class master.
+//
+// Returns:
+//   - domain.AppLookup: The retrieved class master record.
+//   - error: Error if the record is not found or database query fails.
 func (s *KelasMasterService) Get(id string) (domain.AppLookup, error) {
 	cleanID := strings.TrimSpace(id)
 	var item domain.AppLookup
@@ -236,6 +284,15 @@ func (s *KelasMasterService) Get(id string) (domain.AppLookup, error) {
 	return item, nil
 }
 
+// Create inserts a new class master record, auto-generating sequential LookupValue and LookupId if not specified.
+//
+// Parameters:
+//   - payload: Class master record to create (domain.AppLookup).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.AppLookup: The newly created class master record.
+//   - error: Error if validation fails or database insert fails.
 func (s *KelasMasterService) Create(payload domain.AppLookup, c *gin.Context) (domain.AppLookup, error) {
 	category := "B_KELASKHUSUS"
 	payload.CategoryId = &category
@@ -303,6 +360,16 @@ func (s *KelasMasterService) Create(payload domain.AppLookup, c *gin.Context) (d
 	return payload, nil
 }
 
+// Update modifies an existing class master record's description or active status.
+//
+// Parameters:
+//   - id: The LookupId or LookupValue of the class master to update.
+//   - payload: Updated class master fields (domain.AppLookup).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.AppLookup: The updated class master record.
+//   - error: Error if the record is not found, validation fails, or database update fails.
 func (s *KelasMasterService) Update(id string, payload domain.AppLookup, c *gin.Context) (domain.AppLookup, error) {
 	cleanID := strings.TrimSpace(id)
 	var item domain.AppLookup
@@ -350,6 +417,14 @@ func (s *KelasMasterService) Update(id string, payload domain.AppLookup, c *gin.
 	return item, nil
 }
 
+// Delete deactivates a class master record (soft delete via Status = false and ModAct = 'D').
+//
+// Parameters:
+//   - id: The LookupId or LookupValue of the class master to deactivate.
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - error: Error if the record is not found or database update fails.
 func (s *KelasMasterService) Delete(id string, c *gin.Context) error {
 	cleanID := strings.TrimSpace(id)
 	var item domain.AppLookup

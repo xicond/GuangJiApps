@@ -13,6 +13,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Config holds all environment configurations for application runtime, database,
+// authentication keys, external reporting services, and Redis caching.
 type Config struct {
 	Port                 string
 	GinMode              string
@@ -27,6 +29,11 @@ type Config struct {
 	RedisDB              string
 }
 
+// Load reads and parses environment variables from .env / .env.local files,
+// applying default fallbacks where necessary.
+//
+// Returns:
+//   - Config: populated application configuration struct.
 func Load() Config {
 	_ = godotenv.Load()
 	// _ = godotenv.Load("../.env")
@@ -58,22 +65,55 @@ func Load() Config {
 	return cfg
 }
 
+// GetJWTSigningKey loads the private key used for signing primary access JWT tokens.
+//
+// Returns:
+//   - interface{}: parsed RSA or ECDSA private key.
+//   - jwt.SigningMethod: corresponding JWT signing algorithm (RS256/ES256).
+//   - error: non-nil if reading or parsing the key file fails.
 func (c Config) GetJWTSigningKey() (interface{}, jwt.SigningMethod, error) {
 	return LoadJWTSigningKey(c.JWTSecret)
 }
 
+// GetJWTVerificationKey loads the public key used for verifying primary access JWT tokens.
+//
+// Returns:
+//   - interface{}: parsed RSA or ECDSA public key.
+//   - jwt.SigningMethod: corresponding JWT signing algorithm (RS256/ES256).
+//   - error: non-nil if reading or parsing the key file fails.
 func (c Config) GetJWTVerificationKey() (interface{}, jwt.SigningMethod, error) {
 	return LoadJWTVerificationKey(c.JWTSecret)
 }
 
+// GetJWTRefreshSigningKey loads the private key used for signing refresh JWT tokens.
+//
+// Returns:
+//   - interface{}: parsed RSA or ECDSA private key for refresh tokens.
+//   - jwt.SigningMethod: corresponding JWT signing algorithm (RS256/ES256).
+//   - error: non-nil if reading or parsing the key file fails.
 func (c Config) GetJWTRefreshSigningKey() (interface{}, jwt.SigningMethod, error) {
 	return LoadJWTSigningKey(c.RefreshSecret)
 }
 
+// GetJWTRefreshVerificationKey loads the public key used for verifying refresh JWT tokens.
+//
+// Returns:
+//   - interface{}: parsed RSA or ECDSA public key for refresh tokens.
+//   - jwt.SigningMethod: corresponding JWT signing algorithm (RS256/ES256).
+//   - error: non-nil if reading or parsing the key file fails.
 func (c Config) GetJWTRefreshVerificationKey() (interface{}, jwt.SigningMethod, error) {
 	return LoadJWTVerificationKey(c.RefreshSecret)
 }
 
+// LoadJWTSigningKey parses an RSA (RS256) or ECDSA (ES256) private key from a PEM file or raw string.
+//
+// Parameters:
+//   - path: file path to the PEM private key or raw PEM string.
+//
+// Returns:
+//   - interface{}: parsed crypto private key.
+//   - jwt.SigningMethod: detected JWT signing method.
+//   - error: non-nil if parsing fails or key format is invalid.
 func LoadJWTSigningKey(path string) (interface{}, jwt.SigningMethod, error) {
 	bytesData, err := getSecretBytes(path)
 	if err != nil {
@@ -93,6 +133,15 @@ func LoadJWTSigningKey(path string) (interface{}, jwt.SigningMethod, error) {
 	return nil, nil, errors.New("JWT key must be a valid RSA or ECDSA private key PEM file")
 }
 
+// LoadJWTVerificationKey parses an RSA (RS256) or ECDSA (ES256) public key from a PEM file or raw string.
+//
+// Parameters:
+//   - path: file path to the PEM public/private key or raw PEM string.
+//
+// Returns:
+//   - interface{}: parsed crypto public key.
+//   - jwt.SigningMethod: detected JWT signing method.
+//   - error: non-nil if parsing fails or key format is invalid.
 func LoadJWTVerificationKey(path string) (interface{}, jwt.SigningMethod, error) {
 	bytesData, err := getSecretBytes(path)
 	if err != nil {
@@ -122,6 +171,15 @@ func LoadJWTVerificationKey(path string) (interface{}, jwt.SigningMethod, error)
 	return nil, nil, errors.New("JWT key must be a valid RSA or ECDSA public/private key PEM file")
 }
 
+// getSecretBytes retrieves raw key bytes from either a raw PEM string or by resolving
+// relative/absolute file paths across cross-platform candidate locations.
+//
+// Parameters:
+//   - path: raw PEM content string or filesystem path.
+//
+// Returns:
+//   - []byte: trimmed byte slice of the PEM key.
+//   - error: non-nil if file cannot be found or read.
 func getSecretBytes(path string) ([]byte, error) {
 	path = strings.TrimSpace(path)
 	if path == "" {
@@ -180,6 +238,13 @@ func getSecretBytes(path string) ([]byte, error) {
 	return nil, fmt.Errorf("JWT RSA/ECDSA key PEM file not found at '%s'. Tried paths: %s", path, strings.Join(searched, ", "))
 }
 
+// NormalizeBaseURL sanitizes and standardizes the base API URL without trailing slashes.
+//
+// Parameters:
+//   - value: raw base URL string from environment.
+//
+// Returns:
+//   - string: normalized base URL.
 func NormalizeBaseURL(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
@@ -197,6 +262,14 @@ func NormalizeBaseURL(value string) string {
 	return strings.TrimRight(value, "/")
 }
 
+// getenv retrieves the value of an environment variable or falls back to a default value.
+//
+// Parameters:
+//   - key: environment variable key.
+//   - fallback: default value if key is unset or empty.
+//
+// Returns:
+//   - string: resolved environment variable value or fallback.
 func getenv(key, fallback string) string {
 	value := os.Getenv(key)
 	if value == "" {

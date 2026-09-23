@@ -18,6 +18,9 @@ import (
 const FixedRuleName = "Golang_Block_0"
 
 // ReadBlockedIPsFromNetsh queries Windows Firewall rule "Golang_Block_0" to parse existing blocked remote IPs.
+//
+// Returns:
+//   - []string: slice of currently blocked remote IP addresses parsed from Windows Firewall.
 func ReadBlockedIPsFromNetsh() []string {
 	if runtime.GOOS != "windows" {
 		return nil
@@ -63,6 +66,12 @@ func ReadBlockedIPsFromNetsh() []string {
 }
 
 // SyncBlockedIPs_Netsh updates or creates the single firewall rule "Golang_Block_0" with comma-separated unique IPs.
+//
+// Parameters:
+//   - allIPs: slice of unique IP addresses to enforce in the firewall blocklist.
+//
+// Returns:
+//   - error: non-nil if executing the netsh firewall command fails.
 func SyncBlockedIPs_Netsh(allIPs []string) error {
 	if len(allIPs) == 0 {
 		return nil
@@ -110,12 +119,24 @@ func SyncBlockedIPs_Netsh(allIPs []string) error {
 	return nil
 }
 
-// BlockIP_Netsh executes netsh command on Windows to add/update IP in "Golang_Block_0" firewall rule.
+// BlockIP_Netsh executes netsh command on Windows to add/update an IP in the "Golang_Block_0" firewall rule.
+//
+// Parameters:
+//   - ip: remote IP address to block.
+//
+// Returns:
+//   - error: non-nil if firewall command fails.
 func BlockIP_Netsh(ip string) error {
 	return GetFail2Ban().blockIP(ip)
 }
 
-// IsScannerURL detects common vulnerability/scanner probe URL patterns.
+// IsScannerURL detects common vulnerability/scanner probe URL patterns (e.g. .env, wp-admin, .php).
+//
+// Parameters:
+//   - path: request URL path string.
+//
+// Returns:
+//   - bool: true if path matches known scanner or exploit probe patterns.
 func IsScannerURL(path string) bool {
 	p := strings.ToLower(strings.TrimSpace(path))
 
@@ -157,12 +178,14 @@ func IsScannerURL(path string) bool {
 	return false
 }
 
+// ipTracker records timestamps of general and vulnerability scanner 404 occurrences per IP.
 type ipTracker struct {
 	mu          sync.Mutex
 	general404s []time.Time
 	scanner404s []time.Time
 }
 
+// Fail2Ban provides automated intrusion detection and IP blocking integration with Windows Firewall.
 type Fail2Ban struct {
 	blockedIPs sync.Map // map[string]bool
 	trackers   sync.Map // map[string]*ipTracker
@@ -174,7 +197,10 @@ var (
 	globalFail2BanOnce sync.Once
 )
 
-// GetFail2Ban returns the singleton instance of Fail2Ban with background cleanup.
+// GetFail2Ban returns the singleton instance of Fail2Ban with background cleanup loop running.
+//
+// Returns:
+//   - *Fail2Ban: singleton Fail2Ban instance.
 func GetFail2Ban() *Fail2Ban {
 	globalFail2BanOnce.Do(func() {
 		globalFail2Ban = NewFail2Ban()
@@ -182,6 +208,10 @@ func GetFail2Ban() *Fail2Ban {
 	return globalFail2Ban
 }
 
+// NewFail2Ban instantiates and starts a new Fail2Ban manager with background tracker cleanup.
+//
+// Returns:
+//   - *Fail2Ban: new Fail2Ban instance.
 func NewFail2Ban() *Fail2Ban {
 	fb := &Fail2Ban{
 		stopChan: make(chan struct{}),
@@ -190,6 +220,13 @@ func NewFail2Ban() *Fail2Ban {
 	return fb
 }
 
+// blockIP adds an IP to the in-memory block map and syncs it to the Windows Firewall rule.
+//
+// Parameters:
+//   - ip: remote IP address to block.
+//
+// Returns:
+//   - error: non-nil if firewall sync fails.
 func (f *Fail2Ban) blockIP(ip string) error {
 	ip = strings.TrimSpace(ip)
 	if host, _, err := net.SplitHostPort(ip); err == nil {
@@ -220,6 +257,7 @@ func (f *Fail2Ban) blockIP(ip string) error {
 	return SyncBlockedIPs_Netsh(allIPs)
 }
 
+// Stop gracefully terminates the background cleanup loop.
 func (f *Fail2Ban) Stop() {
 	select {
 	case <-f.stopChan:
@@ -229,13 +267,29 @@ func (f *Fail2Ban) Stop() {
 	}
 }
 
+// IsBlocked checks whether the given IP is currently recorded in the active blocklist.
+//
+// Parameters:
+//   - ip: remote IP address to test.
+//
+// Returns:
+//   - bool: true if the IP is blocked.
 func (f *Fail2Ban) IsBlocked(ip string) bool {
 	ip = sanitizeIP(ip)
 	_, blocked := f.blockedIPs.Load(ip)
 	return blocked
 }
 
-// Record404 evaluates 404 event against General (10 per 20s) and Scanner (2 per 60s) rules.
+// Record404 evaluates a 404 Not Found event against two threshold rules:
+//   - General probe rule: 10 occurrences within 20 seconds.
+//   - Scanner probe rule: 2 scanner URL probes within 60 seconds.
+//
+// Parameters:
+//   - ip: client remote IP address.
+//   - path: requested URL path.
+//
+// Returns:
+//   - bool: true if IP exceeded threshold and was blocked.
 func (f *Fail2Ban) Record404(ip, path string) bool {
 	ip = sanitizeIP(ip)
 
@@ -304,6 +358,9 @@ func (f *Fail2Ban) Record404(ip, path string) bool {
 }
 
 // Middleware returns Gin middleware that checks IP block status and tracks 404 responses asynchronously.
+//
+// Returns:
+//   - gin.HandlerFunc: intrusion detection middleware handler.
 func (f *Fail2Ban) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := sanitizeIP(c.ClientIP())
@@ -349,6 +406,7 @@ func (f *Fail2Ban) Middleware() gin.HandlerFunc {
 	}
 }
 
+// CleanupStaleTrackers removes expired 404 history entries and purges inactive IP trackers.
 func (f *Fail2Ban) CleanupStaleTrackers() {
 	now := time.Now()
 	f.trackers.Range(func(key, value interface{}) bool {
@@ -384,6 +442,7 @@ func (f *Fail2Ban) CleanupStaleTrackers() {
 	})
 }
 
+// startCleanupLoop runs a periodic 1-minute ticker to trigger tracker cleanups.
 func (f *Fail2Ban) startCleanupLoop() {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()

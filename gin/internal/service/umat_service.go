@@ -39,6 +39,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// UmatService manages operations on congregation member (umat) data including CRUD, photo processing, QR tokens, SSRS reports, and OCR.
 type UmatService struct {
 	db                   *gorm.DB
 	cfg                  config.Config
@@ -48,6 +49,14 @@ type UmatService struct {
 	reportServerPassword string
 }
 
+// NewUmatService initializes a new instance of UmatService with the provided database and optional configuration.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//   - cfgs: Optional Config instance. If omitted, loaded from environment.
+//
+// Returns:
+//   - *UmatService: An initialized instance of UmatService.
 func NewUmatService(db *gorm.DB, cfgs ...config.Config) *UmatService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -68,6 +77,13 @@ func NewUmatService(db *gorm.DB, cfgs ...config.Config) *UmatService {
 	}
 }
 
+// derefString safely dereferences a string pointer, returning an empty string if nil.
+//
+// Parameters:
+//   - s: Pointer to a string (*string).
+//
+// Returns:
+//   - string: The dereferenced string value or "" if s is nil.
 func derefString(s *string) string {
 	if s == nil {
 		return ""
@@ -75,6 +91,14 @@ func derefString(s *string) string {
 	return *s
 }
 
+// validateUmatLookups validates lookup fields in an umat record against active master lookups in parallel.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB).
+//   - payload: Pointer to the Umat record to validate (*domain.Umat).
+//
+// Returns:
+//   - error: ValidationError containing invalid field details, or nil if all are valid.
 func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 	type lookupCheck struct {
 		fieldName  string
@@ -143,6 +167,18 @@ func validateUmatLookups(db *gorm.DB, payload *domain.Umat) error {
 	return nil
 }
 
+// List retrieves a paginated list of umat records matching the given search and filter parameters.
+//
+// Parameters:
+//   - c: Gin context carrying HTTP query and header parameters.
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter conditions.
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.Umat: Slice of umat records matching the query.
+//   - int64: Total count of matching records.
+//   - error: Error if database query fails.
 func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.Umat, int64, error) { //[]domain.Umat {
 	var items []domain.Umat
 	var total int64
@@ -275,6 +311,18 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 	return items, total, nil
 }
 
+// PopUp executes an optimized search query intended for umat search modal/dialog popups with minimal fields.
+//
+// Parameters:
+//   - c: Gin context carrying HTTP query and header parameters.
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter conditions.
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.UmatPopUpResponse: Lightweight umat records tailored for popup selection.
+//   - int64: Total count of matching records.
+//   - error: Error if database query fails.
 func (s *UmatService) PopUp(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.UmatPopUpResponse, int64, error) {
 	const defaultLimit = 10
 	const maxLimit = 1000
@@ -380,6 +428,13 @@ func (s *UmatService) PopUp(c *gin.Context, page int, filters map[string]string,
 	return items, total, nil
 }
 
+// sanitizeFilename normalizes and cleans a file name to prevent directory traversal and remove unsafe characters.
+//
+// Parameters:
+//   - name: The raw uploaded filename as a string.
+//
+// Returns:
+//   - string: A sanitized and safe filename.
 func sanitizeFilename(name string) string {
 	name = strings.ReplaceAll(name, "\\", "/")
 	name = filepath.Base(name)
@@ -452,6 +507,13 @@ func sanitizeFilename(name string) string {
 	return clean
 }
 
+// validateImageHeader checks the MIME type, extension, size, and decodability of an uploaded image file header.
+//
+// Parameters:
+//   - fileHeader: The uploaded multipart file header (*multipart.FileHeader).
+//
+// Returns:
+//   - error: Error if the file fails size, MIME, or decoding validations; nil if valid or nil header.
 func validateImageHeader(fileHeader *multipart.FileHeader) error {
 	if fileHeader == nil {
 		return nil
@@ -548,6 +610,18 @@ func validateImageHeader(fileHeader *multipart.FileHeader) error {
 	return nil
 }
 
+// processAndSaveUmatFoto saves an uploaded photo to disk (with optional thumbnailing and watermarking) and persists metadata to the database.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB).
+//   - umatID: ID of the umat whose photo is being saved.
+//   - namaIndo: Indonesian name of the umat, used in generating file names.
+//   - fileHeader: The uploaded multipart file header.
+//   - c: Gin context carrying request metadata.
+//   - isUpdate: Flag indicating if this is an update to an existing photo.
+//
+// Returns:
+//   - error: Error if file writing or database persistence fails.
 func processAndSaveUmatFoto(db *gorm.DB, umatID int32, namaIndo string, fileHeader *multipart.FileHeader, c *gin.Context, isUpdate bool) error {
 	if fileHeader == nil {
 		return nil
@@ -669,6 +743,16 @@ func processAndSaveUmatFoto(db *gorm.DB, umatID int32, namaIndo string, fileHead
 	return db.Create(&foto).Error
 }
 
+// Create validates and inserts a new umat member record, generating a unique ID and processing the optional profile photo.
+//
+// Parameters:
+//   - payload: Umat record to create (domain.Umat).
+//   - fileHeader: Optional uploaded photo header (*multipart.FileHeader).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.Umat: The newly created umat record.
+//   - error: Error if validation fails or database insert fails.
 func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHeader, c *gin.Context) (domain.Umat, error) {
 	if fileHeader != nil {
 		if err := validateImageHeader(fileHeader); err != nil {
@@ -812,6 +896,14 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 	return payload, nil
 }
 
+// Get fetches a single umat member by ID, calculates age dynamically, and generates a signed QR token.
+//
+// Parameters:
+//   - id: The primary key of the umat member as a string.
+//
+// Returns:
+//   - domain.Umat: The retrieved umat member record.
+//   - error: Error if the member is not found or database query fails.
 func (s *UmatService) Get(id string) (domain.Umat, error) {
 	var item domain.Umat
 	if err := s.db.Preload("JenisKelaminInfo", "CategoryId = ? AND Status = ?", "B_JENISKELAMIN", true).First(&item, "id = ?", id).Error; err != nil {
@@ -836,6 +928,14 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 	return item, nil
 }
 
+// GenerateQRToken produces a cryptographically signed JWT token prefixed with "umat." for QR attendance.
+//
+// Parameters:
+//   - item: The Umat record for which to issue the token (domain.Umat).
+//
+// Returns:
+//   - string: The formatted QR token string.
+//   - error: Error if key retrieval or signing fails.
 func (s *UmatService) GenerateQRToken(item domain.Umat) (string, error) {
 	key, method, err := s.cfg.GetJWTSigningKey()
 	if err != nil {
@@ -855,6 +955,14 @@ func (s *UmatService) GenerateQRToken(item domain.Umat) (string, error) {
 	return "umat." + signed, nil
 }
 
+// VerifyQR parses and cryptographically validates a QR token, returning basic member details.
+//
+// Parameters:
+//   - tokenString: The raw QR token string to verify.
+//
+// Returns:
+//   - *domain.VerifyQRResponse: Decoded umat identification response.
+//   - error: Error if the token is empty, invalid, or expired.
 func (s *UmatService) VerifyQR(tokenString string) (*domain.VerifyQRResponse, error) {
 	tokenString = strings.TrimSpace(tokenString)
 	if tokenString == "" {
@@ -992,6 +1100,17 @@ func (s *UmatService) VerifyQR(tokenString string) (*domain.VerifyQRResponse, er
 	return res, nil
 }
 
+// Update validates and modifies an existing umat member record and handles photo replacement if a new image is provided.
+//
+// Parameters:
+//   - id: The primary key of the umat member to update as a string.
+//   - payload: Updated umat member data (domain.Umat).
+//   - fileHeader: Optional new photo header (*multipart.FileHeader).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.Umat: The updated umat record.
+//   - error: Error if validation fails, record is not found, or database update fails.
 func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipart.FileHeader, c *gin.Context) (domain.Umat, error) {
 	if fileHeader != nil {
 		if err := validateImageHeader(fileHeader); err != nil {
@@ -1157,6 +1276,14 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 	return item, nil
 }
 
+// Delete deactivates an umat member record (soft delete via Status = false and ModAct = 'D').
+//
+// Parameters:
+//   - id: The primary key of the umat member to delete as a string.
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - error: Error if the record is not found or database update fails.
 func (s *UmatService) Delete(id string, c *gin.Context) error {
 	// 1. Parse ID directly as 32-bit signed integer to avoid narrowing overflow
 	parsedInt64, err := strconv.ParseInt(id, 10, 32)
@@ -1187,6 +1314,15 @@ func (s *UmatService) Delete(id string, c *gin.Context) error {
 	return nil
 }
 
+// getFilterOrDefault extracts the first non-empty value for the specified candidate keys from filters map, or returns defaultVal.
+//
+// Parameters:
+//   - filters: Key-value map of filter parameters.
+//   - keys: Slice of key names to check in order of priority.
+//   - defaultVal: Fallback value if none of the keys exist or are empty.
+//
+// Returns:
+//   - string: The extracted filter value or defaultVal.
 func getFilterOrDefault(filters map[string]string, keys []string, defaultVal string) string {
 	for _, key := range keys {
 		if val, exists := filters[key]; exists && strings.TrimSpace(val) != "" {
@@ -1196,10 +1332,18 @@ func getFilterOrDefault(filters map[string]string, keys []string, defaultVal str
 	return defaultVal
 }
 
+// nullFieldScanner wraps a target pointer to safely scan database values that may be null or type-mismatched.
 type nullFieldScanner struct {
 	target interface{}
 }
 
+// Scan converts and assigns database raw values into the underlying target pointer.
+//
+// Parameters:
+//   - value: Raw database value returned by the driver.
+//
+// Returns:
+//   - error: Error if assignment to the target pointer fails.
 func (s *nullFieldScanner) Scan(value interface{}) error {
 	if value == nil {
 		return nil
@@ -1344,6 +1488,17 @@ func (s *nullFieldScanner) Scan(value interface{}) error {
 	return nil
 }
 
+// Report executes the stored procedure SP_BUS_RPT_UMAT with filter criteria and returns paginated report items.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of report filter parameters.
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.UmatReport: Slice of report rows.
+//   - int64: Total count of records matching the report filters.
+//   - error: Error if stored procedure execution fails.
 func (s *UmatService) Report(page int, filters map[string]string, limit int) ([]domain.UmatReport, int64, error) {
 	if page <= 0 {
 		page = 1
@@ -1472,6 +1627,14 @@ func (s *UmatService) Report(page int, filters map[string]string, limit int) ([]
 	return items, total, nil
 }
 
+// ReportExcel generates and proxies or exports an Excel spreadsheet from the SSRS report server based on filter parameters.
+//
+// Parameters:
+//   - filters: Key-value map of report filter criteria.
+//   - c: Gin context used to stream file responses.
+//
+// Returns:
+//   - error: Error if report generation or streaming fails.
 func (s *UmatService) ReportExcel(filters map[string]string, c *gin.Context) error {
 	baseURL := s.reportServerURL
 	if baseURL == "" {
@@ -1623,6 +1786,7 @@ var ocrBufferPool = sync.Pool{
 	},
 }
 
+// OCRSpaceResult models the structured JSON response returned from the OCR.Space API.
 type OCRSpaceResult struct {
 	ParsedResults []struct {
 		TextOverlay struct {
@@ -1654,6 +1818,16 @@ type OCRSpaceResult struct {
 	ErrorDetails                 []string `json:"ErrorDetails"`
 }
 
+// Ocr uploads an image of a registration form to the OCR service, extracts text, and parses umat fields.
+//
+// Parameters:
+//   - file: The opened multipart file reader (multipart.File).
+//   - header: The uploaded file metadata header (*multipart.FileHeader).
+//   - c: Gin context carrying HTTP request metadata.
+//
+// Returns:
+//   - interface{}: OCRResponsePayload containing parsed fields and raw OCR output.
+//   - error: Error if image decoding, network communication, or OCR parsing fails.
 func (s *UmatService) Ocr(file multipart.File, header *multipart.FileHeader, c *gin.Context) (interface{}, error) {
 	if file == nil || header == nil {
 		return nil, errors.New("file upload tidak valid")
@@ -1783,11 +1957,19 @@ func (s *UmatService) Ocr(file multipart.File, header *multipart.FileHeader, c *
 	}, nil
 }
 
+// OCRResponsePayload encapsulates the parsed umat attributes and raw OCR data returned to the caller.
 type OCRResponsePayload struct {
 	ParsedUmat map[string]interface{} `json:"parsed_umat"`
 	OCRRaw     interface{}            `json:"ocr_raw"`
 }
 
+// cleanSymbols strips punctuation and non-alphanumeric characters, keeping Chinese characters, letters, digits, and spaces.
+//
+// Parameters:
+//   - s: The raw string to clean.
+//
+// Returns:
+//   - string: Sanitized string.
 func cleanSymbols(s string) string {
 	var builder strings.Builder
 	for _, r := range s {
@@ -1798,6 +1980,13 @@ func cleanSymbols(s string) string {
 	return strings.TrimSpace(builder.String())
 }
 
+// deduplicateName removes duplicated name suffixes caused by OCR reading both English and Chinese names side by side.
+//
+// Parameters:
+//   - rawName: The scanned name string.
+//
+// Returns:
+//   - string: Deduplicated name string.
 func deduplicateName(rawName string) string {
 	rawName = strings.TrimSpace(rawName)
 	if rawName == "" {
@@ -1818,6 +2007,13 @@ func deduplicateName(rawName string) string {
 	return rawName
 }
 
+// convertToPinyin converts Hanzi characters to title-cased Pinyin representation.
+//
+// Parameters:
+//   - chineseName: Hanzi characters string.
+//
+// Returns:
+//   - string: Title-cased Pinyin transcription separated by spaces.
 func convertToPinyin(chineseName string) string {
 	a := pinyin.NewArgs()
 	a.Style = pinyin.Normal
@@ -1832,6 +2028,13 @@ func convertToPinyin(chineseName string) string {
 	return strings.Join(words, " ")
 }
 
+// parseGregorianDateFromText extracts and formats Gregorian dates (YYYY-MM-DD) from scanned text lines.
+//
+// Parameters:
+//   - text: Raw text line containing date indications.
+//
+// Returns:
+//   - string: Standardized date string ("YYYY-MM-DD") or empty string if not found.
 func parseGregorianDateFromText(text string) string {
 	clean := strings.ReplaceAll(text, "′", "/")
 	clean = strings.ReplaceAll(clean, "’", "/")
@@ -1892,6 +2095,13 @@ func parseGregorianDateFromText(text string) string {
 	return ""
 }
 
+// ParseUmatOcrText parses raw line-by-line OCR string output into structured umat registration fields.
+//
+// Parameters:
+//   - rawText: Raw OCR text output.
+//
+// Returns:
+//   - map[string]interface{}: Structured key-value mapping of recognized umat fields.
 func ParseUmatOcrText(rawText string) map[string]interface{} {
 	parsed := make(map[string]interface{})
 	lines := strings.Split(rawText, "\n")

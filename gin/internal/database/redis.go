@@ -18,7 +18,12 @@ var (
 )
 
 // GetRedisClient returns a thread-safe singleton *redis.Client instance initialized from config.
-// Returns nil if RedisAddr is empty or if Ping fails.
+//
+// Parameters:
+//   - cfg: application configuration containing Redis address, password, and database index.
+//
+// Returns:
+//   - *redis.Client: active singleton Redis client, or nil if RedisAddr is empty or Ping fails.
 func GetRedisClient(cfg config.Config) *redis.Client {
 	redisOnce.Do(func() {
 		if cfg.RedisAddr == "" {
@@ -46,7 +51,7 @@ func GetRedisClient(cfg config.Config) *redis.Client {
 	return redisClient
 }
 
-// CloseRedisClient closes the singleton Redis client connection if initialized.
+// CloseRedisClient closes the singleton Redis client connection pool if initialized.
 func CloseRedisClient() {
 	if redisClient != nil {
 		if err := redisClient.Close(); err != nil {

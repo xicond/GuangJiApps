@@ -13,7 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// ResourceMetadata struct mapping route to DB table and caching details
+// ResourceMetadata maps an HTTP route to an underlying database table, primary key,
+// and modification tracking column for HTTP 304 Not Modified caching.
 type ResourceMetadata struct {
 	TableName     string
 	IdParam       string
@@ -24,6 +25,13 @@ type ResourceMetadata struct {
 	CacheTTL      time.Duration // defaults to 30 seconds
 }
 
+// parseScannedTime parses arbitrary SQL Server datetime or RFC timestamps into a Go time.Time.
+//
+// Parameters:
+//   - s: formatted timestamp string.
+//
+// Returns:
+//   - time.Time: parsed time instant, or zero time if format cannot be resolved.
 func parseScannedTime(s string) time.Time {
 	if s == "" {
 		return time.Time{}
@@ -51,7 +59,17 @@ func parseScannedTime(s string) time.Time {
 	return time.Time{}
 }
 
-// StatusNotModifiedHeader middleware using DB & Redis caching to avoid frequent table scans
+// StatusNotModifiedHeader middleware checks If-Modified-Since request headers against
+// the latest modification timestamp cached in Redis or queried from MSSQL, returning
+// HTTP 304 Not Modified when the resource has not changed.
+//
+// Parameters:
+//   - db: GORM database handle for querying modification timestamps.
+//   - rdb: Redis client instance for caching timestamps.
+//   - resource: metadata configuration describing table and key parameters.
+//
+// Returns:
+//   - gin.HandlerFunc: HTTP caching middleware handler.
 func StatusNotModifiedHeader(db *gorm.DB, rdb *redis.Client, resource ResourceMetadata) gin.HandlerFunc {
 	updatedCol := resource.UpdatedColumn
 	if updatedCol == "" {

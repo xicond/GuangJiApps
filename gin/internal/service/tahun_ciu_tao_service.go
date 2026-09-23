@@ -15,11 +15,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// TahunCiuTaoService handles Mandarin lunar calendar year ranges and metadata.
 type TahunCiuTaoService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewTahunCiuTaoService initializes a new instance of TahunCiuTaoService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *TahunCiuTaoService: An initialized instance of TahunCiuTaoService.
 func NewTahunCiuTaoService(db *gorm.DB) *TahunCiuTaoService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -27,6 +35,17 @@ func NewTahunCiuTaoService(db *gorm.DB) *TahunCiuTaoService {
 	return &TahunCiuTaoService{db: db, resource: "tahun-ciu-tao"}
 }
 
+// List executes SP_BUS_YEAR_SEARCH_DATA to search Mandarin lunar calendar year records.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter parameters (e.g. "tahun_mandarin", "date").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.TahunCiuTao: Slice of lunar year records.
+//   - int64: Total count of matching records.
+//   - error: Error if stored procedure query fails.
 func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int) ([]domain.TahunCiuTao, int64, error) {
 	var items []domain.TahunCiuTao
 	var total int64
@@ -154,6 +173,15 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 	return items, total, nil
 }
 
+// Create inserts a new Mandarin year record into the database.
+//
+// Parameters:
+//   - payload: Lunar year record to create (domain.TahunCiuTao).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.TahunCiuTao: The newly created year record.
+//   - error: Error if validation fails or database insert fails.
 func (s *TahunCiuTaoService) Create(payload domain.TahunCiuTao, c *gin.Context) (domain.TahunCiuTao, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.TahunCiuTao{}, fmt.Errorf("Validation failed: %w", err)
@@ -179,6 +207,14 @@ func (s *TahunCiuTaoService) Create(payload domain.TahunCiuTao, c *gin.Context) 
 	return payload, nil
 }
 
+// Get fetches a single Mandarin year record by TahunMandarin string.
+//
+// Parameters:
+//   - id: The TahunMandarin primary key.
+//
+// Returns:
+//   - domain.TahunCiuTao: The retrieved lunar year record.
+//   - error: Error if the record is not found or database query fails.
 func (s *TahunCiuTaoService) Get(id string) (domain.TahunCiuTao, error) {
 	var item domain.TahunCiuTao
 	if err := s.db.Where("TahunMandarin = ?", id).Take(&item).Error; err != nil {
@@ -190,6 +226,16 @@ func (s *TahunCiuTaoService) Get(id string) (domain.TahunCiuTao, error) {
 	return item, nil
 }
 
+// Update updates an existing Mandarin lunar year record.
+//
+// Parameters:
+//   - id: The TahunMandarin identifier of the record to update.
+//   - payload: Updated year fields (domain.TahunCiuTao).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.TahunCiuTao: The updated year record.
+//   - error: Error if the record is not found or database update fails.
 func (s *TahunCiuTaoService) Update(id string, payload domain.TahunCiuTao, c *gin.Context) (domain.TahunCiuTao, error) {
 	var item domain.TahunCiuTao
 	if err := s.db.Where("TahunMandarin = ?", id).Take(&item).Error; err != nil {
@@ -222,6 +268,14 @@ func (s *TahunCiuTaoService) Update(id string, payload domain.TahunCiuTao, c *gi
 	return item, nil
 }
 
+// Delete deactivates a Mandarin lunar year record (soft delete via Status = false and ModAct = 'D').
+//
+// Parameters:
+//   - id: The TahunMandarin identifier of the record to deactivate.
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - error: Error if the record is not found or database update fails.
 func (s *TahunCiuTaoService) Delete(id string, c *gin.Context) error {
 	var item domain.TahunCiuTao
 	if err := s.db.Where("TahunMandarin = ?", id).Take(&item).Error; err != nil {

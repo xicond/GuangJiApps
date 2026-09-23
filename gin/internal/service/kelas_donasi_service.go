@@ -13,11 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasDonasiService manages monetary donation records earmarked for a class event.
 type KelasDonasiService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewKelasDonasiService initializes a new KelasDonasiService instance.
+//
+// Parameters:
+//   - db: *gorm.DB database connection pool (defaults to primary if nil)
+//
+// Returns:
+//   - *KelasDonasiService: initialized service pointer
 func NewKelasDonasiService(db *gorm.DB) *KelasDonasiService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -25,6 +33,17 @@ func NewKelasDonasiService(db *gorm.DB) *KelasDonasiService {
 	return &KelasDonasiService{db: db, resource: "kelas_donasi"}
 }
 
+// List queries active monetary donations for a class session with pagination.
+//
+// Parameters:
+//   - trxID: string representation of the class transaction ID
+//   - page: page number (1-based)
+//   - limit: page size limit
+//
+// Returns:
+//   - []domain.KelasDonasi: list of class donation records
+//   - int64: total matching count
+//   - error: database error if query fails
 func (s *KelasDonasiService) List(trxID string, page int, limit int) ([]domain.KelasDonasi, int64, error) {
 	var items []domain.KelasDonasi
 	var total int64
@@ -56,6 +75,15 @@ func (s *KelasDonasiService) List(trxID string, page int, limit int) ([]domain.K
 	return items, total, nil
 }
 
+// Create inserts a new monetary donation for a class session after validation and ID generation.
+//
+// Parameters:
+//   - payload: domain.KelasDonasi entity payload to insert
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasDonasi: created donation record with generated DetailId
+//   - error: validation, ID generation, or database error if failed
 func (s *KelasDonasiService) Create(payload domain.KelasDonasi, c *gin.Context) (domain.KelasDonasi, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.KelasDonasi{}, fmt.Errorf("Validation failed: %w", err)
@@ -88,6 +116,14 @@ func (s *KelasDonasiService) Create(payload domain.KelasDonasi, c *gin.Context) 
 	return payload, nil
 }
 
+// Get retrieves a single donation record by detail ID.
+//
+// Parameters:
+//   - id: string representation of the DetailId primary key
+//
+// Returns:
+//   - domain.KelasDonasi: retrieved donation entity
+//   - error: not found or database error
 func (s *KelasDonasiService) Get(id string) (domain.KelasDonasi, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -103,6 +139,16 @@ func (s *KelasDonasiService) Get(id string) (domain.KelasDonasi, error) {
 	return item, nil
 }
 
+// Update modifies an existing class donation record.
+//
+// Parameters:
+//   - id: string representation of the DetailId primary key
+//   - payload: domain.KelasDonasi entity containing updated donation fields
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasDonasi: updated entity
+//   - error: not found or database error if failed
 func (s *KelasDonasiService) Update(id string, payload domain.KelasDonasi, c *gin.Context) (domain.KelasDonasi, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -141,6 +187,14 @@ func (s *KelasDonasiService) Update(id string, payload domain.KelasDonasi, c *gi
 	return item, nil
 }
 
+// Delete soft-deletes a class donation record (Status = false).
+//
+// Parameters:
+//   - id: string representation of the DetailId primary key
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - error: not found or database error if failed
 func (s *KelasDonasiService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

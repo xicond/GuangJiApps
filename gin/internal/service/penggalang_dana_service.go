@@ -15,11 +15,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// PenggalangDanaService manages fundraiser records and operations.
 type PenggalangDanaService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewPenggalangDanaService initializes a new instance of PenggalangDanaService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *PenggalangDanaService: An initialized instance of PenggalangDanaService.
 func NewPenggalangDanaService(db *gorm.DB) *PenggalangDanaService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -27,6 +35,17 @@ func NewPenggalangDanaService(db *gorm.DB) *PenggalangDanaService {
 	return &PenggalangDanaService{db: db, resource: "penggalang-dana"}
 }
 
+// List executes SP_SXY_PENGGALANG_SEARCH_DATA to search and paginate fundraiser records.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter parameters (e.g. "nama", "mandarin", "fotang").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.PenggalangDanaResponse: Slice of fundraiser records matching the query.
+//   - int64: Total count of matching records.
+//   - error: Error if stored procedure query fails.
 func (s *PenggalangDanaService) List(page int, filters map[string]string, limit int) ([]domain.PenggalangDanaResponse, int64, error) {
 	var items []domain.PenggalangDanaResponse
 	var total int64
@@ -154,6 +173,15 @@ func (s *PenggalangDanaService) List(page int, filters map[string]string, limit 
 	return items, total, nil
 }
 
+// Create inserts a new fundraiser record after auto-generating an ID using SP_APP_GenerateId.
+//
+// Parameters:
+//   - payload: Fundraiser record to create (domain.PenggalangDana).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.PenggalangDana: The newly created fundraiser record.
+//   - error: Error if ID generation fails, validation fails, or database insert fails.
 func (s *PenggalangDanaService) Create(payload domain.PenggalangDana, c *gin.Context) (domain.PenggalangDana, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.PenggalangDana{}, fmt.Errorf("Validation failed: %w", err)
@@ -185,6 +213,14 @@ func (s *PenggalangDanaService) Create(payload domain.PenggalangDana, c *gin.Con
 	return payload, nil
 }
 
+// Get fetches a single fundraiser by primary key ID.
+//
+// Parameters:
+//   - id: The primary key of the fundraiser as a string.
+//
+// Returns:
+//   - domain.PenggalangDana: The retrieved fundraiser record.
+//   - error: Error if ID format is invalid or record is not found.
 func (s *PenggalangDanaService) Get(id string) (domain.PenggalangDana, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -200,6 +236,16 @@ func (s *PenggalangDanaService) Get(id string) (domain.PenggalangDana, error) {
 	return item, nil
 }
 
+// Update updates an existing fundraiser record's fields.
+//
+// Parameters:
+//   - id: The primary key of the fundraiser to update as a string.
+//   - payload: Updated fundraiser fields (domain.PenggalangDana).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.PenggalangDana: The updated fundraiser record.
+//   - error: Error if the record is not found or database update fails.
 func (s *PenggalangDanaService) Update(id string, payload domain.PenggalangDana, c *gin.Context) (domain.PenggalangDana, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -232,6 +278,14 @@ func (s *PenggalangDanaService) Update(id string, payload domain.PenggalangDana,
 	return item, nil
 }
 
+// Delete deactivates a fundraiser record (soft delete via Status = false).
+//
+// Parameters:
+//   - id: The primary key of the fundraiser to deactivate.
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - error: Error if the record is not found or database update fails.
 func (s *PenggalangDanaService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

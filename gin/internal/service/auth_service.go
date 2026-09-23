@@ -21,19 +21,21 @@ import (
 	"gorm.io/gorm"
 )
 
+// menuCacheEntry stores cached menu items for an admin group with timestamp tracking.
 type menuCacheEntry struct {
 	menus     []domain.MainMenuItem
 	fetchedAt time.Time
 }
 
+// AuthService handles authentication, legacy password encryption, JWT issuance, and permission menu resolution.
 type AuthService struct {
 	cfg       config.Config
 	db        *gorm.DB
 	menuCache sync.Map
 }
 
-// Replicates .NET System.Text.ASCIIEncoding.ASCII.GetString(result)
-// It forcefully drops or masks non-ASCII binary bytes exactly like legacy .NET does.
+// convertToDotNetASCIIString replicates .NET System.Text.ASCIIEncoding.ASCII.GetString(result),
+// replacing non-ASCII binary bytes (>127) with '?' to match legacy .NET password hashing behavior.
 func convertToDotNetASCIIString(bytes []byte) string {
 	runes := make([]rune, len(bytes))
 	for i, b := range bytes {
@@ -46,7 +48,14 @@ func convertToDotNetASCIIString(bytes []byte) string {
 	return string(runes)
 }
 
-// Replicates Common.SecurityHelper.Base64Encode(Common.SecurityHelper.Encrypt(rawpassword))
+// EncryptPassword replicates Common.SecurityHelper.Base64Encode(Common.SecurityHelper.Encrypt(rawpassword))
+// from the legacy .NET GuangJiWeb application using MD5 + ASCII quirk + Base64.
+//
+// Parameters:
+//   - rawPassword: plain text password string.
+//
+// Returns:
+//   - string: encrypted and base64-encoded password string matching database storage.
 func EncryptPassword(rawPassword string) string {
 	// 1. Convert input string to ASCII bytes
 	inputBytes := []byte(rawPassword)
@@ -65,10 +74,26 @@ func EncryptPassword(rawPassword string) string {
 	return finalBase64
 }
 
+// NewAuthService constructs an AuthService instance with configuration and database connection.
+//
+// Parameters:
+//   - cfg: application configuration.
+//   - db: GORM database handle.
+//
+// Returns:
+//   - *AuthService: initialized AuthService instance.
 func NewAuthService(cfg config.Config, db *gorm.DB) *AuthService {
 	return &AuthService{cfg: cfg, db: db}
 }
 
+// GenerateToken creates a signed JWT access token for the given user ID valid for 24 hours.
+//
+// Parameters:
+//   - userID: administrative user ID.
+//
+// Returns:
+//   - string: signed JWT token string.
+//   - error: non-nil if key loading or token signing fails.
 func (s *AuthService) GenerateToken(userID int32) (string, error) {
 	key, method, err := s.cfg.GetJWTSigningKey()
 	if err != nil {
@@ -81,6 +106,7 @@ func (s *AuthService) GenerateToken(userID int32) (string, error) {
 	return token.SignedString(key)
 }
 
+// executeWithRetry executes a database operation up to 3 times with backoff if transient TCP errors occur.
 func executeWithRetry(fn func() error) error {
 	var err error
 	for attempt := 1; attempt <= 3; attempt++ {
@@ -98,6 +124,17 @@ func executeWithRetry(fn func() error) error {
 	return err
 }
 
+// Login authenticates credentials via SP_Login, fetches authorized menu items, and generates a JWT token.
+//
+// Parameters:
+//   - username: admin login username.
+//   - password: raw plaintext password.
+//
+// Returns:
+//   - domain.Admin: authenticated admin user details (password cleared).
+//   - string: signed JWT token.
+//   - []domain.MainMenuItem: tree structure of authorized menu items.
+//   - error: non-nil if authentication or database lookup fails.
 func (s *AuthService) Login(username, password string) (domain.Admin, string, []domain.MainMenuItem, error) {
 	if username == "" || password == "" {
 		return domain.Admin{}, "", nil, errors.New("username and password are required")
@@ -268,6 +305,11 @@ func (s *AuthService) Login(username, password string) (domain.Admin, string, []
 	return user, token, mainMenus, nil
 }
 
+// CacheJWTToken stores claims and token mapping in Redis with calculated TTL to enable fast validation.
+//
+// Parameters:
+//   - userID: administrative user ID.
+//   - tokenString: issued JWT token string.
 func (s *AuthService) CacheJWTToken(userID int32, tokenString string) {
 	if tokenString == "" {
 		return
@@ -330,6 +372,13 @@ func (s *AuthService) CacheJWTToken(userID int32, tokenString string) {
 	rdb.Expire(ctx, userTokensKey, ttl)
 }
 
+// toInt coerces arbitrary primitive types (numbers, byte slices, numeric strings) into an int.
+//
+// Parameters:
+//   - val: interface value of scalar type.
+//
+// Returns:
+//   - int: converted integer value.
 func toInt(val interface{}) int {
 	if val == nil {
 		return 0
@@ -372,10 +421,24 @@ func toInt(val interface{}) int {
 	}
 }
 
+// BoolPtr allocates and returns a pointer to a boolean value.
+//
+// Parameters:
+//   - b: boolean literal.
+//
+// Returns:
+//   - *bool: pointer to boolean.
 func BoolPtr(b bool) *bool {
 	return &b
 }
 
+// toBool converts arbitrary scalar database values (int, string, bool, byte) into a boolean.
+//
+// Parameters:
+//   - val: raw interface value.
+//
+// Returns:
+//   - bool: true if represents a truthy value (1, "true", "t", "y", "ya").
 func toBool(val interface{}) bool {
 	if val == nil {
 		return false
@@ -398,6 +461,13 @@ func toBool(val interface{}) bool {
 	}
 }
 
+// toString converts arbitrary interface values or byte slices safely into string.
+//
+// Parameters:
+//   - val: raw interface value.
+//
+// Returns:
+//   - string: string representation.
 func toString(val interface{}) string {
 	if val == nil {
 		return ""
@@ -412,6 +482,16 @@ func toString(val interface{}) string {
 	}
 }
 
+// ChangePassword verifies the user's current password and updates it with the new encrypted password.
+//
+// Parameters:
+//   - userID: administrative user ID (optional if username is provided).
+//   - username: admin login username.
+//   - oldPassword: existing plaintext password to verify.
+//   - newPassword: new plaintext password to encrypt and persist.
+//
+// Returns:
+//   - error: non-nil if validation fails, user is not found, or old password does not match.
 func (s *AuthService) ChangePassword(userID int32, username, oldPassword, newPassword string) error {
 	if strings.TrimSpace(oldPassword) == "" || strings.TrimSpace(newPassword) == "" {
 		return errors.New("old_password and new_password are required")

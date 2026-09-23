@@ -13,11 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// AdminGroupService handles administrative role and permission group operations.
 type AdminGroupService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewAdminGroupService initializes a new instance of AdminGroupService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *AdminGroupService: An initialized instance of AdminGroupService.
 func NewAdminGroupService(db *gorm.DB) *AdminGroupService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -25,6 +33,17 @@ func NewAdminGroupService(db *gorm.DB) *AdminGroupService {
 	return &AdminGroupService{db: db, resource: "admin-groups"}
 }
 
+// List retrieves a paginated list of admin groups matching the given filter criteria.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter conditions (e.g. "group_name").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.AdminGroup: Slice of admin group records.
+//   - int64: Total count of records matching the filters.
+//   - error: Error if the database query fails.
 func (s *AdminGroupService) List(page int, filters map[string]string, limit int) ([]domain.AdminGroup, int64, error) {
 	var items []domain.AdminGroup
 	var total int64
@@ -100,6 +119,15 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 	return items, total, nil
 }
 
+// Create inserts a new admin group into the database after validating fields.
+//
+// Parameters:
+//   - payload: The admin group record to create (domain.AdminGroup).
+//   - c: Gin context carrying HTTP request metadata.
+//
+// Returns:
+//   - domain.AdminGroup: The newly created admin group record.
+//   - error: Error if validation fails or the insert query fails.
 func (s *AdminGroupService) Create(payload domain.AdminGroup, c *gin.Context) (domain.AdminGroup, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.AdminGroup{}, fmt.Errorf("Validation failed: %w", err)
@@ -112,6 +140,14 @@ func (s *AdminGroupService) Create(payload domain.AdminGroup, c *gin.Context) (d
 	return payload, nil
 }
 
+// Get fetches a single admin group by its ID.
+//
+// Parameters:
+//   - id: The primary key (GroupId) of the admin group as a string.
+//
+// Returns:
+//   - domain.AdminGroup: The retrieved admin group record.
+//   - error: Error if ID format is invalid or record is not found.
 func (s *AdminGroupService) Get(id string) (domain.AdminGroup, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -127,6 +163,16 @@ func (s *AdminGroupService) Get(id string) (domain.AdminGroup, error) {
 	return item, nil
 }
 
+// Update updates an existing admin group's permissions and details.
+//
+// Parameters:
+//   - id: The primary key (GroupId) of the admin group to update as a string.
+//   - payload: Updated admin group fields (domain.AdminGroup).
+//   - c: Gin context carrying HTTP request metadata.
+//
+// Returns:
+//   - domain.AdminGroup: The updated admin group record.
+//   - error: Error if the record is not found or database update fails.
 func (s *AdminGroupService) Update(id string, payload domain.AdminGroup, c *gin.Context) (domain.AdminGroup, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -155,6 +201,14 @@ func (s *AdminGroupService) Update(id string, payload domain.AdminGroup, c *gin.
 	return item, nil
 }
 
+// Delete removes an admin group from the database.
+//
+// Parameters:
+//   - id: The primary key (GroupId) of the admin group to delete as a string.
+//   - c: Gin context carrying HTTP request metadata.
+//
+// Returns:
+//   - error: Error if the record is not found or database delete fails.
 func (s *AdminGroupService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

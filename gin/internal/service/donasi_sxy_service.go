@@ -20,10 +20,18 @@ import (
 	"gorm.io/gorm"
 )
 
+// nullStringScanner safely scans database null strings into a string pointer.
 type nullStringScanner struct {
 	target *string
 }
 
+// Scan assigns the database value to the target string, defaulting to empty string on null.
+//
+// Parameters:
+//   - value: Database driver raw column value.
+//
+// Returns:
+//   - error: Scan error if type conversion fails.
 func (s *nullStringScanner) Scan(value interface{}) error {
 	if value == nil {
 		*s.target = ""
@@ -42,6 +50,7 @@ func (s *nullStringScanner) Scan(value interface{}) error {
 	}
 }
 
+// DonasiSxyService handles SXY donation transactions and SSRS financial reports.
 type DonasiSxyService struct {
 	db                   *gorm.DB
 	resource             string
@@ -50,6 +59,13 @@ type DonasiSxyService struct {
 	reportServerPassword string
 }
 
+// NewDonasiSxyService initializes a new instance of DonasiSxyService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *DonasiSxyService: An initialized instance of DonasiSxyService.
 func NewDonasiSxyService(db *gorm.DB) *DonasiSxyService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -57,6 +73,13 @@ func NewDonasiSxyService(db *gorm.DB) *DonasiSxyService {
 	return &DonasiSxyService{db: db, resource: "donasi-sxy", reportServerURL: getReportServerURL(), reportServerUsername: getReportServerUsername(), reportServerPassword: getReportServerPassword()}
 }
 
+// isValidDate verifies whether a string corresponds to common supported date formats.
+//
+// Parameters:
+//   - s: Raw date string to test.
+//
+// Returns:
+//   - bool: True if string successfully parses into a time.Time; false otherwise.
 func isValidDate(s string) bool {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -76,6 +99,17 @@ func isValidDate(s string) bool {
 	return false
 }
 
+// List executes SP_SXY_TRX_SEARCH_DATA to search and paginate SXY donation transaction records.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter parameters (e.g. "no_kwitansi", "start_date", "end_date", "donatur").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.DonasiSxyResponse: Slice of donation records.
+//   - int64: Total count of matching records.
+//   - error: Error if database query fails.
 func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) ([]domain.DonasiSxyResponse, int64, error) {
 	items := make([]domain.DonasiSxyResponse, 0)
 	var total int64
@@ -215,6 +249,15 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 	return items, total, nil
 }
 
+// Create inserts a new SXY donation record after generating a sequential ID via SP_APP_GenerateId.
+//
+// Parameters:
+//   - payload: Donation transaction data (domain.DonasiSxy).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.DonasiSxy: The newly created donation record.
+//   - error: Error if ID generation fails, validation fails, or database insert fails.
 func (s *DonasiSxyService) Create(payload domain.DonasiSxy, c *gin.Context) (domain.DonasiSxy, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.DonasiSxy{}, fmt.Errorf("Validation failed: %w", err)
@@ -243,6 +286,14 @@ func (s *DonasiSxyService) Create(payload domain.DonasiSxy, c *gin.Context) (dom
 	return payload, nil
 }
 
+// Get fetches a single SXY donation transaction by primary key ID.
+//
+// Parameters:
+//   - id: Primary key ID of the donation transaction as a string.
+//
+// Returns:
+//   - domain.DonasiSxy: Retrieved donation record.
+//   - error: Error if ID format is invalid or record is not found.
 func (s *DonasiSxyService) Get(id string) (domain.DonasiSxy, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -258,6 +309,16 @@ func (s *DonasiSxyService) Get(id string) (domain.DonasiSxy, error) {
 	return item, nil
 }
 
+// Update updates an existing SXY donation record's details.
+//
+// Parameters:
+//   - id: Primary key ID of the record to update as a string.
+//   - payload: Updated donation fields (domain.DonasiSxy).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.DonasiSxy: Updated donation record.
+//   - error: Error if the record is not found or database update fails.
 func (s *DonasiSxyService) Update(id string, payload domain.DonasiSxy, c *gin.Context) (domain.DonasiSxy, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -292,6 +353,14 @@ func (s *DonasiSxyService) Update(id string, payload domain.DonasiSxy, c *gin.Co
 	return item, nil
 }
 
+// Delete deactivates an SXY donation record (soft delete via Status = false).
+//
+// Parameters:
+//   - id: Primary key ID of the record to deactivate.
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - error: Error if the record is not found or database update fails.
 func (s *DonasiSxyService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -316,6 +385,18 @@ func (s *DonasiSxyService) Delete(id string, c *gin.Context) error {
 	return nil
 }
 
+// Report executes SP_SXY_RPT_TRANSAKSI and returns paginated donation reports along with total financial sums.
+//
+// Parameters:
+//   - page: Target page number (1-based).
+//   - filters: Filter parameters map.
+//   - limit: Maximum records per page.
+//
+// Returns:
+//   - []domain.SxyDonasiReport: Slice of report rows.
+//   - float64: Total sum of donation amounts across matching records.
+//   - int64: Total count of matching records.
+//   - error: Error if stored procedure execution fails.
 func (s *DonasiSxyService) Report(page int, filters map[string]string, limit int) ([]domain.SxyDonasiReport, float64, int64, error) {
 	items := make([]domain.SxyDonasiReport, 0)
 	var total int64
@@ -473,6 +554,14 @@ func (s *DonasiSxyService) Report(page int, filters map[string]string, limit int
 	return items, totalJumlah, total, nil
 }
 
+// ReportExcel generates and streams an Excel export of SXY donation reports via SSRS.
+//
+// Parameters:
+//   - filters: Filter parameters map.
+//   - c: Gin context used to stream HTTP response to client.
+//
+// Returns:
+//   - error: Error if report generation or network streaming fails.
 func (s *DonasiSxyService) ReportExcel(filters map[string]string, c *gin.Context) error {
 
 	baseURL := s.reportServerURL

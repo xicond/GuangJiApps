@@ -14,6 +14,14 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// AuthMiddleware validates Bearer JWT tokens from the Authorization header,
+// checks the Redis token cache to accelerate validation, and sets the authenticated "userID" in Gin Context.
+//
+// Parameters:
+//   - cfg: application configuration containing JWT public verification keys.
+//
+// Returns:
+//   - gin.HandlerFunc: Gin middleware handler function.
 func AuthMiddleware(cfg config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")

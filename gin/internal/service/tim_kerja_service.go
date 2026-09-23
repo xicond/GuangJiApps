@@ -13,11 +13,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// TimKerjaService handles work team positions and division mappings under the B_POSISI category.
 type TimKerjaService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewTimKerjaService initializes a new instance of TimKerjaService.
+//
+// Parameters:
+//   - db: Database connection handle (*gorm.DB). If nil, the default connection is used.
+//
+// Returns:
+//   - *TimKerjaService: An initialized instance of TimKerjaService.
 func NewTimKerjaService(db *gorm.DB) *TimKerjaService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -25,6 +33,17 @@ func NewTimKerjaService(db *gorm.DB) *TimKerjaService {
 	return &TimKerjaService{db: db, resource: "tim-kerja"}
 }
 
+// List retrieves a paginated list of active work team position records matching the given filter criteria.
+//
+// Parameters:
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter parameters (e.g. "search", "lookup_description", "lookup_value").
+//   - limit: Maximum number of records to return per page.
+//
+// Returns:
+//   - []domain.TimKerja: Slice of work team records.
+//   - int64: Total count of matching records.
+//   - error: Error if database query fails.
 func (s *TimKerjaService) List(page int, filters map[string]string, limit int) ([]domain.TimKerja, int64, error) {
 	var items []domain.TimKerja
 	var total int64
@@ -101,6 +120,15 @@ func (s *TimKerjaService) List(page int, filters map[string]string, limit int) (
 	return items, total, nil
 }
 
+// Create inserts a new work team position into T_APP_LOOKUP under CategoryId = B_POSISI.
+//
+// Parameters:
+//   - payload: Work team record to create (domain.TimKerja).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.TimKerja: The newly created work team record.
+//   - error: Error if validation fails or database insert fails.
 func (s *TimKerjaService) Create(payload domain.TimKerja, c *gin.Context) (domain.TimKerja, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.TimKerja{}, fmt.Errorf("Validation failed: %w", err)
@@ -130,6 +158,14 @@ func (s *TimKerjaService) Create(payload domain.TimKerja, c *gin.Context) (domai
 	return payload, nil
 }
 
+// Get fetches a single work team position by its LookupId.
+//
+// Parameters:
+//   - id: The LookupId of the work team position.
+//
+// Returns:
+//   - domain.TimKerja: The retrieved work team record.
+//   - error: Error if the record is not found or database query fails.
 func (s *TimKerjaService) Get(id string) (domain.TimKerja, error) {
 	var item domain.TimKerja
 	if err := s.db.Where("LookupId = ? AND CategoryId = ?", id, "B_POSISI").Take(&item).Error; err != nil {
@@ -141,6 +177,16 @@ func (s *TimKerjaService) Get(id string) (domain.TimKerja, error) {
 	return item, nil
 }
 
+// Update updates an existing work team position's details.
+//
+// Parameters:
+//   - id: The LookupId of the work team position to update.
+//   - payload: Updated work team fields (domain.TimKerja).
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - domain.TimKerja: The updated work team record.
+//   - error: Error if the record is not found or database update fails.
 func (s *TimKerjaService) Update(id string, payload domain.TimKerja, c *gin.Context) (domain.TimKerja, error) {
 	var item domain.TimKerja
 	if err := s.db.Where("LookupId = ? AND CategoryId = ?", id, "B_POSISI").Take(&item).Error; err != nil {
@@ -171,6 +217,14 @@ func (s *TimKerjaService) Update(id string, payload domain.TimKerja, c *gin.Cont
 	return item, nil
 }
 
+// Delete deactivates a work team position (soft delete via Status = false and ModAct = 'D').
+//
+// Parameters:
+//   - id: The LookupId of the work team position to deactivate.
+//   - c: Gin context carrying HTTP request metadata for user tracking.
+//
+// Returns:
+//   - error: Error if the record is not found or database update fails.
 func (s *TimKerjaService) Delete(id string, c *gin.Context) error {
 	var item domain.TimKerja
 	if err := s.db.Where("LookupId = ? AND CategoryId = ?", id, "B_POSISI").Take(&item).Error; err != nil {
@@ -191,10 +245,33 @@ func (s *TimKerjaService) Delete(id string, c *gin.Context) error {
 	return nil
 }
 
+// Lookup retrieves active work team options under CategoryId = B_TIMKERJA.
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of lookup records.
+//   - int64: Total count of matching records.
+//   - error: Error if query fails.
 func (s *TimKerjaService) Lookup(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_TIMKERJA", page, limit, filters)
 }
 
+// LookupSub retrieves active sub-division options under CategoryId = B_SUBKERJA mapped to the specified division value.
+//
+// Parameters:
+//   - timkerjaValue: The parent division value to match against.
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of mapped sub-division lookup records.
+//   - int64: Total count of matching records.
+//   - error: Error if query fails.
 func (s *TimKerjaService) LookupSub(timkerjaValue string, filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	subQuery := s.db.Table("T_BUS_WORK_MAPPING").
 		Where("T_BUS_WORK_MAPPING.SubDivisi = T_APP_LOOKUP.LookupValue").
@@ -203,6 +280,17 @@ func (s *TimKerjaService) LookupSub(timkerjaValue string, filters map[string]str
 	return Lookup(s.db, "B_SUBKERJA", page, limit, filters, subQuery)
 }
 
+// LookupReport retrieves active work team report options under CategoryId = B_TIMKERJA_REPORT.
+//
+// Parameters:
+//   - filters: Filter criteria map.
+//   - page: Page number (1-based).
+//   - limit: Records per page.
+//
+// Returns:
+//   - []domain.AppLookup: Slice of report lookup records.
+//   - int64: Total count of matching records.
+//   - error: Error if query fails.
 func (s *TimKerjaService) LookupReport(filters map[string]string, page int, limit int) ([]domain.AppLookup, int64, error) {
 	return Lookup(s.db, "B_TIMKERJA_REPORT", page, limit, filters)
 }

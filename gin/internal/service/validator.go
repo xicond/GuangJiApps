@@ -11,6 +11,13 @@ import (
 	"guangjiapps/gin/internal/domain"
 )
 
+// isValidEmail performs strict RFC 5322 email syntax and domain checks.
+//
+// Parameters:
+//   - email: email address string to validate.
+//
+// Returns:
+//   - bool: true if empty or a valid email address.
 func isValidEmail(email string) bool {
 	str := strings.TrimSpace(email)
 	if str == "" {
@@ -28,6 +35,11 @@ func isValidEmail(email string) bool {
 	return strings.Contains(domainPart, ".") && !strings.HasPrefix(domainPart, ".") && !strings.HasSuffix(domainPart, ".")
 }
 
+// ConfigureValidator registers JSON tag naming, custom type extractors for DateOnly/DateTime,
+// and custom validation rules on the validator instance.
+//
+// Parameters:
+//   - v: target validator.Validate instance.
 func ConfigureValidator(v *validator.Validate) {
 	v.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
@@ -67,10 +79,15 @@ var validate = func() *validator.Validate {
 	return v
 }()
 
+// ValidationError aggregates field-specific validation error messages into a structured error.
 type ValidationError struct {
 	Details map[string][]string
 }
 
+// Error concatenates all field validation error messages into a single human-readable string.
+//
+// Returns:
+//   - string: formatted error string.
 func (v *ValidationError) Error() string {
 	var parts []string
 	for field, msgs := range v.Details {
@@ -81,10 +98,24 @@ func (v *ValidationError) Error() string {
 	return strings.Join(parts, ", ")
 }
 
+// NewValidationError constructs a ValidationError with the given field violation map.
+//
+// Parameters:
+//   - details: map of field names to slices of violation descriptions.
+//
+// Returns:
+//   - *ValidationError: initialized ValidationError.
 func NewValidationError(details map[string][]string) *ValidationError {
 	return &ValidationError{Details: details}
 }
 
+// FormatValidatorErrors translates raw validator.ValidationErrors into localized Indonesian error messages.
+//
+// Parameters:
+//   - err: raw validator error.
+//
+// Returns:
+//   - map[string][]string: field error mapping with descriptive messages.
 func FormatValidatorErrors(err error) map[string][]string {
 	details := make(map[string][]string)
 	var validationErrs validator.ValidationErrors
@@ -142,6 +173,13 @@ func FormatValidatorErrors(err error) map[string][]string {
 	return details
 }
 
+// ValidateStruct executes struct validation tags and returns a ValidationError if constraints are violated.
+//
+// Parameters:
+//   - s: pointer to the struct to validate.
+//
+// Returns:
+//   - error: *ValidationError if invalid, or nil if valid.
 func ValidateStruct(s interface{}) error {
 	if err := validate.Struct(s); err != nil {
 		details := FormatValidatorErrors(err)

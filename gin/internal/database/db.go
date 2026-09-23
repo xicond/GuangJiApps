@@ -11,6 +11,15 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// Open initializes a GORM connection to Microsoft SQL Server with performance-tuned
+// connection pooling parameters (MaxIdleConns, MaxOpenConns, pre-warmed sockets).
+//
+// Parameters:
+//   - dsn: database connection string (MSSQL format). If empty, falls back to DatabaseDSN from config.
+//
+// Returns:
+//   - *gorm.DB: configured GORM database handle.
+//   - error: non-nil if connection or pool initialization fails.
 func Open(dsn string) (*gorm.DB, error) {
 	if dsn == "" {
 		dsn = config.Load().DatabaseDSN
@@ -61,6 +70,13 @@ func Open(dsn string) (*gorm.DB, error) {
 	// return gorm.Open(sqlserver.Open(dsn), cfg)
 }
 
+// MustOpen calls Open with the provided DSN and panics if the database connection fails.
+//
+// Parameters:
+//   - dsn: database connection string.
+//
+// Returns:
+//   - *gorm.DB: active GORM database handle.
 func MustOpen(dsn string) *gorm.DB {
 	db, err := Open(dsn)
 	if err != nil {
@@ -69,6 +85,13 @@ func MustOpen(dsn string) *gorm.DB {
 	return db
 }
 
+// AutoMigrate applies schema auto-migrations for all core domain entity models.
+//
+// Parameters:
+//   - db: target GORM database handle.
+//
+// Returns:
+//   - error: non-nil if schema migration fails.
 func AutoMigrate(db *gorm.DB) error {
 	if db == nil {
 		return nil

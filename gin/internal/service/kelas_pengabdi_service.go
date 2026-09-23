@@ -15,11 +15,19 @@ import (
 	"gorm.io/gorm"
 )
 
+// KelasPengabdiService manages staff/servant (pengabdi) assignments and work roles for a class session.
 type KelasPengabdiService struct {
 	db       *gorm.DB
 	resource string
 }
 
+// NewKelasPengabdiService initializes a new KelasPengabdiService instance.
+//
+// Parameters:
+//   - db: *gorm.DB database connection pool (defaults to primary if nil)
+//
+// Returns:
+//   - *KelasPengabdiService: initialized service pointer
 func NewKelasPengabdiService(db *gorm.DB) *KelasPengabdiService {
 	if db == nil {
 		db = database.MustOpen("")
@@ -27,6 +35,14 @@ func NewKelasPengabdiService(db *gorm.DB) *KelasPengabdiService {
 	return &KelasPengabdiService{db: db, resource: "kelas_pengabdi"}
 }
 
+// validatePengabdiLookups validates foreign keys and lookup codes for class servant assignments.
+//
+// Parameters:
+//   - db: *gorm.DB database connection
+//   - payload: *domain.KelasPengabdi entity data to validate
+//
+// Returns:
+//   - error: *ValidationError with error details if validation fails, or nil
 func validatePengabdiLookups(db *gorm.DB, payload *domain.KelasPengabdi) error {
 	type lookupCheck struct {
 		fieldName string
@@ -140,6 +156,18 @@ func validatePengabdiLookups(db *gorm.DB, payload *domain.KelasPengabdi) error {
 	return nil
 }
 
+// List retrieves paginated servant assignments for a class session filtered by user's branch warehouse.
+//
+// Parameters:
+//   - c: *gin.Context containing user auth session for branch isolation
+//   - trxID: string representation of the class transaction ID
+//   - page: page number (1-based)
+//   - limit: page size limit
+//
+// Returns:
+//   - []domain.KelasPengabdi: list of servant assignments
+//   - int64: total matching count
+//   - error: database error if query fails
 func (s *KelasPengabdiService) List(c *gin.Context, trxID string, page int, limit int) ([]domain.KelasPengabdi, int64, error) {
 	var items []domain.KelasPengabdi
 	var total int64
@@ -193,6 +221,15 @@ func (s *KelasPengabdiService) List(c *gin.Context, trxID string, page int, limi
 	return items, total, nil
 }
 
+// Create inserts a new class servant assignment after ID generation and lookup validation.
+//
+// Parameters:
+//   - payload: domain.KelasPengabdi entity data to insert
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasPengabdi: created entity with generated DetailId
+//   - error: validation, ID generation, or database error if failed
 func (s *KelasPengabdiService) Create(payload domain.KelasPengabdi, c *gin.Context) (domain.KelasPengabdi, error) {
 	if err := ValidateStruct(payload); err != nil {
 		return domain.KelasPengabdi{}, fmt.Errorf("Validation failed: %w", err)
@@ -229,6 +266,14 @@ func (s *KelasPengabdiService) Create(payload domain.KelasPengabdi, c *gin.Conte
 	return payload, nil
 }
 
+// Get retrieves a single servant assignment record by detail ID.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//
+// Returns:
+//   - domain.KelasPengabdi: retrieved entity
+//   - error: not found or database error
 func (s *KelasPengabdiService) Get(id string) (domain.KelasPengabdi, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -244,6 +289,16 @@ func (s *KelasPengabdiService) Get(id string) (domain.KelasPengabdi, error) {
 	return item, nil
 }
 
+// Update modifies an existing servant assignment record.
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//   - payload: domain.KelasPengabdi entity containing updated fields
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - domain.KelasPengabdi: updated entity
+//   - error: validation, not found, or database error if failed
 func (s *KelasPengabdiService) Update(id string, payload domain.KelasPengabdi, c *gin.Context) (domain.KelasPengabdi, error) {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
@@ -336,6 +391,14 @@ func (s *KelasPengabdiService) Update(id string, payload domain.KelasPengabdi, c
 	return item, nil
 }
 
+// Delete soft-deletes a servant assignment record (Status = false).
+//
+// Parameters:
+//   - id: string representation of the detailid primary key
+//   - c: *gin.Context containing user auth session for audit metadata
+//
+// Returns:
+//   - error: not found or database error if failed
 func (s *KelasPengabdiService) Delete(id string, c *gin.Context) error {
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {

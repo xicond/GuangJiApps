@@ -16,12 +16,21 @@ import (
 	"guangjiapps/gin/internal/database"
 )
 
+// LoginRateLimiter tracks and enforces rate limits specifically for authentication attempts.
 type LoginRateLimiter struct {
 	instance *limiter.Limiter
 	store    limiter.Store
 	rate     limiter.Rate
 }
 
+// NewLoginRateLimiter creates a LoginRateLimiter configured for 3 attempts per 5 minutes,
+// backed by Redis when available with automatic memory store fallback.
+//
+// Parameters:
+//   - cfg: application configuration for Redis connection details.
+//
+// Returns:
+//   - *LoginRateLimiter: initialized login rate limiter instance.
 func NewLoginRateLimiter(cfg config.Config) *LoginRateLimiter {
 	// 3 attempts per 5 minutes
 	rate := limiter.Rate{
@@ -55,6 +64,13 @@ func NewLoginRateLimiter(cfg config.Config) *LoginRateLimiter {
 	}
 }
 
+// sanitizeIP strips port suffixes from an IP address string.
+//
+// Parameters:
+//   - ip: raw IP string possibly including port.
+//
+// Returns:
+//   - string: host IP without port.
 func sanitizeIP(ip string) string {
 	if host, _, err := net.SplitHostPort(ip); err == nil {
 		return host
@@ -62,10 +78,25 @@ func sanitizeIP(ip string) string {
 	return ip
 }
 
+// GetKey extracts the client IP key from the Gin context for rate limiting.
+//
+// Parameters:
+//   - c: active Gin request context.
+//
+// Returns:
+//   - string: client IP address.
 func (l *LoginRateLimiter) GetKey(c *gin.Context) string {
 	return c.ClientIP()
 }
 
+// SetHeaders sets standard rate limiting HTTP response headers (X-RateLimit-*, Retry-After).
+//
+// Parameters:
+//   - c: active Gin request context.
+//   - limCtx: rate limiter evaluation context.
+//
+// Returns:
+//   - int64: retry-after duration in seconds if limit reached, or 0.
 func (l *LoginRateLimiter) SetHeaders(c *gin.Context, limCtx limiter.Context) int64 {
 	c.Header("X-RateLimit-Limit", strconv.FormatInt(limCtx.Limit, 10))
 	c.Header("X-RateLimit-Remaining", strconv.FormatInt(limCtx.Remaining, 10))
@@ -84,28 +115,59 @@ func (l *LoginRateLimiter) SetHeaders(c *gin.Context, limCtx limiter.Context) in
 	return retryAfterSeconds
 }
 
+// Peek inspects the current rate limit status for the client IP without incrementing attempts.
+//
+// Parameters:
+//   - c: active Gin request context.
+//
+// Returns:
+//   - limiter.Context: current rate limit evaluation context.
+//   - error: non-nil if lookup fails.
 func (l *LoginRateLimiter) Peek(c *gin.Context) (limiter.Context, error) {
 	key := l.GetKey(c)
 	return l.instance.Peek(c.Request.Context(), key)
 }
 
+// Increment records a failed login attempt and returns updated rate limit status.
+//
+// Parameters:
+//   - c: active Gin request context.
+//
+// Returns:
+//   - limiter.Context: updated rate limit evaluation context.
+//   - error: non-nil if increment fails.
 func (l *LoginRateLimiter) Increment(c *gin.Context) (limiter.Context, error) {
 	key := l.GetKey(c)
 	return l.instance.Get(c.Request.Context(), key)
 }
 
+// Reset clears recorded rate limit attempts for the client IP upon successful authentication.
+//
+// Parameters:
+//   - c: active Gin request context.
 func (l *LoginRateLimiter) Reset(c *gin.Context) {
 	key := l.GetKey(c)
 	ctx := c.Request.Context()
 	_, _ = l.store.Reset(ctx, key, l.rate)
 }
 
+// UserRateLimiter enforces general request rate limiting per authenticated user or IP address.
 type UserRateLimiter struct {
 	instance *limiter.Limiter
 	store    limiter.Store
 	rate     limiter.Rate
 }
 
+// NewUserRateLimiter creates a UserRateLimiter with custom rate limits and storage prefix.
+//
+// Parameters:
+//   - cfg: application configuration for Redis.
+//   - limit: maximum allowed requests within the period.
+//   - period: time duration window for the limit.
+//   - prefix: Redis key namespace prefix.
+//
+// Returns:
+//   - *UserRateLimiter: initialized user rate limiter instance.
 func NewUserRateLimiter(cfg config.Config, limit int64, period time.Duration, prefix string) *UserRateLimiter {
 	rate := limiter.Rate{
 		Period: period,
@@ -136,6 +198,10 @@ func NewUserRateLimiter(cfg config.Config, limit int64, period time.Duration, pr
 	}
 }
 
+// Middleware returns a Gin middleware HandlerFunc that throttles requests and returns HTTP 429 when exceeded.
+//
+// Returns:
+//   - gin.HandlerFunc: rate limiting middleware handler.
 func (u *UserRateLimiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var key string

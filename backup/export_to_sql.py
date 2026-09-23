@@ -1,6 +1,6 @@
 import pymssql
 
-conn = pymssql.connect(server='mssql', user='sa', password='YourStrong@Passw0rd123', database='api')
+conn = pymssql.connect(server='mssql', user='sa', password='YourStrong@Passw0rd123', database='guangji')
 cursor = conn.cursor()
 
 with open('/backup/db_export_structure.sql', 'w', encoding='utf-8') as f:

@@ -156,6 +156,33 @@ services:
       "
     restart: "no"
 
+  # SERVICE STRIX SECURITY SCANNER (ON-DEMAND)
+  strix:
+    build:
+      context: ./strix_runs
+      dockerfile: Dockerfile
+    container_name: strix_ai_agent
+    volumes:
+      # PENTING: Berikan akses ke Docker host agar Strix bisa memanggil strix-sandbox
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Simpan hasil laporan pentest agar tidak hilang saat container mati
+      - ./strix_runs:/app/strix_runs
+      # Folder kode .NET 4.0 Anda
+      - /Users/xicond/Workspace/GuangJiAppsNew:/app/target_code
+    working_dir: /app
+    # Menginstall Python & Strix langsung di dalam environment Docker CLI resmi
+    # command: >
+    #   sh -c " apk add --no-cache python3 py3-pip bash go gcc musl-dev && python3 -m venv /app/venv && /app/venv/bin/pip install --no-cache-dir --upgrade pip && /app/venv/bin/pip install --no-cache-dir strix-agent && /app/venv/bin/strix -n --target /app/target_code --instruction 'This is a raw .NET 4.0 source code repository. Scan for hardcoded credentials, Bruteforce DDOS causing memory and CPU exhaust, will run in windows 7 IIS, SQL injection, and legacy cryptographical flaws.' "
+    environment:
+      - STRIX_IMAGE=ghcr.io/usestrix/strix-sandbox:latest
+      - LLM_API_BASE=https://api.maiarouter.ai/v1
+      - STRIX_LLM=openai/deepseek/deepseek-chat
+      # - LLM_TIMEOUT=120
+      - LLM_API_KEY=sk-UN8hrGSWFHZSrFiptclQCw
+      # 4. TRIK INDUK: Petakan gpt-4o menjadi deepseek-chat secara internal di LiteLLM
+      # Ini mendikte LiteLLM mengirimkan nama model "deepseek-chat" dalam JSON payload ke MAIA
+      # - gpt-4o=deepseek-chat
+
 volumes:
   go-compiler-cache:
   go-modules-cache:

@@ -1,10 +1,14 @@
 package middleware
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"guangjiapps/gin/internal/config"
+	"guangjiapps/gin/internal/database"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -29,6 +33,28 @@ func AuthMiddleware(cfg config.Config) gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
+
+		// 1. Check Redis cache availability to speedup and skip validation
+		rdb := database.GetRedisClient(cfg)
+		if rdb != nil {
+			ctx, cancel := context.WithTimeout(c.Request.Context(), 1*time.Second)
+			defer cancel()
+
+			tokenKey := "jwt:token:" + tokenString
+			val, err := rdb.Get(ctx, tokenKey).Result()
+			if err == nil && val != "" {
+				var claims jwt.MapClaims
+				if err := json.Unmarshal([]byte(val), &claims); err == nil {
+					if sub, exists := claims["sub"]; exists {
+						c.Set("userID", sub)
+						c.Next()
+						return
+					}
+				}
+			}
+		}
+
+		// 2. Cache miss or Redis unavailable: do normal validation
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			vKey, method, err := cfg.GetJWTVerificationKey()
 			if err != nil {

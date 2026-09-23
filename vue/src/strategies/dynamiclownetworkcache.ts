@@ -53,6 +53,10 @@ export class DynamicLowNetworkCacheStrategy extends DynamicNetworkCacheStrategy 
     }
 
     protected async _handle(request: Request, handler: StrategyHandler): Promise<Response> {
+        if (request.signal?.aborted) {
+            throw new DOMException('The user aborted a request.', 'AbortError');
+        }
+
         if (!this.isLowNetwork()) {
             return await super._handle(request, handler);
         }
@@ -60,6 +64,10 @@ export class DynamicLowNetworkCacheStrategy extends DynamicNetworkCacheStrategy 
         // Low network mode:
         // 1. Prioritaskan cache jika hadir
         const cachedResponse = await handler.cacheMatch(request).catch(() => undefined);
+
+        if (request.signal?.aborted) {
+            throw new DOMException('The user aborted a request.', 'AbortError');
+        }
 
         if (cachedResponse) {
             const lastFetch = this.lastFetchMap.get(request.url) ?? 0;
@@ -70,9 +78,13 @@ export class DynamicLowNetworkCacheStrategy extends DynamicNetworkCacheStrategy 
                 this.lastFetchMap.set(request.url, now);
                 const backgroundFetch = (async () => {
                     try {
-                        const networkResponse = await this.fetchDeduplicated(request, handler);
+                        const bgRequest = new Request(request.url, {
+                            method: request.method,
+                            headers: request.headers
+                        });
+                        const networkResponse = await this.fetchDeduplicated(bgRequest, handler);
                         if (networkResponse && networkResponse.ok) {
-                            await handler.cachePut(request, networkResponse.clone());
+                            await handler.cachePut(bgRequest, networkResponse.clone());
                         }
                     } catch (err) {
                         // Fail silently for background update on low network
@@ -89,6 +101,9 @@ export class DynamicLowNetworkCacheStrategy extends DynamicNetworkCacheStrategy 
 
         // 2. Jika cache tidak hadir, baru fetch dari network
         const networkResponse = await this.fetchDeduplicated(request, handler);
+        if (request.signal?.aborted) {
+            throw new DOMException('The user aborted a request.', 'AbortError');
+        }
         if (networkResponse && networkResponse.ok) {
             const putPromise = handler.cachePut(request, networkResponse.clone()).catch(() => { });
             if (typeof handler.waitUntil === 'function') {

@@ -7,6 +7,11 @@ dist/
 build/
 bin/
 strix_runs/
+venv_strix/
+backup/
+.agents/
+gin/certs/
+gin/dist/
 
 # Go specific
 go.work.sum

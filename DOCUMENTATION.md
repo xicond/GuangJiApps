@@ -1,11 +1,131 @@
 # Documentation - Completed Tasks
 
-## [Completed] Service Worker: Workbox Native `handler.fetchAndCachePut` Integration (`vue/src/strategies/dynamicnetworkcache.ts`)
+## [Completed] Custom Proprietary & Restricted License (`LICENSE.md`)
 
 ### Summary & Changes Made:
-- **Native Workbox Integration**: Refactored `DynamicNetworkCacheStrategy` in [dynamicnetworkcache.ts](./vue/src/strategies/dynamicnetworkcache.ts) to utilize Workbox's built-in `handler.fetchAndCachePut(request)`.
-- **Elimination of Stream Locking**: Replaced custom `response.clone()` and manual `handler.cachePut()` calls with `handler.fetchAndCachePut()`. This delegates stream cloning, plugin lifecycle execution (`CacheableResponsePlugin`, `ExpirationPlugin`), and background `waitUntil()` registration natively to Workbox, completely preventing `TypeError: Response body is already used` and hanging `FetchEvent.respondWith()` promises.
-- **Verification**: Verified via `npm run build:client` (`vue-tsc --noEmit` and `vite build`), compiling cleanly with 0 errors.
+- **Trilingual Custom Proprietary License**:
+  - Authored formal license agreements across 3 dedicated files:
+    - **English (en)**: [`LICENSE.md`](./LICENSE.md)
+    - **Bahasa Indonesia (id)**: [`LICENSE.id.md`](./LICENSE.id.md)
+    - **简体中文 (zh-Hans)**: [`LICENSE.zh.md`](./LICENSE.zh.md)
+  - All editions feature cross-navigation language headers and standardized legal clauses.
+- **Permitted Use for Authorized Non-Profit Foundations**:
+  - Explicitly restricts application deployment and operation solely to authorized non-profit foundations (Yayasan) that have obtained express written permission from the Developer.
+  - Prohibits any commercial, for-profit, or unauthorized third-party entity usage.
+- **Testing & Quality Assurance Allowance**:
+  - Explicitly permits functional testing, integration testing, E2E validation, load testing (e.g. k6), and security audits within authorized testing environments.
+- **Strict Prohibitions**:
+  - **No Repository Duplication**: Strictly prohibits cloning, copying, mirroring, public re-uploading, or redistributing the repository or source code in any form.
+  - **Mandatory Developer Consent**: Mandates prior written authorization from the Developer for any other use, modification outside the foundation, or distribution.
+- **TOC & README Integration**: Linked all 3 license files in [`README.md`](./README.md) Table of Contents and License section, and added the official GuangJiApps logo ([`favicon.png`](./vue/public/favicon.png)) centered at the very top of [`README.md`](./README.md).
+
+---
+
+## [Completed] Project README Documentation (`README.md`)
+
+### Summary & Changes Made:
+- **Comprehensive Project Overview**: Created top-level [`README.md`](./README.md) introducing the GuangJiApps enterprise platform, explaining the migration from the legacy .NET Framework / SSRS monolith (`GuangJiAppsNew`) to Gin-Gonic (Go) and Vue 3 + TypeScript.
+- **Architecture & Tech Stack Breakdown**: Documented technology choices across backend (Go 1.25+, Gin-Gonic, GORM, Redis, Validator v10, Excelize), frontend (Vue 3, TypeScript 5, Element Plus, Pinia, Vite, Workbox PWA), database (MSSQL Server 2022, Redis), and quality assurance tools (k6, Semgrep, Postman).
+- **Directory Structure & Component Mapping**: Outlined repository tree mapping `gin/`, `vue/`, `backup/`, and Docker services.
+- **Step-by-Step Quickstart**: Provided local running instructions via Docker Compose (`docker compose up -d`), independent host commands for Go backend and Vue frontend, environment configurations (`.env`), and Windows IIS cross-compilation (`docker compose --profile build run --rm gin-build`).
+- **Coding Style & Development Standards**: Embedded core engineering guidelines covering GC minimization (`sync.Pool`, slice pre-allocation, runtime tuning with `GOGC`/`GOMEMLIMIT`), concurrent GORM connection pooling, form submission disabling with `finally` blocks, strict TypeScript usage, Postman collection synchronization, and documentation rules.
+
+---
+
+## [Completed] Postman Documentation Re-arrangement: API v1 Hierarchy, CRUD Sub-folders, and Sample Environment
+
+### Summary & Changes Made:
+- **Collection Version (v1) & Collection Headers**:
+  - Updated collection metadata in [`apps-gin.postman_collection.json`](./gin/postman/apps-gin.postman_collection.json) to version `"v1"`.
+  - Added `apiVersion: "v1"` to collection variables alongside `baseUrl`, `authToken`, and `resourceId`.
+  - Reverted outer `v1` folder to keep top-level navigation direct (`Public`, `Admin Management`, `Master Data`, `Lookup Service`, `Transactions`).
+  - Added collection-level header definition for `Content-Type: application/json` and `Accept: application/json` (both via collection root `header` definition and collection pre-request script handling automatic injection while preserving multipart/formdata).
+- **Automated Authentication Lifecycle (Pre-request & 401 Retry Test Scripts)**:
+  - **Pre-request Script (`prerequest`)**:
+    - Automatically checks if `authToken` is present in environment or collection variables.
+    - If `authToken` already exists, skips login and attaches `Bearer <token>` to request headers.
+    - If `authToken` is empty or missing (and current request is not `Login` or `Ping`), automatically sends an asynchronous POST to `{{baseUrl}}/login` using default environment/collection credentials (`root` / `password123`), stores the received token in both environment and collection variables, and attaches the `Authorization` header to the outgoing request.
+  - **Post-response Script (`test`)**:
+    - Listens for HTTP 401 Unauthorized responses on protected requests.
+    - Automatically executes a re-login flow to acquire a fresh JWT token, updates `authToken` in environment and collection variables, and retries the original request with the renewed Bearer token.
+- **Nested Folder Classification for CRUD Operations**:
+  - **Admin Management**: Grouped 21 requests into 5 dedicated entity folders:
+    - `Admins` (List, Create, Get By ID, Update, Delete)
+    - `Department` (List)
+    - `Admin Groups` (List, Create, Get By ID, Update, Delete)
+    - `Group Menu Mappings` (List, Create, Get By ID, Update, Delete)
+    - `Admin Sub Warehouses` (List, Create, Get By ID, Update, Delete)
+  - **Master Data**: Grouped 52 requests into 9 dedicated entity folders:
+    - `Umat` (12 endpoints: Report, Report Excel, OCR, List, PopUp, Create, Create Multipart, Get By ID, Verify QR, Update, Update Multipart, Delete)
+    - `Topics` (List, Create, Get By ID, Update, Delete)
+    - `Kelas Master` (List, Create, Get By ID, Update, Delete)
+    - `Activities` (List, Create, Get By ID, Update, Delete)
+    - `Tim Kerja` (List, Create, Get By ID, Update, Delete, Lookup, Lookup Sub, Lookup Report)
+    - `Tahun Ciu Tao` (List, Create, Get By ID, Update, Delete)
+    - `Penggalang Dana` (List, Create, Get By ID, Update, Delete)
+    - `Sxy Donatur` (List, Create, Get By ID, Update, Delete)
+    - `Fotang` (Lookup, Lookup Sxy)
+  - **Transactions**: Grouped 32 requests into 12 dedicated entity folders:
+    - `Kelas` (List, Lookup, Report, Peserta List, Peserta Load Previous, Create, Get By ID, Update, Delete)
+    - `Kelas Peserta` (Get, Get By IdPeserta, Create, Create Bulk, Update, Delete)
+    - `Kelas Pengabdi` (List, Create)
+    - `Kelas Topik` (List, Create)
+    - `Kelas Kendaraan` (List)
+    - `Kelas Donasi` (List)
+    - `Kelas Donasi Barang` (List)
+    - `Kelas Pengeluaran` (List)
+    - `Kelas Musik` (List)
+    - `Kelas Absensi` (List)
+    - `Donasi Sxy` (List, Create, Get By ID, Update, Delete)
+    - `Report` (SXY List, SXY Excel)
+- **Sample Environment Configuration**:
+  - Created [`apps-gin.postman_environment.json`](./gin/postman/apps-gin.postman_environment.json) (and symlink `app-gin.postman_environment.json`) containing standard Postman environment format with pre-configured variables: `baseUrl`, `apiVersion`, `authToken`, `resourceId`, `username`, and `password`.
+- **Verification**:
+  - Validated that all 122 endpoints with their complete request bodies, query parameters, path variables, UAT test scripts, and mock response examples are 100% preserved without any drops or modifications.
+
+---
+
+## [Completed] Gin: Endpoint `GET /v1/umats/popup` via Stored Procedure `SP_BUS_UMAT_SEARCH_POPUP`
+
+### Summary & Changes Made:
+- **Domain Response Model ([legacy_models.go](./gin/internal/domain/legacy_models.go))**:
+  - Added `UmatPopUpResponse` matching the columns returned by `dbo.SP_BUS_UMAT_SEARCH_POPUP`: `id`, `kode`, `marga`, `alias`, `nama_indonesia`, `nama_mandarin`, `alamat`, `fotang_aktif_desc`, `fotang_ciu_tao_desc`, `pengajak`, and `penanggung`.
+- **Service Implementation ([umat_service.go](./gin/internal/service/umat_service.go))**:
+  - Added `func (s *UmatService) PopUp(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.UmatPopUpResponse, int64, error)`.
+  - Executes stored procedure `EXEC dbo.SP_BUS_UMAT_SEARCH_POPUP` without filtering by `SUBWHID`.
+  - Supports filters: `nama_indonesia`, `nama_mandarin`, `alias`, `fotang_aktif`, and `fotang_ciu_tao`.
+  - Dynamically scans rows using `nullFieldScanner` and extracts `totalRow` for pagination metadata.
+- **Route Registration ([router.go](./gin/internal/api/router.go))**:
+  - Registered `protected.GET("/umats/popup", ...)` with `middleware.StatusNotModifiedHeader` cache headers.
+- **Unit & Acceptance Testing**:
+  - Added `TestUmatService_PopUp` in `gin/internal/service/umat_service_test.go` covering parameter passing, pagination, and filter execution.
+  - Added acceptance tests under `umat_crud_and_reports` in `gin/tests/e2e/master_data_e2e_test.go` verifying status `200 OK`, `meta.total >= 0`, and filtering capabilities.
+- **Postman Documentation ([apps-gin.postman_collection.json](./gin/postman/apps-gin.postman_collection.json))**:
+  - Added `Umat - PopUp` item under Master Data with complete query parameter definitions and sample `200 OK` JSON mock response.
+- **Frontend Integration ([UmatForm.vue](./vue/src/components/umat/UmatForm.vue), [umat.ts](./vue/src/api/umat.ts), [umat.ts](./vue/src/types/umat.ts))**:
+  - Added TypeScript interfaces `UmatPopUpItem`, `UmatPopUpQueryParams`, and `UmatPopUpResponse`.
+  - Added `umatApi.getUmatsPopup` endpoint consumer in `api/umat.ts`.
+  - Updated `UmatPopupSelector` in `UmatForm.vue` to fetch from `umatApi.getUmatsPopup` and aligned filter parameter keys (`nama_indonesia`, `nama_mandarin`, `alias`, `fotang_ciu_tao`, `fotang_aktif`).
+- **Verification**:
+  - Recompiled Windows distribution binary via `docker compose run --rm gin-build` (**PASS**).
+  - Validated frontend TypeScript types via `npm run type-check` (`vue-tsc --noEmit`) (**PASS** with 0 errors).
+
+---
+
+## [Completed] Service Worker Abort Propagation & Rapid Pagination Loader Fix
+
+### Summary & Changes Made:
+- **Service Worker Abort Propagation (`vue/src/strategies/dynamicnetworkcache.ts` & `dynamiclownetworkcache.ts`)**:
+  - Attached dedicated `AbortController` instances to deduplicated in-flight fetches, tracking subscribing `request.signal`s.
+  - When all client subscribers abort (e.g. rapid pagination), the Service Worker automatically executes `abortController.abort()` to terminate the outbound HTTP/TCP connection to the backend server.
+  - Prevented aborted requests from triggering unwanted debounced background updates (`triggerDebouncedBackgroundUpdate`) or delivering stale fallback cache responses.
+  - Updated `DynamicLowNetworkCacheStrategy` to cleanly handle `request.signal?.aborted` in low-network mode.
+- **Client Loader & State Race Condition Fix (`vue/src/views/report/SxyReportList.vue`, `UmatReportList.vue`, `DonasiSxyList.vue`)**:
+  - Fixed rapid pagination bug where aborted previous requests executed `finally { loading.value = false }`, prematurely hiding the table loading spinner while the new page request was still in-flight.
+  - Tied `loading.value = false`, `dataList.value`, and pagination/totals updates strictly to `currentAbortController === controller`, ensuring only the latest active request controls UI loading states and prevents stale data overwrites.
+- **Verification**:
+  - Ran `npm run type-check` (`vue-tsc --noEmit`) — Passed with 0 errors.
+  - Ran `npm run build` (`vite build` + Service Worker build) — Succeeded with exit code 0.
 
 ---
 
@@ -1020,12 +1140,6 @@ Updated `vue/pentest.js` ([pentest.js](./vue/pentest.js)) to focus strictly on p
    - Tooltip displays "Do fill filter first" when data is shown in the table (`dataList.length > 0`) but no filter has been filled (`!hasActiveFilter`).
    - Automatically hides when the user fills any filter or when no dataset is present.
 - Verified with `vue-tsc --noEmit`, passing cleanly with 0 type errors.
-
-
-
-
-
-
 
 
 

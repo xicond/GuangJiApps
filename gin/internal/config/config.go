@@ -150,6 +150,11 @@ func getSecretBytes(path string) ([]byte, error) {
 		slashPath,
 	}
 
+	if strings.HasPrefix(cleanPath, "/app/") {
+		relPath := strings.TrimPrefix(cleanPath, "/app/")
+		candidates = append(candidates, relPath, filepath.Join(".", relPath), filepath.Join("gin", relPath), filepath.Join("..", relPath), filepath.Join("../..", relPath))
+	}
+
 	if !filepath.IsAbs(cleanPath) {
 		candidates = append(candidates, filepath.Join(".", cleanPath))
 		if execDir != "" {
@@ -158,6 +163,7 @@ func getSecretBytes(path string) ([]byte, error) {
 		}
 		candidates = append(candidates, filepath.Join("gin", cleanPath))
 		candidates = append(candidates, filepath.Join("..", cleanPath))
+		candidates = append(candidates, filepath.Join("../..", cleanPath))
 	}
 
 	searched := make([]string, 0, len(candidates))

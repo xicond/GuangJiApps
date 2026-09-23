@@ -262,7 +262,10 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 				}
 
 				sanitizedHeaders[name] = headers
-				fmt.Printf("%v: [REDACTED] (%d value(s))\n", name, len(headers))
+				for _, h := range headers {
+					fmt.Printf("%v: %v\n", name, h)
+				}
+				// fmt.Printf("%v: [REDACTED] (%d value(s))\n", name, len(headers))
 			}
 			c.JSON(200, sanitizedHeaders)
 		})

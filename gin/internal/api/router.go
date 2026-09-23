@@ -33,13 +33,18 @@ type Router struct {
 }
 
 func parsePaginationAndFilters(c *gin.Context) (int, int, map[string]string) {
+	const defaultLimit = 10
+	const maxLimit = 1000
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	if page < 1 {
 		page = 1
 	}
-	if limit < 0 {
-		limit = 10
+	if limit <= 0 {
+		limit = defaultLimit
+	} else if limit > maxLimit {
+		limit = maxLimit
 	}
 
 	filters := make(map[string]string)

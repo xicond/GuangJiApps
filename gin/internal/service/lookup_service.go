@@ -277,6 +277,14 @@ func Lookup(db *gorm.DB, categoryID string, page int, limit int, opts ...interfa
 		return nil, 0, errors.New("database connection is nil")
 	}
 
+	const defaultLimit = 10
+	const maxLimit = 1000
+	if limit <= 0 {
+		limit = defaultLimit
+	} else if limit > maxLimit {
+		limit = maxLimit
+	}
+
 	var items []domain.AppLookup
 	var total int64
 	var filters map[string]string

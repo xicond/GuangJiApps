@@ -237,13 +237,31 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 
 	if cfg.GinMode == "debug" {
 		r.GET(cfg.BaseURL+"/debug-headers", func(c *gin.Context) {
-			// Print semua header yang diterima
+			// Print semua header yang diterima (dengan redaksi untuk data sensitif)
+			sensitiveHeaders := map[string]struct{}{
+				"authorization":       {},
+				"proxy-authorization": {},
+				"cookie":              {},
+				"set-cookie":          {},
+				"x-api-key":           {},
+				"x-auth-token":        {},
+			}
+
+			sanitizedHeaders := make(map[string][]string, len(c.Request.Header))
 			for name, headers := range c.Request.Header {
+				lowerName := strings.ToLower(name)
+				if _, isSensitive := sensitiveHeaders[lowerName]; isSensitive {
+					sanitizedHeaders[name] = []string{"[REDACTED]"}
+					fmt.Printf("%v: %v\n", name, "[REDACTED]")
+					continue
+				}
+
+				sanitizedHeaders[name] = headers
 				for _, h := range headers {
 					fmt.Printf("%v: %v\n", name, h)
 				}
 			}
-			c.JSON(200, c.Request.Header)
+			c.JSON(200, sanitizedHeaders)
 		})
 	}
 

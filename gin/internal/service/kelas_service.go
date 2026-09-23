@@ -235,7 +235,7 @@ func getUserID(c *gin.Context) int32 {
 			case float64:
 				return int32(v)
 			case string:
-				if n, err := strconv.Atoi(v); err == nil {
+				if n, err := strconv.ParseInt(v, 10, 32); err == nil {
 					return int32(n)
 				}
 			}

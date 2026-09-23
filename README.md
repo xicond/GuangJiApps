@@ -1,14 +1,22 @@
-# GuangJiApps
+<p align="center">
+  <img src="./vue/public/favicon.png" alt="GuangJiApps Logo" width="128" height="128" />
+</p>
 
-Modern enterprise web application for the GuangJi organization, providing congregant management, educational classes, administrative workflows, and donation tracking.
+<h1 align="center">GuangJi Apps</h1>
 
-This project is a complete modernization and migration from a legacy **.NET Framework + SSRS + Microsoft SQL Server** monolith (`GuangJiAppsNew`) to a decoupled, high-performance architecture powered by **Gin-Gonic (Go)** and **Vue 3 + TypeScript + Element Plus + PWA**.
+<p align="center">
+  <b>Modern enterprise web application for the GuangJi organization, providing congregant management, educational classes, administrative workflows, and donation tracking.</b>
+</p>
+
+<p align="center">
+  This project is a complete modernization and migration from a legacy <b>.NET Framework + SSRS + Microsoft SQL Server</b> monolith (<code>GuangJiAppsNew</code>) to a decoupled, high-performance architecture powered by <b>Gin-Gonic (Go)</b> and <b>Vue 3 + TypeScript + Element Plus + PWA</b>.
+</p>
 
 ---
 
 ## Table of Contents
 
-- [GuangJiApps](#guangjiapps)
+- [GuangJi Apps](#guangjiapps)
   - [Table of Contents](#table-of-contents)
   - [Project Overview](#project-overview)
   - [Technology Stack](#technology-stack)
@@ -32,7 +40,7 @@ This project is a complete modernization and migration from a legacy **.NET Fram
 
 ## Project Overview
 
-GuangJiApps manages organizational data, liturgical events, classes, and contributions:
+GuangJi Apps manages organizational data, liturgical events, classes, and contributions:
 
 - **Auth & Security**: JWT-based authentication with RSA/PEM secret signing, Redis token caching, client IP-aware rate limiting (`ulule/limiter`), and brute-force protection (`Fail2Ban` middleware).
 - **Admin Management**: User management (`T_Login_Mst`), permission groups (`T_Login_Group`), group menu mappings (`T_Login_Menu`), and warehouse sub-locations (`T_WH_SUBWH_MST`).
@@ -223,7 +231,7 @@ docker compose --profile tools run --rm semgrep
 
 ## Production Windows IIS Deployment
 
-GuangJiApps is engineered to run in a Windows Server IIS environment via the **HttpPlatformHandler** module.
+GuangJi Apps is engineered to run in a Windows Server IIS environment via the **HttpPlatformHandler** module.
 
 1. **Cross-Compile Windows Executable**:
    Execute the dedicated Docker build container to generate `server.exe`:

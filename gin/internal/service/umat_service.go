@@ -1158,12 +1158,12 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 }
 
 func (s *UmatService) Delete(id string, c *gin.Context) error {
-	// 1. Cast string ID parameter safely to int32 to prevent MSSQL query crashes
-	parsedInt, err := strconv.Atoi(id)
+	// 1. Parse ID directly as 32-bit signed integer to avoid narrowing overflow
+	parsedInt64, err := strconv.ParseInt(id, 10, 32)
 	if err != nil {
 		return fmt.Errorf("invalid ID format: %w", err)
 	}
-	userIDInt32 := int32(parsedInt)
+	userIDInt32 := int32(parsedInt64)
 
 	var item domain.Umat
 	// 2. Fetch the existing item using .Take() to avoid default sorting bugs

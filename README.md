@@ -305,7 +305,7 @@ These rules and conventions must be strictly followed when contributing to the c
 
 A complete Postman test suite and environment configuration is maintained under `gin/postman/`:
 
-- **Collection**: [`apps-gin.postman_collection.json`](./gin/postman/apps-gin.postman_collection.json) (symlinked to `app-gin.postman_collection.json`).
+- **Collection**: [`apps-gin.postman_collection.json`](./gin/postman/apps-gin.postman_collection.json).
 - **Environment**: [`apps-gin.postman_environment.json`](./gin/postman/apps-gin.postman_environment.json).
 - **Features**:
   - **Version `v1`**: Collection metadata versioned at `v1` with `apiVersion` variable.

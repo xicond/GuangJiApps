@@ -125,7 +125,7 @@ GuangJiApps/
 ### Prerequisites
 
 - **Docker & Docker Compose**: Recommended for local development to spin up MSSQL Server, Redis, and hot-reload containers.
-- **Go 1.26+**: Required if running the backend directly on your host machine.
+- **Go 1.26.8+**: Required if running the backend directly on your host machine.
 - **Node.js 20+ & npm**: Required if running the frontend directly on your host machine.
 
 ### Environment Configuration

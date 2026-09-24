@@ -1,0 +1,20 @@
+---
+# Codacy configuration
+# Documentation: https://docs.codacy.com/repositories-configure/codacy-configuration-file/
+
+exclude_paths:
+  - "**.py"
+  - "**/*.py"
+
+engines:
+  prospector:
+    enabled: false
+  bandit:
+    enabled: false
+  pylint:
+    enabled: false
+  revive:
+    enabled: true
+    exclude_paths:
+      - "**.py"
+      - "**/*.py"

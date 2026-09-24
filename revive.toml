@@ -1,0 +1,9 @@
+# Revive configuration file for Codacy / local linting
+# Documentation: https://revive.run/
+
+ignoreGeneratedHeader = false
+severity = "warning"
+confidence = 0.8
+
+[rule.var-naming]
+disabled = true

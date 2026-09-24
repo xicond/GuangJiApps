@@ -1017,7 +1017,7 @@ func (s *UmatService) VerifyQR(tokenString string) (*domain.VerifyQRResponse, er
 				return int32(n)
 			}
 		case string:
-			if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			if n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 32); err == nil {
 				return int32(n)
 			}
 		}
@@ -1130,8 +1130,8 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 		return domain.Umat{}, err
 	}
 
-	// 1. Cast string ID parameter safely to int32 to prevent MSSQL query crashes
-	parsedInt, err := strconv.Atoi(id)
+	// 1. Parse string ID directly as 32-bit signed integer to avoid narrowing overflow
+	parsedInt, err := strconv.ParseInt(id, 10, 32)
 	if err != nil {
 		return domain.Umat{}, fmt.Errorf("invalid ID format: %w", err)
 	}

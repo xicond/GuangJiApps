@@ -1017,7 +1017,7 @@ func (s *UmatService) VerifyQR(tokenString string) (*domain.VerifyQRResponse, er
 				return int32(n)
 			}
 		case string:
-			if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			if n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 32); err == nil {
 				return int32(n)
 			}
 		}

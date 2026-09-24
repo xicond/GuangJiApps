@@ -59,6 +59,7 @@ jobs:
         if: always()
         run: |
           if [ -f results.sarif ]; then
+            sudo chown $(id -u):$(id -g) results.sarif
             python3 -c '
           import json
 
@@ -84,9 +85,10 @@ jobs:
                   filtered_results.append(r)
               run["results"] = filtered_results
 
-          with open("results.sarif", "w") as f:
+          with open("results.tmp.sarif", "w") as f:
               json.dump(data, f, indent=2)
           '
+            mv results.tmp.sarif results.sarif
           fi
 
       # Upload the SARIF file generated in the previous step

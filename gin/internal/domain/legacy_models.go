@@ -39,6 +39,12 @@ var FieldTranslations = map[string]string{
 // GetFieldLabel translates a field identifier (struct namespace like "Umat.NamaIndonesia",
 // struct field name like "NamaIndonesia", or json key like "nama_indonesia") to a human-readable label.
 // If not found in FieldTranslations map, it defaults to splitting the model field name into space-separated words.
+//
+// Parameters:
+//   - identifier: field key or qualified property path.
+//
+// Returns:
+//   - string: human-readable label for display.
 func GetFieldLabel(identifier string) string {
 	if identifier == "" {
 		return ""
@@ -64,6 +70,12 @@ func GetFieldLabel(identifier string) string {
 
 // FormatFieldName converts PascalCase/camelCase or snake_case string into space-separated words.
 // E.g., "NamaIndonesia" -> "Nama Indonesia", "nama_indonesia" -> "Nama Indonesia".
+//
+// Parameters:
+//   - s: raw field identifier.
+//
+// Returns:
+//   - string: capitalized space-delimited label.
 func FormatFieldName(s string) string {
 	if s == "" {
 		return ""
@@ -140,6 +152,9 @@ type Admin struct {
 }
 
 // TableName returns the underlying MSSQL database table name for Admin.
+//
+// Returns:
+//   - string: table name "T_Login_Mst".
 func (Admin) TableName() string { return "T_Login_Mst" }
 
 // AdminMatrix represents the warehouse user access matrix mapped to table [dbo].[T_WH_USER_MATRIX_MST].
@@ -151,6 +166,9 @@ type AdminMatrix struct {
 }
 
 // TableName returns the underlying MSSQL database table name for AdminMatrix.
+//
+// Returns:
+//   - string: table name "T_WH_USER_MATRIX_MST".
 func (AdminMatrix) TableName() string {
 	return "T_WH_USER_MATRIX_MST"
 }
@@ -186,6 +204,9 @@ type AdminGroup struct {
 }
 
 // TableName returns the underlying MSSQL database table name for AdminGroup.
+//
+// Returns:
+//   - string: table name "T_Login_Group".
 func (AdminGroup) TableName() string { return "T_Login_Group" }
 
 // DepartmentMst represents organizational department master data mapped to table [dbo].[T_BUS_DEPARTMENT_MST].
@@ -200,6 +221,9 @@ type DepartmentMst struct {
 }
 
 // TableName returns the underlying MSSQL database table name for DepartmentMst.
+//
+// Returns:
+//   - string: table name "T_BUS_DEPARTMENT_MST".
 func (DepartmentMst) TableName() string {
 	return "T_BUS_DEPARTMENT_MST"
 }
@@ -217,6 +241,9 @@ type GroupMenuMapping struct {
 }
 
 // TableName returns the underlying MSSQL database table name for GroupMenuMapping.
+//
+// Returns:
+//   - string: table name "T_Login_Menu".
 func (GroupMenuMapping) TableName() string { return "T_Login_Menu" }
 
 // AdminSubWarehouse represents warehouse subdivision master entity mapped to table [dbo].[T_WH_SUBWH_MST].
@@ -234,6 +261,9 @@ type AdminSubWarehouse struct {
 }
 
 // TableName returns the underlying MSSQL database table name for AdminSubWarehouse.
+//
+// Returns:
+//   - string: table name "T_WH_SUBWH_MST".
 func (AdminSubWarehouse) TableName() string { return "T_WH_SUBWH_MST" }
 
 // ==========================================
@@ -334,8 +364,17 @@ type VerifyQRResponse struct {
 	FotangAktif   string                 `json:"fotang_aktif"`
 }
 
+// UnmarshalJSON implements custom JSON unmarshaling for Umat,
+// decoding boolean vow flags (ikrar1-6) while delegating base attributes to an alias.
+//
+// Parameters:
+//   - data: raw JSON byte slice.
+//
+// Returns:
+//   - error: non-nil if JSON unmarshaling fails.
 func (u *Umat) UnmarshalJSON(data []byte) error {
 	type Alias Umat
+	// auxUmat captures alternate boolean pointers for vow checkboxes before mapping to Umat.
 	aux := &struct {
 		Ikrar1Alt *bool `json:"ikrar1"`
 		Ikrar2Alt *bool `json:"ikrar2"`
@@ -371,6 +410,10 @@ func (u *Umat) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// TableName returns the underlying MSSQL database table name for Umat.
+//
+// Returns:
+//   - string: table name "T_BUS_UMAT".
 func (Umat) TableName() string { return "T_BUS_UMAT" }
 
 // UmatFoto stores binary photographic documents or uploaded member portrait files mapped to table [dbo].[T_BUS_UMAT_FOTO].
@@ -387,7 +430,10 @@ type UmatFoto struct {
 	ModDate     *time.Time `gorm:"column:ModDate" json:"mod_date"`
 }
 
-// TableName menentukan nama tabel secara eksplisit di SQL Server
+// TableName returns the underlying MSSQL database table name for UmatFoto.
+//
+// Returns:
+//   - string: table name "T_BUS_UMAT_FOTO".
 func (UmatFoto) TableName() string {
 	return "T_BUS_UMAT_FOTO"
 }
@@ -406,7 +452,10 @@ type AppLookup struct {
 	Category *AppLookupCategory `gorm:"foreignKey:CategoryId;references:CategoryId;constraint:false" json:"category,omitempty" validate:"-"`
 }
 
-// TableName menentukan nama tabel secara eksplisit di database
+// TableName returns the underlying MSSQL database table name for AppLookup.
+//
+// Returns:
+//   - string: table name "T_APP_LOOKUP".
 func (AppLookup) TableName() string {
 	return "T_APP_LOOKUP"
 }
@@ -422,7 +471,10 @@ type AppLookupCategory struct {
 	ModDate             *DateTime `gorm:"column:ModDate;type:datetime" json:"mod_date,omitempty"`
 }
 
-// TableName memaksa GORM menggunakan nama tabel spesifik tanpa pluralisasi otomatis
+// TableName returns the underlying MSSQL database table name for AppLookupCategory.
+//
+// Returns:
+//   - string: table name "T_APP_LOOKUPCATEGORY".
 func (AppLookupCategory) TableName() string {
 	return "T_APP_LOOKUPCATEGORY"
 }
@@ -441,6 +493,10 @@ type Topic struct {
 	TopicCategoryInfo *AppLookup `gorm:"foreignKey:TopicCategory;references:LookupValue;constraint:false" json:"topic_category_info,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for Topic.
+//
+// Returns:
+//   - string: table name "T_BUS_TOPIC".
 func (Topic) TableName() string { return "T_BUS_TOPIC" }
 
 // Activity represents event and ritual activity definitions mapped to table [dbo].[T_BUS_EVENT].
@@ -457,6 +513,10 @@ type Activity struct {
 	EventCategoryInfo *AppLookup `gorm:"foreignKey:EventCategory;references:LookupValue;constraint:false" json:"event_category_info,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for Activity.
+//
+// Returns:
+//   - string: table name "T_BUS_EVENT".
 func (Activity) TableName() string { return "T_BUS_EVENT" }
 
 // TimKerja represents work team / servant committee role lookup entries mapped to [dbo].[T_APP_LOOKUP] with CategoryId = 'B_POSISI'.
@@ -471,6 +531,10 @@ type TimKerja struct {
 	ModDate           DateTime `gorm:"column:ModDate" json:"mod_date"`
 }
 
+// TableName returns the underlying MSSQL database table name for TimKerja.
+//
+// Returns:
+//   - string: table name "T_APP_LOOKUP".
 func (TimKerja) TableName() string { return "T_APP_LOOKUP" }
 
 // DateOnly represents a date without time information (YYYY-MM-DD), compatible with MSSQL date/datetime columns.
@@ -503,6 +567,12 @@ func (d *DateOnly) Scan(value interface{}) error {
 }
 
 // parseString parses diverse date string layouts into the embedded time.Time instance.
+//
+// Parameters:
+//   - s: formatted date string.
+//
+// Returns:
+//   - error: non-nil if date cannot be parsed by any known layout.
 func (d *DateOnly) parseString(s string) error {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -737,6 +807,12 @@ func (dt *DateTime) Scan(value interface{}) error {
 }
 
 // parseString attempts to parse a datetime string against multiple known layouts.
+//
+// Parameters:
+//   - s: formatted datetime string.
+//
+// Returns:
+//   - error: non-nil if datetime cannot be parsed by any known layout.
 func (dt *DateTime) parseString(s string) error {
 	s = strings.TrimSpace(s)
 	if s == "" || s == "null" {
@@ -931,6 +1007,10 @@ type TahunCiuTao struct {
 	Description   string   `gorm:"column:description" json:"description" validate:"omitempty,max=50"`
 }
 
+// TableName returns the underlying MSSQL database table name for TahunCiuTao.
+//
+// Returns:
+//   - string: table name "T_BUS_TAHUN_CIUTAO".
 func (TahunCiuTao) TableName() string { return "T_BUS_TAHUN_CIUTAO" }
 
 // PenggalangDana represents charity fund collector / coordinator master records mapped to table [dbo].[T_SXY_MST_PENGGALANG].
@@ -967,6 +1047,10 @@ type PenggalangDanaResponse struct {
 	Email         string `gorm:"column:email" json:"email"`
 }
 
+// TableName returns the underlying MSSQL database table name for PenggalangDana.
+//
+// Returns:
+//   - string: table name "T_SXY_MST_PENGGALANG".
 func (PenggalangDana) TableName() string { return "T_SXY_MST_PENGGALANG" }
 
 // SxyDonatur represents donor profile master records for charity donations mapped to table [dbo].[T_SXY_MST_DONATUR].
@@ -1024,6 +1108,10 @@ type SxyDonasiReport struct {
 	Fotang         string  `gorm:"column:Fotang" json:"fotang"`
 }
 
+// TableName returns the underlying MSSQL database table name for SxyDonatur.
+//
+// Returns:
+//   - string: table name "T_SXY_MST_DONATUR".
 func (SxyDonatur) TableName() string { return "T_SXY_MST_DONATUR" }
 
 // Kelas represents class session header records mapped to table [dbo].[T_TRX_KELAS].
@@ -1052,6 +1140,10 @@ type Kelas struct {
 	FotangName *AppLookup `gorm:"foreignKey:KodeFotang;references:LookupValue;constraint:false" json:"fotang_name,omitempty" validate:"-"` // CategoryId = B_FOTHANG
 }
 
+// TableName returns the underlying MSSQL database table name for Kelas.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS".
 func (Kelas) TableName() string { return "T_TRX_KELAS" }
 
 // KelasResponse represents the serialized projection of class session data with descriptions.
@@ -1095,7 +1187,10 @@ type KelasPeserta struct {
 	Umat  *Umat  `gorm:"foreignKey:IdPeserta;references:ID;constraint:false" json:"umat,omitempty" validate:"-"`
 }
 
-// TableName menentukan nama tabel secara eksplisit di database
+// TableName returns the underlying MSSQL database table name for KelasPeserta.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS_PESERTA".
 func (KelasPeserta) TableName() string {
 	return "T_TRX_KELAS_PESERTA"
 }
@@ -1375,7 +1470,10 @@ type KelasPengabdi struct {
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
-// TableName menentukan nama tabel secara eksplisit di database
+// TableName returns the underlying MSSQL database table name for KelasPengabdi.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS_PENGABDI".
 func (KelasPengabdi) TableName() string {
 	return "T_TRX_KELAS_PENGABDI"
 }
@@ -1405,6 +1503,10 @@ type KelasTopik struct {
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for KelasTopik.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS_TOPIK".
 func (KelasTopik) TableName() string {
 	return "T_TRX_KELAS_TOPIK"
 }
@@ -1428,6 +1530,10 @@ type KelasKendaraan struct {
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for KelasKendaraan.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS_KENDARAAN".
 func (KelasKendaraan) TableName() string {
 	return "T_TRX_KELAS_KENDARAAN"
 }
@@ -1446,6 +1552,10 @@ type KelasDonasi struct {
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for KelasDonasi.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS_DONASI".
 func (KelasDonasi) TableName() string {
 	return "T_TRX_KELAS_DONASI"
 }
@@ -1464,6 +1574,10 @@ type KelasDonasiBarang struct {
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for KelasDonasiBarang.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS_DONASI_BARANG".
 func (KelasDonasiBarang) TableName() string {
 	return "T_TRX_KELAS_DONASI_BARANG"
 }
@@ -1483,6 +1597,10 @@ type KelasPengeluaran struct {
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for KelasPengeluaran.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS_PENGELUARAN".
 func (KelasPengeluaran) TableName() string {
 	return "T_TRX_KELAS_PENGELUARAN"
 }
@@ -1503,6 +1621,10 @@ type KelasMusik struct {
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for KelasMusik.
+//
+// Returns:
+//   - string: table name "T_TRX_MUSIK".
 func (KelasMusik) TableName() string {
 	return "T_TRX_MUSIK"
 }
@@ -1521,6 +1643,10 @@ type KelasAbsensi struct {
 	Kelas *Kelas `gorm:"foreignKey:TrxId;references:TrxId;constraint:false" json:"kelas,omitempty" validate:"-"`
 }
 
+// TableName returns the underlying MSSQL database table name for KelasAbsensi.
+//
+// Returns:
+//   - string: table name "T_TRX_KELAS_ABSENSI".
 func (KelasAbsensi) TableName() string {
 	return "T_TRX_KELAS_ABSENSI"
 }
@@ -1547,6 +1673,10 @@ type DonasiSxy struct {
 	TtkSent         bool     `gorm:"column:ttksent" json:"ttk_sent"`
 }
 
+// TableName returns the underlying MSSQL database table name for DonasiSxy.
+//
+// Returns:
+//   - string: table name "T_SXY_TRANSAKSI".
 func (DonasiSxy) TableName() string { return "T_SXY_TRANSAKSI" }
 
 // DonasiSxyResponse represents the projection DTO for charitable transactions,
@@ -1577,6 +1707,10 @@ type WorkMapping struct {
 	Status    bool   `gorm:"column:Status;type:bit;default:1" json:"status"`
 }
 
+// TableName returns the underlying MSSQL database table name for WorkMapping.
+//
+// Returns:
+//   - string: table name "T_BUS_WORK_MAPPING".
 func (WorkMapping) TableName() string { return "T_BUS_WORK_MAPPING" }
 
 // UmatReport represents a comprehensive flat reporting model for congregant (Umat) records,

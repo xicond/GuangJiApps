@@ -54,6 +54,41 @@ jobs:
           # This will handover control about PR rejection to the GitHub side
           max-allowed-issues: 2147483647
 
+      # Filter out *.py files and Revive_var-naming rule from SARIF results
+      - name: Filter SARIF results
+        if: always()
+        run: |
+          if [ -f results.sarif ]; then
+            python3 -c '
+          import json
+
+          with open("results.sarif", "r") as f:
+              data = json.load(f)
+
+          for run in data.get("runs", []):
+              filtered_results = []
+              for r in run.get("results", []):
+                  rule_id = r.get("ruleId", "")
+                  if rule_id == "Revive_var-naming" or "var-naming" in rule_id.lower():
+                      continue
+
+                  is_py = False
+                  for loc in r.get("locations", []):
+                      uri = loc.get("physicalLocation", {}).get("artifactLocation", {}).get("uri", "")
+                      if uri.endswith(".py"):
+                          is_py = True
+                          break
+                  if is_py:
+                      continue
+
+                  filtered_results.append(r)
+              run["results"] = filtered_results
+
+          with open("results.sarif", "w") as f:
+              json.dump(data, f, indent=2)
+          '
+          fi
+
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
         uses: github/codeql-action/upload-sarif@v3

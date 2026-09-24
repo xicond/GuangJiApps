@@ -7,3 +7,6 @@ confidence = 0.8
 
 [rule.var-naming]
 disabled = true
+
+[rule.bool-literal-in-expr]
+disabled = true

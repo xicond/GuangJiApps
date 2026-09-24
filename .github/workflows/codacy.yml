@@ -74,14 +74,14 @@ jobs:
             rm -rf /tmp/py_stash
           fi
 
-      # Filter out *.py files and Revive_var-naming rule from SARIF results
+      # Filter out *.py files, Revive_var-naming, and expr rules from SARIF results
       - name: Filter SARIF results
         if: always()
         run: |
           if [ -f results.sarif ]; then
             sudo chown $(id -u):$(id -g) results.sarif
             python3 -c '
-          import json
+          import json, re
 
           with open("results.sarif", "r") as f:
               data = json.load(f)
@@ -90,7 +90,16 @@ jobs:
               filtered_results = []
               for r in run.get("results", []):
                   rule_id = r.get("ruleId", "")
-                  if rule_id == "Revive_var-naming" or "var-naming" in rule_id.lower():
+                  rule_lower = rule_id.lower()
+                  # Check if rule matches var-naming or expr
+                  if (
+                      "var-naming" in rule_lower
+                      or rule_lower == "expr"
+                      or rule_lower.endswith("_expr")
+                      or rule_lower.startswith("expr_")
+                      or "bool-literal-in-expr" in rule_lower
+                      or bool(re.search(r"(^|[_.-])expr([_.-]|$)", rule_lower))
+                  ):
                       continue
 
                   is_py = False

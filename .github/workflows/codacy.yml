@@ -38,6 +38,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Temporarily stash python files so Codacy CLI does not discover or analyze them
+      - name: Temporarily stash python files
+        run: |
+          mkdir -p /tmp/py_stash
+          find . -not -path "*/.*" -name "*.py" | while read -r file; do
+            clean_file="${file#./}"
+            dir=$(dirname "$clean_file")
+            mkdir -p "/tmp/py_stash/$dir"
+            mv "$clean_file" "/tmp/py_stash/$clean_file"
+          done
+
       # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
@@ -53,6 +64,15 @@ jobs:
           # Force 0 exit code to allow SARIF file generation
           # This will handover control about PR rejection to the GitHub side
           max-allowed-issues: 2147483647
+
+      # Restore python files immediately after analysis
+      - name: Restore python files
+        if: always()
+        run: |
+          if [ -d /tmp/py_stash ]; then
+            cp -r /tmp/py_stash/* . 2>/dev/null || true
+            rm -rf /tmp/py_stash
+          fi
 
       # Filter out *.py files and Revive_var-naming rule from SARIF results
       - name: Filter SARIF results

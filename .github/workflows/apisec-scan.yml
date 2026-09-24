@@ -24,7 +24,7 @@ jobs:
          uses: actions/checkout@v4
 
        - name: APIsec University Scan
-         uses: apisec-university/free-API-security-test-action@v1.2 # Sesuaikan versi tag/commit terbaru
+         uses: apisec-university/free-API-security-test-action@beta # Sesuaikan versi tag/commit terbaru
          with:
            # Token khusus dari APIsec University
            apisecu_token: ${{ secrets.APISECU_TOKEN }}

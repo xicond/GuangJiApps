@@ -1210,8 +1210,17 @@ type KelasPesertaBulkRequest struct {
 	MakananMalam    *string  `json:"makanan_malam" validate:"omitempty,max=30"`
 }
 
-// UnmarshalJSON custom unmarshaler for KelasPesertaBulkRequest to enforce array of umat IDs
+// UnmarshalJSON implements custom JSON unmarshaling for KelasPesertaBulkRequest,
+// validating and enforcing that id_peserta is provided as an array of integer IDs.
+//
+// Parameters:
+//   - data: raw JSON bytes.
+//
+// Returns:
+//   - error: non-nil if JSON is invalid or id_peserta is not a valid array.
 func (p *KelasPesertaBulkRequest) UnmarshalJSON(data []byte) error {
+	// auxBulkRequest is an auxiliary deserialization struct that temporarily captures
+	// raw JSON payload representations of bulk participant enrollment requests before slice coercion.
 	type auxBulkRequest struct {
 		TrxId           int32           `json:"trx_id"`
 		IdPeserta       json.RawMessage `json:"id_peserta"`

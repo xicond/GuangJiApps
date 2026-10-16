@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect/v2"
 )
@@ -56,6 +57,14 @@ func getAuthToken(t *testing.T, e *httpexpect.Expect) string {
 	if cachedToken != "" {
 		return cachedToken
 	}
+
+	checkClient := http.Client{Timeout: 500 * time.Millisecond}
+	resp, err := checkClient.Get(getBaseURL())
+	if err != nil {
+		t.Skipf("skipping E2E test: server at %s not reachable: %v", getBaseURL(), err)
+		return ""
+	}
+	_ = resp.Body.Close()
 
 	res := e.POST("/login").
 		WithHeader("Content-Type", "application/json").

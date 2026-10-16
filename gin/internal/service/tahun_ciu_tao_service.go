@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -41,12 +42,17 @@ func NewTahunCiuTaoService(db *gorm.DB) *TahunCiuTaoService {
 //   - page: The target page number (1-based index).
 //   - filters: Key-value map of filter parameters (e.g. "tahun_mandarin", "date").
 //   - limit: Maximum number of records to return per page.
+// Parameters:
+//   - c: Gin context carrying HTTP request metadata.
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter conditions.
+//   - limit: Maximum number of records to return per page.
 //
 // Returns:
 //   - []domain.TahunCiuTao: Slice of lunar year records.
 //   - int64: Total count of matching records.
 //   - error: Error if stored procedure query fails.
-func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int) ([]domain.TahunCiuTao, int64, error) {
+func (s *TahunCiuTaoService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.TahunCiuTao, int64, error) {
 	var items []domain.TahunCiuTao
 	var total int64
 
@@ -89,8 +95,13 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 
 	var findErr error
 
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
 	sortDirection := "ASCENDING"
-	rows, err := s.db.Raw("EXEC SP_BUS_YEAR_SEARCH_DATA ?, ?, ?, ?, ?, ?",
+	rows, err := s.db.WithContext(reqCtx).Raw("EXEC SP_BUS_YEAR_SEARCH_DATA ?, ?, ?, ?, ?, ?",
 		limit,         // @PageSize
 		page,          // @CurrentPage
 		nil,           // @SortExpression (selalu null)
@@ -99,13 +110,18 @@ func (s *TahunCiuTaoService) List(page int, filters map[string]string, limit int
 		dateVal,       // @Date (time.Time atau nil)
 	).Rows()
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, 0, fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+		}
 		return nil, 0, fmt.Errorf("database query error: %w", err)
 	}
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, context.Canceled) {
+			findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			findErr = errors.New("tahun ciu tao tidak ditemukan")
 		} else {
 			findErr = fmt.Errorf("database error: %w", err)

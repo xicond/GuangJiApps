@@ -97,7 +97,7 @@ func TestKelasMasterService(t *testing.T) {
 
 	// 5. List with filters
 	filters := map[string]string{"lookup_description": "Malaikat Baru"}
-	items, total, err := svc.List(1, filters, 10)
+	items, total, err := svc.List(c, 1, filters, 10)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -108,7 +109,7 @@ var copyBufferPool = sync.Pool{
 //   - []domain.KelasResponse: Slice of class event response records.
 //   - int64: Total count of matching records.
 //   - error: Error if database query fails.
-func (s *KelasService) List(page int, filters map[string]string, c *gin.Context, limit int) ([]domain.KelasResponse, int64, error) {
+func (s *KelasService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.KelasResponse, int64, error) {
 	var items []domain.KelasResponse
 	var total int64
 
@@ -160,13 +161,20 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 
 	var findErr error
 
-	sortDirection := "ASCENDING"
-	var userID int32
-	if userIDVal, exists := c.Get("userID"); exists {
-		userID = ToInt32(userIDVal)
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
 	}
 
-	rows, err := s.db.Raw("EXEC SP_TRX_KELAS_SEARCH_DATA ?, ?, ?, ?, ?, ?, ?, ?, ?",
+	sortDirection := "ASCENDING"
+	var userID int32
+	if c != nil {
+		if userIDVal, exists := c.Get("userID"); exists {
+			userID = ToInt32(userIDVal)
+		}
+	}
+
+	rows, err := s.db.WithContext(reqCtx).Raw("EXEC SP_TRX_KELAS_SEARCH_DATA ?, ?, ?, ?, ?, ?, ?, ?, ?",
 		limit,         // @PageSize
 		page,          // @CurrentPage
 		nil,           // @SortExpression (selalu null)
@@ -179,13 +187,18 @@ func (s *KelasService) List(page int, filters map[string]string, c *gin.Context,
 	).Rows()
 
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return items, 0, fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+		}
 		return items, 0, fmt.Errorf("database query error: %w", err)
 	}
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, context.Canceled) {
+			findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			findErr = errors.New("kelas tidak ditemukan")
 		} else {
 			findErr = fmt.Errorf("database error: %w", err)

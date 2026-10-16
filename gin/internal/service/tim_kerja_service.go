@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -36,6 +37,7 @@ func NewTimKerjaService(db *gorm.DB) *TimKerjaService {
 // List retrieves a paginated list of active work team position records matching the given filter criteria.
 //
 // Parameters:
+//   - c: Gin context carrying HTTP request metadata.
 //   - page: The target page number (1-based index).
 //   - filters: Key-value map of filter parameters (e.g. "search", "lookup_description", "lookup_value").
 //   - limit: Maximum number of records to return per page.
@@ -44,7 +46,7 @@ func NewTimKerjaService(db *gorm.DB) *TimKerjaService {
 //   - []domain.TimKerja: Slice of work team records.
 //   - int64: Total count of matching records.
 //   - error: Error if database query fails.
-func (s *TimKerjaService) List(page int, filters map[string]string, limit int) ([]domain.TimKerja, int64, error) {
+func (s *TimKerjaService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.TimKerja, int64, error) {
 	var items []domain.TimKerja
 	var total int64
 
@@ -56,7 +58,12 @@ func (s *TimKerjaService) List(page int, filters map[string]string, limit int) (
 	}
 	offset := (page - 1) * limit
 
-	query := s.db.Table("T_APP_LOOKUP").Where("CategoryId = ? AND Status = ?", "B_POSISI", true)
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
+	query := s.db.WithContext(reqCtx).Table("T_APP_LOOKUP").Where("CategoryId = ? AND Status = ?", "B_POSISI", true)
 
 	if filters != nil {
 		var searchVal string
@@ -90,7 +97,11 @@ func (s *TimKerjaService) List(page int, filters map[string]string, limit int) (
 
 	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("database count error: %w", err)
+			if errors.Is(err, context.Canceled) {
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("database count error: %w", err)
+			}
 		}
 	})
 
@@ -100,7 +111,9 @@ func (s *TimKerjaService) List(page int, filters map[string]string, limit int) (
 			Offset(offset).
 			Order("LookupId ASC").
 			Find(&items).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, context.Canceled) {
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				findErr = errors.New("tim kerja tidak ditemukan")
 			} else {
 				findErr = fmt.Errorf("database error: %w", err)

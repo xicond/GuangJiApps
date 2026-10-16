@@ -518,6 +518,26 @@ func TestDonasiSxy_EndToEnd(t *testing.T) {
 			Status(http.StatusBadRequest)
 	})
 
+	t.Run(fmt.Sprintf("PATCH /v1/donasi-sxy/%s - 400 Bad Request on negative amount", idStr), func(t *testing.T) {
+		e.PATCH("/v1/donasi-sxy/" + idStr).
+			WithJSON(map[string]interface{}{
+				"no_kwitansi": "KW-VALID",
+				"jumlah":      -1000000.0,
+			}).
+			Expect().
+			Status(http.StatusBadRequest)
+	})
+
+	t.Run(fmt.Sprintf("PATCH /v1/donasi-sxy/%s - 400 Bad Request on zero amount", idStr), func(t *testing.T) {
+		e.PATCH("/v1/donasi-sxy/" + idStr).
+			WithJSON(map[string]interface{}{
+				"no_kwitansi": "KW-VALID",
+				"jumlah":      0,
+			}).
+			Expect().
+			Status(http.StatusBadRequest)
+	})
+
 	// 8. PATCH /v1/donasi-sxy/:id valid - 200 OK
 	t.Run(fmt.Sprintf("PATCH /v1/donasi-sxy/%s - 200 OK", idStr), func(t *testing.T) {
 		e.PATCH("/v1/donasi-sxy/" + idStr).

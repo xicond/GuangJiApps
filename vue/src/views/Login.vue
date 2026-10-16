@@ -46,6 +46,12 @@
             :disabled="loading || isLockedOut" show-password clearable autocomplete="current-password" />
         </el-form-item>
 
+        <el-form-item v-if="isBiometricSupported" prop="rememberMe" class="remember-item">
+          <el-checkbox v-model="form.rememberMe" :disabled="loading || isLockedOut">
+            Remember Me
+          </el-checkbox>
+        </el-form-item>
+
         <el-alert v-if="errorMessage || isLockedOut"
           :title="isLockedOut ? `${errorMessage || 'Terlalu banyak percobaan login.'} Silakan coba lagi dalam ${formattedCountdown}.` : errorMessage"
           type="error" show-icon :closable="false" class="error-alert" />
@@ -63,12 +69,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore, type LoginErrorResult } from '../stores/auth'
 import { setMode, currentMode, isDark, type ThemeMode } from '../theme'
 import { User, Lock, Sunny, Moon, Monitor } from '@element-plus/icons-vue'
-import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import axios from 'axios'
+import { registerBiometricPasskey } from '../services/passkey'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -76,7 +84,31 @@ const authStore = useAuthStore()
 const loginFormRef = ref<FormInstance>()
 const form = ref({
   username: 'root',
-  password: 'password123'
+  password: 'password123',
+  rememberMe: false
+})
+
+const isBiometricSupported = ref(false)
+
+onMounted(async () => {
+  if (typeof window === 'undefined') return
+
+  // Periksa ketersediaan platform authenticator / WebAuthn
+  const pkCred = (window as unknown as { PublicKeyCredential?: typeof PublicKeyCredential }).PublicKeyCredential
+  const checkCond = (!pkCred || !pkCred.isUserVerifyingPlatformAuthenticatorAvailable) == true
+  if (checkCond) {
+    isBiometricSupported.value = true
+    return
+  }
+
+  if (window.PublicKeyCredential && typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
+    try {
+      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+      isBiometricSupported.value = available !== false
+    } catch {
+      isBiometricSupported.value = true
+    }
+  }
 })
 
 const rules: FormRules = {
@@ -142,6 +174,27 @@ const handleLogin = async () => {
     errorMessage.value = ''
     try {
       await authStore.login(form.value.username, form.value.password)
+
+      // Jika user login dengan remember me checked, daftarkan passkey biometrik
+      if (form.value.rememberMe && isBiometricSupported.value && authStore.token) {
+        try {
+          const userObj = {
+            id: String(authStore.user?.id ?? '1'),
+            username: String(authStore.user?.username || form.value.username),
+            name: String(authStore.user?.name || form.value.username)
+          }
+          const refreshToken = await registerBiometricPasskey(authStore.token, userObj)
+          if (refreshToken) {
+            localStorage.setItem('refresh_token', refreshToken)
+          }
+        } catch (passkeyErr: unknown) {
+          console.error('Biometric passkey registration failed:', passkeyErr)
+          const msg = (axios.isAxiosError(passkeyErr) && passkeyErr.response?.data?.error) ||
+            (passkeyErr instanceof Error ? passkeyErr.message : 'Gagal mendaftarkan biometrik passkey.')
+          ElMessage.warning(`Login berhasil, namun pendaftaran biometrik gagal: ${msg}`)
+        }
+      }
+
       router.push('/dashboard')
     } catch (err: unknown) {
       const loginErr = err as LoginErrorResult
@@ -198,6 +251,11 @@ const handleLogin = async () => {
   margin-bottom: 0;
   font-size: 0.9rem;
   color: var(--el-text-color-secondary);
+}
+
+.remember-item {
+  margin-top: -0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .error-alert {

@@ -1,14 +1,19 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
 	"guangjiapps/gin/internal/database"
 	"guangjiapps/gin/internal/domain"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestDonasiSxyService(t *testing.T) {
@@ -54,9 +59,32 @@ func TestDonasiSxyService(t *testing.T) {
 
 	// 3. List (may fail if stored procedure is not installed in test db)
 	filters := map[string]string{"no_kwitansi": "KW001"}
-	_, _, _ = svc.List(1, filters, 10)
+	_, _, _ = svc.List(c, 1, filters, 10)
 
-	// 4. Update
+	// 3b. Report (may fail if stored procedure is not installed in test db)
+	reportFilters := map[string]string{"no_kwitansi": "KW001"}
+	_, _, _, _ = svc.Report(c, 1, reportFilters, 10)
+
+	// 4. Update validation failures
+	invalidNegative := created
+	invalidNegative.Jumlah = -500000
+	if _, err := svc.Update(idStr, invalidNegative, c); err == nil {
+		t.Fatalf("expected error updating with negative jumlah, got nil")
+	}
+
+	invalidZero := created
+	invalidZero.Jumlah = 0
+	if _, err := svc.Update(idStr, invalidZero, c); err == nil {
+		t.Fatalf("expected error updating with zero jumlah, got nil")
+	}
+
+	invalidNoKwitansi := created
+	invalidNoKwitansi.NoKwitansi = ""
+	if _, err := svc.Update(idStr, invalidNoKwitansi, c); err == nil {
+		t.Fatalf("expected error updating with empty no_kwitansi, got nil")
+	}
+
+	// 4b. Update valid
 	created.Jumlah = 750000
 	updated, err := svc.Update(idStr, created, c)
 	if err != nil {
@@ -139,5 +167,26 @@ func TestDonasiSxyResponseJSON(t *testing.T) {
 		if !strings.Contains(jsonStr, key) {
 			t.Errorf("expected JSON output to contain key %s, got: %s", key, jsonStr)
 		}
+	}
+}
+
+func TestDonasiSxyService_Report_ContextCanceled(t *testing.T) {
+	db, err := database.Open("")
+	if err != nil {
+		t.Skipf("skipping test, DB not available: %v", err)
+		return
+	}
+	svc := NewDonasiSxyService(db)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+	req, _ := http.NewRequestWithContext(ctx, "GET", "/v1/donasi-sxy/report", nil)
+	c.Request = req
+
+	_, _, _, err = svc.Report(c, 1, nil, 10)
+	if err == nil {
+		t.Errorf("expected error when context is canceled, got nil")
 	}
 }

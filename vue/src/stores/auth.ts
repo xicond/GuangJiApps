@@ -134,6 +134,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     mainMenus.value = []
     localStorage.removeItem('token')
+    localStorage.removeItem('refresh_token')
     localStorage.removeItem('user')
     localStorage.removeItem('main_menu')
   }

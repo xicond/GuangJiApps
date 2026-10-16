@@ -48,7 +48,7 @@ func TestTimKerjaService(t *testing.T) {
 
 	// 3. List
 	filters := map[string]string{"lookup_value": "Ketua"}
-	items, total, err := svc.List(1, filters, 10)
+	items, total, err := svc.List(c, 1, filters, 10)
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}

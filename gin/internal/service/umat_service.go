@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
@@ -192,9 +193,14 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 	}
 	offset := (page - 1) * limit
 
+	var ctx = context.Background()
+	if c != nil && c.Request != nil {
+		ctx = c.Request.Context()
+	}
+
 	var subWhVal int64
 	userID := getUserID(c)
-	row := s.db.Model(&domain.AdminMatrix{}).
+	row := s.db.WithContext(ctx).Model(&domain.AdminMatrix{}).
 		Where("LOGINID = ?", userID).
 		Select("SUBWHID").
 		Row()
@@ -213,7 +219,7 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 		Where("T_APP_LOOKUP.Status = ?", true)
 
 	// Base query
-	query := s.db.Table("T_BUS_UMAT").
+	query := s.db.WithContext(ctx).Table("T_BUS_UMAT").
 		Where("fotangaktif = ?", subWhVal).
 		Where("EXISTS (?)", subQueryFotang).
 		Where("EXISTS (?)", subQueryJK).
@@ -267,7 +273,12 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 	// Goroutine 1: Concurrent Count query
 	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("database count error: %w", err)
+			if errors.Is(err, context.Canceled) {
+				// Klien memutus koneksi di tengah query berat
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("database count error: %w", err)
+			}
 		}
 	})
 
@@ -279,7 +290,10 @@ func (s *UmatService) List(c *gin.Context, page int, filters map[string]string, 
 			Offset(offset).
 			Order("ID ASC").
 			Find(&items).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, context.Canceled) {
+				// Klien memutus koneksi di tengah query berat
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				findErr = errors.New("umat tidak ditemukan")
 			} else {
 				findErr = fmt.Errorf("database error: %w", err)
@@ -862,7 +876,7 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 		return domain.Umat{}, fmt.Errorf("failed to generate id: %w", errId)
 	}
 	if errSubWh != nil {
-		log.Printf("[UmatService.Create] warning querying sub warehouse info for user %d: %v", userID, errSubWh)
+		log.Printf("[ERROR] UmatService.Create: warning querying sub warehouse info for user %d: %v", userID, errSubWh)
 	}
 	if errPenanggung != nil {
 		return domain.Umat{}, errPenanggung
@@ -889,7 +903,7 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 
 	if fileHeader != nil {
 		if err := processAndSaveUmatFoto(s.db, payload.ID, payload.NamaIndonesia, fileHeader, c, false); err != nil {
-			log.Printf("[UmatService.Create] Save UmatFoto error: %v", err)
+			log.Printf("[ERROR] UmatService.Create: Save UmatFoto error: %v", err)
 		}
 	}
 
@@ -907,7 +921,7 @@ func (s *UmatService) Create(payload domain.Umat, fileHeader *multipart.FileHead
 func (s *UmatService) Get(id string) (domain.Umat, error) {
 	var item domain.Umat
 	if err := s.db.Preload("JenisKelaminInfo", "CategoryId = ? AND Status = ?", "B_JENISKELAMIN", true).First(&item, "id = ?", id).Error; err != nil {
-		return domain.Umat{}, fmt.Errorf("umat %s not found", id)
+		return domain.Umat{}, fmt.Errorf("umat %s not found: %w", id, err)
 	}
 	if !item.TanggalLahir.IsZero() && item.TanggalLahir.Year() > 1900 {
 		u := int32(time.Now().Year() - item.TanggalLahir.Year())
@@ -918,7 +932,7 @@ func (s *UmatService) Get(id string) (domain.Umat, error) {
 	if err == nil {
 		item.QRToken = &qrToken
 	} else {
-		log.Printf("[UmatService.Get] GenerateQRToken error: %v", err)
+		log.Printf("[ERROR] UmatService.Get: GenerateQRToken error: %v", err)
 	}
 
 	// Dont activate this, get from JenisKelaminInfo
@@ -1269,7 +1283,7 @@ func (s *UmatService) Update(id string, payload domain.Umat, fileHeader *multipa
 
 	if fileHeader != nil {
 		if err := processAndSaveUmatFoto(s.db, item.ID, item.NamaIndonesia, fileHeader, c, true); err != nil {
-			log.Printf("[UmatService.Update] Save UmatFoto error: %v", err)
+			log.Printf("[ERROR] UmatService.Update: Save UmatFoto error: %v", err)
 		}
 	}
 
@@ -1499,7 +1513,7 @@ func (s *nullFieldScanner) Scan(value interface{}) error {
 //   - []domain.UmatReport: Slice of report rows.
 //   - int64: Total count of records matching the report filters.
 //   - error: Error if stored procedure execution fails.
-func (s *UmatService) Report(page int, filters map[string]string, limit int) ([]domain.UmatReport, int64, error) {
+func (s *UmatService) Report(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.UmatReport, int64, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -1520,7 +1534,11 @@ func (s *UmatService) Report(page int, filters map[string]string, limit int) ([]
 
 	var findErr error
 
-	rows, err := s.db.Raw("EXEC SP_BUS_RPT_UMAT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?",
+	var ctx = context.Background()
+	if c != nil && c.Request != nil {
+		ctx = c.Request.Context()
+	}
+	rows, err := s.db.WithContext(ctx).Raw("EXEC SP_BUS_RPT_UMAT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?",
 		fotangAktif,
 		fotangChiuTao,
 		namaMandarin,
@@ -1560,13 +1578,18 @@ func (s *UmatService) Report(page int, filters map[string]string, limit int) ([]
 	// }))
 
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, 0, errors.New("Query dibatalkan karena klien memutus koneksi.")
+		}
 		return nil, 0, fmt.Errorf("database query error: %w", err)
 	}
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, context.Canceled) {
+			findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			findErr = errors.New("umat report tidak ditemukan")
 		} else {
 			findErr = fmt.Errorf("database error: %w", err)
@@ -1894,7 +1917,8 @@ func (s *UmatService) Ocr(file multipart.File, header *multipart.FileHeader, c *
 		Timeout: 45 * time.Second,
 	}
 
-	req, err := http.NewRequest("POST", "https://api.ocr.space/parse/image", strings.NewReader(formData.Encode()))
+	var reqCtx = c.Request.Context()
+	req, err := http.NewRequestWithContext(reqCtx, "POST", "https://api.ocr.space/parse/image", strings.NewReader(formData.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("gagal membuat request OCR.space: %w", err)
 	}

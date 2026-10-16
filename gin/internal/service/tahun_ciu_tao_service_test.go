@@ -49,7 +49,7 @@ func TestTahunCiuTaoService(t *testing.T) {
 
 	// 3. List (may fail if stored procedure SP_BUS_YEAR_SEARCH_DATA is not installed in test db)
 	filters := map[string]string{"tahun_mandarin": "2024"}
-	_, _, _ = svc.List(1, filters, 10)
+	_, _, _ = svc.List(c, 1, filters, 10)
 
 	// 4. Update
 	created.Description = "Year of the Wood Dragon"

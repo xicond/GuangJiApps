@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -36,6 +37,7 @@ func NewAdminGroupService(db *gorm.DB) *AdminGroupService {
 // List retrieves a paginated list of admin groups matching the given filter criteria.
 //
 // Parameters:
+//   - c: Gin context carrying HTTP request metadata.
 //   - page: The target page number (1-based index).
 //   - filters: Key-value map of filter conditions (e.g. "group_name").
 //   - limit: Maximum number of records to return per page.
@@ -44,7 +46,7 @@ func NewAdminGroupService(db *gorm.DB) *AdminGroupService {
 //   - []domain.AdminGroup: Slice of admin group records.
 //   - int64: Total count of records matching the filters.
 //   - error: Error if the database query fails.
-func (s *AdminGroupService) List(page int, filters map[string]string, limit int) ([]domain.AdminGroup, int64, error) {
+func (s *AdminGroupService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.AdminGroup, int64, error) {
 	var items []domain.AdminGroup
 	var total int64
 
@@ -56,7 +58,12 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 	}
 	offset := (page - 1) * limit
 
-	query := s.db.Table("T_Login_Group")
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
+	query := s.db.WithContext(reqCtx).Table("T_Login_Group")
 
 	type FilterRule struct {
 		Column string
@@ -89,7 +96,11 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 
 	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("database count error: %w", err)
+			if errors.Is(err, context.Canceled) {
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("database count error: %w", err)
+			}
 		}
 	})
 
@@ -99,7 +110,9 @@ func (s *AdminGroupService) List(page int, filters map[string]string, limit int)
 			Offset(offset).
 			Order("GroupId ASC").
 			Find(&items).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, context.Canceled) {
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				findErr = errors.New("admin group tidak ditemukan")
 			} else {
 				findErr = fmt.Errorf("database error: %w", err)

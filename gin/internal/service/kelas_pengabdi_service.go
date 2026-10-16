@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -179,9 +180,14 @@ func (s *KelasPengabdiService) List(c *gin.Context, trxID string, page int, limi
 		page = 1
 	}
 
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
 	var subWhVal string
 	userID := getUserID(c)
-	row := s.db.Model(&domain.AdminMatrix{}).
+	row := s.db.WithContext(reqCtx).Model(&domain.AdminMatrix{}).
 		Where("LOGINID = ?", userID).
 		Select("SUBWHID").
 		Row()
@@ -189,7 +195,7 @@ func (s *KelasPengabdiService) List(c *gin.Context, trxID string, page int, limi
 		_ = row.Scan(&subWhVal)
 	}
 
-	query := s.db.Table("T_TRX_KELAS_PENGABDI").
+	query := s.db.WithContext(reqCtx).Table("T_TRX_KELAS_PENGABDI").
 		Select(`T_TRX_KELAS_PENGABDI.*, 
 			u.namaindonesia AS nama_indonesia, 
 			u.namamandarin AS nama_mandarin, 
@@ -209,13 +215,43 @@ func (s *KelasPengabdiService) List(c *gin.Context, trxID string, page int, limi
 		}
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return items, 0, fmt.Errorf("failed to count record: %w", err)
-	}
-
 	offset := (page - 1) * limit
-	if err := query.Offset(offset).Limit(limit).Find(&items).Error; err != nil {
-		return items, 0, fmt.Errorf("failed to list records: %w", err)
+
+	var (
+		countErr error
+		findErr  error
+		wg       sync.WaitGroup
+	)
+
+	wg.Go(func() {
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			if errors.Is(err, context.Canceled) {
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("failed to count record: %w", err)
+			}
+		}
+	})
+
+	wg.Go(func() {
+		if err := query.Session(&gorm.Session{}).Offset(offset).Limit(limit).Find(&items).Error; err != nil {
+			if errors.Is(err, context.Canceled) {
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				findErr = errors.New("pengabdi kelas tidak ditemukan")
+			} else {
+				findErr = fmt.Errorf("failed to list records: %w", err)
+			}
+		}
+	})
+
+	wg.Wait()
+
+	if countErr != nil {
+		return items, 0, countErr
+	}
+	if findErr != nil {
+		return items, 0, findErr
 	}
 
 	return items, total, nil

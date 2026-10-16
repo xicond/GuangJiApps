@@ -150,8 +150,12 @@ func FormatValidatorErrors(err error) map[string][]string {
 				msg = fmt.Sprintf("%s melebihi nilai maksimum %s (max:%s)", label, e.Param(), e.Param())
 			case "gte":
 				msg = fmt.Sprintf("%s kurang dari nilai minimum %s", label, e.Param())
+			case "gt":
+				msg = fmt.Sprintf("%s harus lebih besar dari %s", label, e.Param())
 			case "lte":
 				msg = fmt.Sprintf("%s melebihi nilai maksimum %s", label, e.Param())
+			case "lt":
+				msg = fmt.Sprintf("%s harus lebih kecil dari %s", label, e.Param())
 			case "gtefield":
 				targetLabel := domain.GetFieldLabel(e.Param())
 				if targetLabel == "" {

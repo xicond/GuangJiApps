@@ -112,17 +112,28 @@ func TestValidateStruct(t *testing.T) {
 		}
 	})
 
-	t.Run("validation failure on negative amount gte=0", func(t *testing.T) {
+	t.Run("validation failure on negative amount gt=0", func(t *testing.T) {
 		payload := domain.DonasiSxy{
 			NoKwitansi: "KW001",
 			Jumlah:     -500.0,
 		}
 		err := ValidateStruct(payload)
 		if err == nil {
-			t.Fatalf("expected gte validation error, got nil")
+			t.Fatalf("expected gt validation error for negative amount, got nil")
 		}
-		if !strings.Contains(err.Error(), "kurang dari nilai minimum 0") {
-			t.Errorf("expected error message to contain 'kurang dari nilai minimum 0', got: %v", err)
+		if !strings.Contains(err.Error(), "harus lebih besar dari 0") {
+			t.Errorf("expected error message to contain 'harus lebih besar dari 0', got: %v", err)
+		}
+	})
+
+	t.Run("validation failure on zero amount gt=0", func(t *testing.T) {
+		payload := domain.DonasiSxy{
+			NoKwitansi: "KW001",
+			Jumlah:     0,
+		}
+		err := ValidateStruct(payload)
+		if err == nil {
+			t.Fatalf("expected validation error for zero amount, got nil")
 		}
 	})
 

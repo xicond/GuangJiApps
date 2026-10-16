@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -106,11 +107,17 @@ func isValidDate(s string) bool {
 //   - filters: Key-value map of filter parameters (e.g. "no_kwitansi", "start_date", "end_date", "donatur").
 //   - limit: Maximum number of records to return per page.
 //
+// Parameters:
+//   - c: Gin context carrying HTTP request metadata.
+//   - page: The target page number (1-based index).
+//   - filters: Key-value map of filter conditions.
+//   - limit: Maximum number of records to return per page.
+//
 // Returns:
 //   - []domain.DonasiSxyResponse: Slice of donation records.
 //   - int64: Total count of matching records.
 //   - error: Error if database query fails.
-func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) ([]domain.DonasiSxyResponse, int64, error) {
+func (s *DonasiSxyService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.DonasiSxyResponse, int64, error) {
 	items := make([]domain.DonasiSxyResponse, 0)
 	var total int64
 
@@ -164,8 +171,13 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 
 	var findErr error
 
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
 	sortDirection := "ASCENDING"
-	rows, err := s.db.Raw("EXEC SP_SXY_TRX_SEARCH_DATA ?, ?, ?, ?, ?, ?, ?, ?",
+	rows, err := s.db.WithContext(reqCtx).Raw("EXEC SP_SXY_TRX_SEARCH_DATA ?, ?, ?, ?, ?, ?, ?, ?",
 		limit,         // @PageSize
 		page,          // @CurrentPage
 		nil,           // @SortExpression (selalu null)
@@ -177,13 +189,18 @@ func (s *DonasiSxyService) List(page int, filters map[string]string, limit int) 
 	).Rows()
 
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return items, 0, fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+		}
 		return items, 0, fmt.Errorf("database query error: %w", err)
 	}
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, context.Canceled) {
+			findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			findErr = errors.New("donasi sxy tidak ditemukan")
 		} else {
 			findErr = fmt.Errorf("database error: %w", err)
@@ -320,6 +337,10 @@ func (s *DonasiSxyService) Get(id string) (domain.DonasiSxy, error) {
 //   - domain.DonasiSxy: Updated donation record.
 //   - error: Error if the record is not found or database update fails.
 func (s *DonasiSxyService) Update(id string, payload domain.DonasiSxy, c *gin.Context) (domain.DonasiSxy, error) {
+	if err := ValidateStruct(payload); err != nil {
+		return domain.DonasiSxy{}, fmt.Errorf("Validation failed: %w", err)
+	}
+
 	parsedInt, err := strconv.Atoi(id)
 	if err != nil {
 		return domain.DonasiSxy{}, fmt.Errorf("invalid ID format: %w", err)
@@ -397,7 +418,7 @@ func (s *DonasiSxyService) Delete(id string, c *gin.Context) error {
 //   - float64: Total sum of donation amounts across matching records.
 //   - int64: Total count of matching records.
 //   - error: Error if stored procedure execution fails.
-func (s *DonasiSxyService) Report(page int, filters map[string]string, limit int) ([]domain.SxyDonasiReport, float64, int64, error) {
+func (s *DonasiSxyService) Report(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.SxyDonasiReport, float64, int64, error) {
 	items := make([]domain.SxyDonasiReport, 0)
 	var total int64
 	var totalJumlah float64
@@ -448,7 +469,12 @@ func (s *DonasiSxyService) Report(page int, filters map[string]string, limit int
 
 	var findErr error
 
-	rows, err := s.db.Raw("EXEC SP_SXY_RPT_TRANSAKSI ?, ?, ?, ?, ?, ?, ?",
+	var ctx = context.Background()
+	if c != nil && c.Request != nil {
+		ctx = c.Request.Context()
+	}
+
+	rows, err := s.db.WithContext(ctx).Raw("EXEC SP_SXY_RPT_TRANSAKSI ?, ?, ?, ?, ?, ?, ?",
 		donatur,
 		penggalang,
 		startDate,
@@ -473,13 +499,18 @@ func (s *DonasiSxyService) Report(page int, filters map[string]string, limit int
 	// }))
 
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, 0, 0, errors.New("Query dibatalkan karena klien memutus koneksi.")
+		}
 		return nil, 0, 0, fmt.Errorf("database query error: %w", err)
 	}
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, context.Canceled) {
+			findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			findErr = errors.New("sxy report tidak ditemukan")
 		} else {
 			findErr = fmt.Errorf("database error: %w", err)

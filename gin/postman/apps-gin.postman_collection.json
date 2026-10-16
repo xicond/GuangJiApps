@@ -452,6 +452,595 @@
               "_postman_previewlanguage": "json"
             }
           ]
+        },
+        {
+          "name": "Add Passkey",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Registers a new biometric WebAuthn passkey for the authenticated user and returns an initial refresh token.",
+            "url": {
+              "raw": "{{baseUrl}}/v1/add-passkey",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "add-passkey"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"credential-id-base64\",\n  \"rawId\": \"credential-id-base64\",\n  \"type\": \"public-key\",\n  \"response\": {\n    \"clientDataJSON\": \"eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiZXlKaGJHY2lPaUpTVXpJMk5pSXNJblI1Y0NJNklrcFhWQ0o5Li4uIn0\",\n    \"attestationObject\": \"o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVj...\",\n    \"publicKey\": \"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Passkey Added Successfully",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/add-passkey",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "add-passkey"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"credential-id-base64\",\n  \"rawId\": \"credential-id-base64\",\n  \"type\": \"public-key\",\n  \"response\": {\n    \"clientDataJSON\": \"eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiZXlKaGJHY2lPaUpTVXpJMk5pSXNJblI1Y0NJNklrcFhWQ0o5Li4uIn0\",\n    \"attestationObject\": \"o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVj...\",\n    \"publicKey\": \"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8",
+                  "name": "Content-Type",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"passkey added successfully\",\n  \"refresh_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mzg4MDAwMDAsImlhdCI6MTczODcwMDAwMCwidXNlcl9pZCI6MX0.sample-refresh-token\"\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "400 Bad Request - Challenge Mismatch",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/add-passkey",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "add-passkey"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"credential-id-base64\",\n  \"rawId\": \"credential-id-base64\",\n  \"type\": \"public-key\",\n  \"response\": {\n    \"clientDataJSON\": \"invalid-client-data\",\n    \"attestationObject\": \"invalid-attestation\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8",
+                  "name": "Content-Type",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"challenge mismatch: provided challenge does not match expected authentication token\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Login Renew",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{refreshToken}}",
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Biometric WebAuthn passkey assertion login and refresh token renewal with rate limiting.",
+            "url": {
+              "raw": "{{baseUrl}}/login-renew",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login-renew"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"credential-id-base64\",\n  \"rawId\": \"credential-id-base64\",\n  \"type\": \"public-key\",\n  \"response\": {\n    \"clientDataJSON\": \"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiZXlKaGJHY2lPaUpTVXpJMk5pSXNJblI1Y0NJNklrcFhWQ0o5Li4uIn0\",\n    \"authenticatorData\": \"SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MBAAAAFA\",\n    \"signature\": \"MEQCIG1i...\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Access and Refresh Token Renewed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{refreshToken}}",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/login-renew",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "login-renew"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"credential-id-base64\",\n  \"rawId\": \"credential-id-base64\",\n  \"type\": \"public-key\",\n  \"response\": {\n    \"clientDataJSON\": \"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiZXlKaGJHY2lPaUpTVXpJMk5pSXNJblI1Y0NJNklrcFhWQ0o5Li4uIn0\",\n    \"authenticatorData\": \"SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MBAAAAFA\",\n    \"signature\": \"MEQCIG1i...\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8",
+                  "name": "Content-Type",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImV4cCI6MTgwMDAwMDAwMH0.sample-access-token\",\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImV4cCI6MTgwMDAwMDAwMH0.sample-access-token\",\n  \"refresh_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mzg4MDAwMDAsImlhdCI6MTczODcwMDAwMCwidXNlcl9pZCI6MX0.sample-renewed-token\"\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "400 Bad Request - Invalid Payload",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{refreshToken}}",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/login-renew",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "login-renew"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8",
+                  "name": "Content-Type",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"Format payload JSON tidak valid atau rusak.\",\n  \"details\": {}\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Login Options",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Retrieves WebAuthn passkey assertion options (challenge, rpId, allowCredentials, userVerification) for the specified username. Rate limited.",
+            "url": {
+              "raw": "{{baseUrl}}/login-options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login-options"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Assertion Options Returned",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/login-options",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "login-options"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"admin\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8",
+                  "name": "Content-Type",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"challenge\": \"pode7lmd8F5EaYPdgt6nSw\",\n  \"rpId\": \"account.docusign.com\",\n  \"allowCredentials\": [\n    {\n      \"type\": \"public-key\",\n      \"id\": \"HwsbBwZOKGYlKo7EXCgq6Yawu3A\",\n      \"transports\": [\n        \"hybrid\",\n        \"internal\"\n      ]\n    }\n  ],\n  \"userVerification\": \"required\"\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "400 Bad Request - Username Required",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/login-options",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "login-options"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8",
+                  "name": "Content-Type",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"username is required\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
+        },
+        {
+          "name": "Login Passkey",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Authenticates a user via WebAuthn biometric passkey assertion. Rate limited (10 req/min). Returns JWT token, user info, main menus, and optionally a new refresh token and public key if rememberme=true.",
+            "url": {
+              "raw": "{{baseUrl}}/login-passkey",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login-passkey"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"rememberme\": true,\n  \"credential\": {\n    \"id\": \"HwsbBwZOKGYlKo7EXCgq6Yawu3A\",\n    \"response\": {\n      \"clientDataJSON\": \"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoicG9kZTdsbWQiLCJvcmlnaW4iOiJodHRwczovL2FwcC5sb2NhbCJ9\",\n      \"authenticatorData\": \"SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MBAAAA\",\n      \"signature\": \"MEUCIQD2vYw...\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK - Login Successful (With RememberMe)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/login-passkey",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "login-passkey"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"admin\",\n  \"rememberme\": true,\n  \"credential\": {\n    \"id\": \"HwsbBwZOKGYlKo7EXCgq6Yawu3A\",\n    \"response\": {\n      \"clientDataJSON\": \"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoicG9kZTdsbWQiLCJvcmlnaW4iOiJodHRwczovL2FwcC5sb2NhbCJ9\",\n      \"authenticatorData\": \"SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MBAAAA\",\n      \"signature\": \"MEUCIQD2vYw...\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8",
+                  "name": "Content-Type",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"login successful\",\n  \"token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.sample_access_token\",\n  \"access_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.sample_access_token\",\n  \"user\": {\n    \"id\": 1,\n    \"username\": \"admin\",\n    \"group_id\": 1\n  },\n  \"main_menu\": [\n    {\n      \"id\": 1,\n      \"name\": \"Dashboard\",\n      \"path\": \"/dashboard\"\n    }\n  ],\n  \"refresh_token\": \"eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.sample_refresh_token\",\n  \"public_key\": \"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsample_public_key\",\n  \"credential\": \"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsample_public_key\"\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "400 Bad Request - Invalid Credential / Signature",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/login-passkey",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "login-passkey"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"admin\",\n  \"credential\": {\n    \"id\": \"\",\n    \"response\": {}\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8",
+                  "name": "Content-Type",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"credential.id is required\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ]
         }
       ]
     },
@@ -19697,7 +20286,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"code\": \"DSX002\",\n  \"name\": \"Donasi Two\",\n  \"active\": false\n}",
+                  "raw": "{\n  \"no_kwitansi\": \"KW-001-UPD\",\n  \"tanggal\": \"2026-03-01\",\n  \"donatur_id\": 1,\n  \"penggalang_id\": 1,\n  \"jumlah\": 750000,\n  \"tipe_sumbangan\": 1,\n  \"keterangan\": \"Donasi Sxy Updated\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -19773,7 +20362,7 @@
                     },
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"code\": \"DSX002\",\n  \"name\": \"Donasi Two\",\n  \"active\": false\n}",
+                      "raw": "{\n  \"no_kwitansi\": \"KW-001-UPD\",\n  \"tanggal\": \"2026-03-01\",\n  \"donatur_id\": 1,\n  \"penggalang_id\": 1,\n  \"jumlah\": 750000,\n  \"tipe_sumbangan\": 1,\n  \"keterangan\": \"Donasi Sxy Updated\"\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -19793,7 +20382,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"resource\": \"Donasi Sxy\",\n  \"data\": {\n    \"id\": 1,\n    \"kode_donasi\": \"DSX001\",\n    \"nama_donatur\": \"Yayasan Guang Ji Indonesia\",\n    \"nominal\": 12000000,\n    \"tgl_donasi\": \"2026-03-01\",\n    \"keterangan\": \"Donasi Operasional Disesuaikan\",\n    \"status\": true\n  }\n}",
+                  "body": "{\n  \"resource\": \"Donasi Sxy\",\n  \"data\": {\n    \"id\": 12,\n    \"no_kwitansi\": \"KW-001-UPD\",\n    \"tanggal\": \"2026-03-01\",\n    \"donatur_id\": 1,\n    \"penggalang_id\": 1,\n    \"jumlah\": 750000,\n    \"tipe_sumbangan\": 1,\n    \"keterangan\": \"Donasi Sxy Updated\",\n    \"status\": true\n  }\n}",
                   "_postman_previewlanguage": "json"
                 },
                 {
@@ -19838,7 +20427,7 @@
                     },
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"code\": \"DSX002\",\n  \"name\": \"Donasi Two\",\n  \"active\": false\n}",
+                      "raw": "{\n  \"no_kwitansi\": \"KW-001-UPD\",\n  \"jumlah\": -1000000\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -19858,7 +20447,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"error\": \"Validation failed: id donasi tidak ditemukan\",\n  \"details\": {\n    \"id\": [\n      \"id donasi tidak ditemukan\"\n    ]\n  }\n}",
+                  "body": "{\n  \"error\": \"Validation failed\",\n  \"details\": {\n    \"Jumlah\": [\n      \"Field 'Jumlah' must be greater than 0\"\n    ]\n  }\n}",
                   "_postman_previewlanguage": "json"
                 }
               ]

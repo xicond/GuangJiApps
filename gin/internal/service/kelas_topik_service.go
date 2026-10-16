@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -137,6 +138,7 @@ func validateTopikLookups(db *gorm.DB, payload *domain.KelasTopik) error {
 // List queries class topic schedules filtered by class transaction ID with pagination.
 //
 // Parameters:
+//   - c: *gin.Context carrying HTTP request metadata
 //   - trxID: string representation of the class transaction ID
 //   - page: page number (1-based)
 //   - limit: page size limit
@@ -145,7 +147,7 @@ func validateTopikLookups(db *gorm.DB, payload *domain.KelasTopik) error {
 //   - []domain.KelasTopik: list of class topics
 //   - int64: total matching count
 //   - error: database error if query fails
-func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.KelasTopik, int64, error) {
+func (s *KelasTopikService) List(c *gin.Context, trxID string, page int, limit int) ([]domain.KelasTopik, int64, error) {
 	var items []domain.KelasTopik
 	var total int64
 
@@ -156,7 +158,12 @@ func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.Ke
 		page = 1
 	}
 
-	query := s.db.Table("T_TRX_KELAS_TOPIK").
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
+	query := s.db.WithContext(reqCtx).Table("T_TRX_KELAS_TOPIK").
 		Select("T_TRX_KELAS_TOPIK.*, T_BUS_TOPIC.TopicName AS nama_topik, T_BUS_TOPIC.TopicCategory AS topic_category, T_BUS_TOPIC.Description AS topic_desc").
 		Joins("LEFT JOIN T_BUS_TOPIC ON T_TRX_KELAS_TOPIK.kodetopik = T_BUS_TOPIC.TopicCode").
 		Where("T_TRX_KELAS_TOPIK.status = ?", true)
@@ -167,13 +174,43 @@ func (s *KelasTopikService) List(trxID string, page int, limit int) ([]domain.Ke
 		}
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return items, 0, fmt.Errorf("failed to count record: %w", err)
-	}
-
 	offset := (page - 1) * limit
-	if err := query.Offset(offset).Limit(limit).Order("T_TRX_KELAS_TOPIK.topikdate asc, T_TRX_KELAS_TOPIK.urutan asc").Find(&items).Error; err != nil {
-		return items, 0, fmt.Errorf("failed to list records: %w", err)
+
+	var (
+		countErr error
+		findErr  error
+		wg       sync.WaitGroup
+	)
+
+	wg.Go(func() {
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			if errors.Is(err, context.Canceled) {
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("failed to count record: %w", err)
+			}
+		}
+	})
+
+	wg.Go(func() {
+		if err := query.Session(&gorm.Session{}).Offset(offset).Limit(limit).Order("T_TRX_KELAS_TOPIK.topikdate asc, T_TRX_KELAS_TOPIK.urutan asc").Find(&items).Error; err != nil {
+			if errors.Is(err, context.Canceled) {
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				findErr = errors.New("topik kelas tidak ditemukan")
+			} else {
+				findErr = fmt.Errorf("failed to list records: %w", err)
+			}
+		}
+	})
+
+	wg.Wait()
+
+	if countErr != nil {
+		return items, 0, countErr
+	}
+	if findErr != nil {
+		return items, 0, findErr
 	}
 
 	return items, total, nil

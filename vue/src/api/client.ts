@@ -2,6 +2,7 @@ import axios, { type InternalAxiosRequestConfig, type AxiosRequestConfig } from 
 import { useAuthStore } from '../stores/auth'
 import router from '../router'
 import { useQuickStreamSpeedTest } from './useQuickStreamSpeedTest'
+import { renewBiometricSession } from '../services/passkey'
 
 declare module 'axios' {
   export interface InternalAxiosRequestConfig {
@@ -37,11 +38,23 @@ const { canRunTest,
 const activeTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    // Jika proses biometric renewal sedang berlangsung, tunggu sampai selesai
+    // agar request ini langsung memakai token baru tanpa memicu 401 tambahan
+    if (isRenewing && renewPromise) {
+      try {
+        await renewPromise
+      } catch {
+        // Renewal gagal, biarkan request berjalan (atau ditolak oleh response interceptor)
+      }
+    }
+
     const authStore = useAuthStore()
-    const token = authStore.token || localStorage.getItem('token')
+    const token = (authStore.token || localStorage.getItem('token') || '').trim()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    } else if (config.headers.Authorization) {
+      delete config.headers.Authorization
     }
 
     const requestId = Math.random().toString(36).substring(2, 9)
@@ -88,24 +101,107 @@ apiClient.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 )
+// State untuk sinkronisasi concurrent renewal session biometrik
+let isRenewing = false
+let renewPromise: Promise<string> | null = null
 
 apiClient.interceptors.response.use(
   (response) => {
     clearRequestTimer(response.config)
     return response
   },
-  (error) => {
+  async (error) => {
     clearRequestTimer(error.config)
+
     if (error.response && error.response.status === 401) {
       if (error.response.data?.error === 'invalid token') {
         error.response.data.error = 'login expired'
       }
-      const authStore = useAuthStore()
-      authStore.logout()
-      if (router.currentRoute.value.name !== 'login') {
-        router.push({ name: 'login' })
+
+      const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined
+      const url = originalRequest?.url || ''
+      const isAuthEndpoint = url.includes('/login-renew') || url.includes('/login')
+
+      // 1. Jika sedang ada proses renewal berjalan di request lain, TUNGGU proses tersebut
+      // JANGAN langsung logout atau memicu prompt biometrik ganda!
+      if (isRenewing && renewPromise) {
+        try {
+          const freshToken = await renewPromise
+          if (originalRequest && freshToken) {
+            originalRequest.headers.Authorization = `Bearer ${freshToken}`
+            return apiClient(originalRequest)
+          }
+        } catch (retryErr) {
+          return Promise.reject(retryErr)
+        }
+      }
+
+      const refreshToken = (localStorage.getItem('refresh_token') || '').trim()
+
+      // 2. Jika bukan endpoint auth, belum pernah di-retry, dan ada simpanan refresh token:
+      // jalankan renewal biometrik secara atomik (single flight)
+      if (originalRequest && !originalRequest._retry && !isAuthEndpoint && refreshToken) {
+        originalRequest._retry = true
+
+        const authStore = useAuthStore()
+        const currentActiveToken = (authStore.token || localStorage.getItem('token') || '').trim()
+        const requestToken = originalRequest.headers.Authorization?.toString().replace(/^Bearer\s+/i, '').trim() || ''
+
+        // Cek jika token sudah diperbarui sebelumnya oleh request lain
+        if (currentActiveToken && requestToken && currentActiveToken !== requestToken) {
+          originalRequest.headers.Authorization = `Bearer ${currentActiveToken}`
+          return apiClient(originalRequest)
+        }
+
+        isRenewing = true
+
+        renewPromise = (async () => {
+          try {
+            const result = await renewBiometricSession(refreshToken)
+            const freshToken = (result.token || '').trim()
+            if (!freshToken) {
+              throw new Error('Access token baru kosong dari server.')
+            }
+            authStore.token = freshToken
+            localStorage.setItem('token', freshToken)
+            if (result.refresh_token && result.refresh_token.trim()) {
+              localStorage.setItem('refresh_token', result.refresh_token.trim())
+            }
+            return freshToken
+          } catch (renewErr) {
+            // Hanya logout jika autentikasi biometrik dibatalkan / gagal
+            authStore.logout()
+            if (router.currentRoute.value.name !== 'login') {
+              router.push({ name: 'login' })
+            }
+            throw renewErr
+          } finally {
+            isRenewing = false
+            renewPromise = null
+          }
+        })()
+
+        try {
+          const newToken = await renewPromise
+          if (newToken) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`
+            return apiClient(originalRequest)
+          }
+        } catch (renewErr) {
+          return Promise.reject(renewErr)
+        }
+      }
+
+      // 3. Hanya lakukan fallback logout jika TIDAK ada proses renewal yang sedang berjalan
+      if (!isRenewing && !renewPromise) {
+        const authStore = useAuthStore()
+        authStore.logout()
+        if (router.currentRoute.value.name !== 'login') {
+          router.push({ name: 'login' })
+        }
       }
     }
+
     return Promise.reject(error)
   }
 )

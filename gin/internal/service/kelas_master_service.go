@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -162,6 +163,7 @@ func (s *KelasMasterService) validateKelasMaster(payload domain.AppLookup, exclu
 // List retrieves a paginated list of class master records matching the given filter criteria.
 //
 // Parameters:
+//   - c: Gin context carrying HTTP request metadata.
 //   - page: The target page number (1-based index).
 //   - filters: Key-value map of filter parameters (e.g. "status", "name", "code").
 //   - limit: Maximum number of records to return per page.
@@ -170,7 +172,7 @@ func (s *KelasMasterService) validateKelasMaster(payload domain.AppLookup, exclu
 //   - []domain.AppLookup: Slice of class master lookup records.
 //   - int64: Total count of matching records.
 //   - error: Error if database query fails.
-func (s *KelasMasterService) List(page int, filters map[string]string, limit int) ([]domain.AppLookup, int64, error) {
+func (s *KelasMasterService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.AppLookup, int64, error) {
 	var items []domain.AppLookup
 	var total int64
 
@@ -182,7 +184,12 @@ func (s *KelasMasterService) List(page int, filters map[string]string, limit int
 	}
 	offset := (page - 1) * limit
 
-	query := s.db.Table("T_APP_LOOKUP").Where("CategoryId = ?", "B_KELASKHUSUS")
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
+	query := s.db.WithContext(reqCtx).Table("T_APP_LOOKUP").Where("CategoryId = ?", "B_KELASKHUSUS")
 
 	// Status filter: default active (Status = 1) unless specified otherwise
 	if statusVal, exists := filters["status"]; exists && statusVal != "" {
@@ -235,7 +242,11 @@ func (s *KelasMasterService) List(page int, filters map[string]string, limit int
 
 	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("database count error: %w", err)
+			if errors.Is(err, context.Canceled) {
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("database count error: %w", err)
+			}
 		}
 	})
 
@@ -245,7 +256,9 @@ func (s *KelasMasterService) List(page int, filters map[string]string, limit int
 			Offset(offset).
 			Order("LookupValue ASC").
 			Find(&items).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, context.Canceled) {
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				findErr = errors.New("kelas master tidak ditemukan")
 			} else {
 				findErr = fmt.Errorf("database error: %w", err)

@@ -1659,7 +1659,7 @@ type DonasiSxy struct {
 	Tanggal         DateOnly `gorm:"column:tanggal" json:"tanggal"`
 	Donatur         int32    `gorm:"column:donatur" json:"donatur_id"`
 	Penggalang      int32    `gorm:"column:penggalang" json:"penggalang_id"`
-	Jumlah          float64  `gorm:"column:jumlah" json:"jumlah" validate:"omitempty,gte=0"` // Maps NUMERIC(18,0) cleanly
+	Jumlah          float64  `gorm:"column:jumlah" json:"jumlah" validate:"required,gt=0"` // Maps NUMERIC(18,0) cleanly
 	TipeSumbangan   int32    `gorm:"column:tipesumbangan" json:"tipe_sumbangan"`
 	NoKupon         string   `gorm:"column:nokupon" json:"no_kupon" validate:"omitempty,max=50"`
 	Keterangan      string   `gorm:"column:keterangan" json:"keterangan" validate:"omitempty,max=500"`
@@ -1795,3 +1795,23 @@ type UmatPopUpResponse struct {
 	Penanggung       *string `gorm:"column:penanggung" json:"penanggung"`
 }
 
+// AuthPasskey maps to T_Auth_Passkey storing biometric WebAuthn credentials and refresh tokens.
+type AuthPasskey struct {
+	PasskeyID        int32      `gorm:"column:PasskeyId;primaryKey;autoIncrement" json:"passkey_id"`
+	LoginID          int32      `gorm:"column:LoginId;not null;index:IX_T_Auth_Passkey_LoginId" json:"login_id"`
+	CredentialID     string     `gorm:"column:CredentialId;type:varchar(255);index:IX_T_Auth_Passkey_CredentialId" json:"credential_id,omitempty"`
+	Credential       string     `gorm:"column:Credential;not null" json:"credential"`
+	RefreshToken     *string    `gorm:"column:RefreshToken" json:"refresh_token,omitempty"`
+	RefreshTokenHash string     `gorm:"column:RefreshTokenHash;type:varchar(32);index:IX_T_Auth_Passkey_RefreshTokenHash" json:"refresh_token_hash,omitempty"`
+	IP               *string    `gorm:"column:Ip;type:varchar(45)" json:"ip,omitempty"`
+	UserAgent        *string    `gorm:"column:UserAgent;type:varchar(500)" json:"user_agent,omitempty"`
+	CreatedAt        *time.Time `gorm:"column:CreatedAt" json:"created_at"`
+	LastUsed         *time.Time `gorm:"column:LastUsed" json:"last_used"`
+	ExpiredAt        *time.Time `gorm:"column:ExpiredAt" json:"expired_at"`
+	Status           *bool      `gorm:"column:Status;type:bit;default:true" json:"status"`
+}
+
+// TableName overrides the default GORM table name to match database schema.
+func (AuthPasskey) TableName() string {
+	return "T_Auth_Passkey"
+}

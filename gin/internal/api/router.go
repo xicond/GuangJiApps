@@ -354,6 +354,101 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "login successful", "token": token, "user": user, "main_menu": mainMenus})
 	})
 
+	loginRenewLimiter := middleware.NewUserRateLimiter(cfg, 5, 1*time.Minute, "login_renew_limiter:")
+
+	r.POST(cfg.BaseURL+"/login-renew", loginRenewLimiter.Middleware(), middleware.RefreshTokenAuthMiddleware(cfg, db), func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		var req service.LoginRenewRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+
+		passkeyVal, exists := c.Get("passkey")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid passkey session"})
+			return
+		}
+		passkey, ok := passkeyVal.(domain.AuthPasskey)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid passkey context"})
+			return
+		}
+
+		refreshTokenVal, _ := c.Get("refreshToken")
+		currentRefreshToken, _ := refreshTokenVal.(string)
+
+		newRefreshToken, newAccessToken, err := authService.LoginRenew(passkey, req, currentRefreshToken, c.ClientIP(), c.Request.UserAgent(), c.Request.Referer())
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"token":         newAccessToken,
+			"access_token":  newAccessToken,
+			"refresh_token": newRefreshToken,
+		})
+	})
+
+	loginOptionsLimiter := middleware.NewUserRateLimiter(cfg, 10, 1*time.Minute, "login_options_limiter:")
+
+	r.POST(cfg.BaseURL+"/login-options", loginOptionsLimiter.Middleware(), func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		var req service.LoginOptionsRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+
+		origin := c.GetHeader("Origin")
+		if origin == "" {
+			origin = c.GetHeader("Referer")
+		}
+		if origin == "" {
+			origin = c.Request.Host
+		}
+
+		options, err := authService.GetLoginOptions(req.Username, origin)
+		if err != nil {
+			if err.Error() == "username is required" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			if err.Error() == "user not found" || err.Error() == "no passkey found for this user" {
+				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, options)
+	})
+
+	loginPasskeyLimiter := middleware.NewUserRateLimiter(cfg, 10, 1*time.Minute, "login_passkey_limiter:")
+
+	r.POST(cfg.BaseURL+"/login-passkey", loginPasskeyLimiter.Middleware(), func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		var req service.LoginPasskeyRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+
+		resp, err := authService.LoginPasskey(req, c.ClientIP(), c.Request.UserAgent(), c.Request.Referer())
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) || err.Error() == "user not found" {
+				c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+				return
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, resp)
+	})
+
 	protected := r.Group(cfg.BaseURL + "/v1")
 	protected.Use(middleware.AuthMiddleware(cfg))
 
@@ -383,11 +478,47 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		c.JSON(http.StatusOK, gin.H{"message": "password changed successfully"})
 	})
 
+	protected.POST("/add-passkey", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		var req service.AddPasskeyRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+
+		var userID int32
+		if userIDVal, exists := c.Get("userID"); exists {
+			userID = service.ToInt32(userIDVal)
+		}
+		if userID == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+
+		authHeader := c.GetHeader("Authorization")
+		parts := strings.Split(authHeader, " ")
+		bearerToken := ""
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			bearerToken = parts[1]
+		}
+
+		newRefreshToken, err := authService.AddPasskey(userID, req, bearerToken, c.ClientIP(), c.Request.UserAgent(), c.Request.Referer())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"message":       "passkey added successfully",
+			"refresh_token": newRefreshToken,
+		})
+	})
+
 	// Admins
 	protected.GET("/admins", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := adminService.List(page, filters, limit)
+		items, total, err := adminService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -470,7 +601,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/admin-groups", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := adminGroupService.List(page, filters, limit)
+		items, total, err := adminGroupService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -542,7 +673,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/group-menu-mappings", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := groupMenuService.List(page, filters, limit)
+		items, total, err := groupMenuService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -614,7 +745,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/admin-sub-warehouses", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := adminSubWarehouseService.List(page, filters, limit)
+		items, total, err := adminSubWarehouseService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -696,7 +827,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/umats/report", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := umatService.Report(page, filters, limit)
+		items, total, err := umatService.Report(c, page, filters, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -909,7 +1040,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/topics", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_TOPIC", UpdatedColumn: "ModDate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := topicService.List(page, filters, limit)
+		items, total, err := topicService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -998,7 +1129,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	kelasMasterListHandler := func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := kelasMasterService.List(page, filters, limit)
+		items, total, err := kelasMasterService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -1112,7 +1243,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/activities", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_EVENT", UpdatedColumn: "ModDate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := activityService.List(page, filters, limit)
+		items, total, err := activityService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -1178,7 +1309,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/tim-kerja", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_APP_LOOKUP", WhereClause: "CategoryId = ?", WhereArgs: []interface{}{"B_POSISI"}, CacheKey: "lookup:B_POSISI"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := timKerjaService.List(page, filters, limit)
+		items, total, err := timKerjaService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -1265,7 +1396,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/tahun-ciu-tao/list", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_BUS_TAHUN_CIUTAO", UpdatedColumn: "ModDate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := tahunCiuTaoService.List(page, filters, limit)
+		items, total, err := tahunCiuTaoService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -1339,7 +1470,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/penggalang-dana", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_SXY_MST_PENGGALANG", UpdatedColumn: "updateddate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := penggalangDanaService.List(page, filters, limit)
+		items, total, err := penggalangDanaService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -1411,7 +1542,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/sxy-donatur", middleware.StatusNotModifiedHeader(db, rdb, middleware.ResourceMetadata{TableName: "T_SXY_MST_DONATUR", UpdatedColumn: "updateddate"}), func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := sxyDonaturService.List(page, filters, limit)
+		items, total, err := sxyDonaturService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -1663,7 +1794,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/kelas", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := kelasService.List(page, filters, c, limit)
+		items, total, err := kelasService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -1770,7 +1901,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasPesertaService.List(c.Param("id"), c, page, limit)
+		items, total, err := kelasPesertaService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2020,7 +2151,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasTopikService.List(c.Param("id"), page, limit)
+		items, total, err := kelasTopikService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2216,7 +2347,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasDonasiService.List(c.Param("id"), page, limit)
+		items, total, err := kelasDonasiService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2314,7 +2445,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasDonasiBarangService.List(c.Param("id"), page, limit)
+		items, total, err := kelasDonasiBarangService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2412,7 +2543,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasPengeluaranService.List(c.Param("id"), page, limit)
+		items, total, err := kelasPengeluaranService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2510,7 +2641,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasMusikService.List(c.Param("id"), page, limit)
+		items, total, err := kelasMusikService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2608,7 +2739,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			return
 		}
 		page, limit, _ := parsePaginationAndFilters(c)
-		items, total, err := kelasAbsensiService.List(c.Param("id"), page, limit)
+		items, total, err := kelasAbsensiService.List(c, c.Param("id"), page, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2701,7 +2832,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/donasi-sxy", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, total, err := donasiSxyService.List(page, filters, limit)
+		items, total, err := donasiSxyService.List(c, page, filters, limit)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -2711,7 +2842,7 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 	protected.GET("/donasi-sxy/report", func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
 		page, limit, filters := parsePaginationAndFilters(c)
-		items, totalJumlah, total, err := donasiSxyService.Report(page, filters, limit)
+		items, totalJumlah, total, err := donasiSxyService.Report(c, page, filters, limit)
 		if err != nil {
 			respondError(c, err)
 			return
@@ -2755,6 +2886,10 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			respondValidationError(c, err)
 			return
 		}
+		if err := service.ValidateStruct(payload); err != nil {
+			respondValidationError(c, err)
+			return
+		}
 		created, err := donasiSxyService.Create(payload, c)
 		if err != nil {
 			respondError(c, err)
@@ -2771,6 +2906,10 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		var payload domain.DonasiSxy
 		if err := c.ShouldBindJSON(&payload); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+		if err := service.ValidateStruct(payload); err != nil {
 			respondValidationError(c, err)
 			return
 		}

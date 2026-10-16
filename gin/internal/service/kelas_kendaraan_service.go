@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -57,9 +58,14 @@ func (s *KelasKendaraanService) List(c *gin.Context, trxID string, page int, lim
 		page = 1
 	}
 
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
 	userID := getUserID(c)
 	var subWhVal string
-	row := s.db.Model(&domain.AdminMatrix{}).
+	row := s.db.WithContext(reqCtx).Model(&domain.AdminMatrix{}).
 		Where("LOGINID = ?", userID).
 		Select("SUBWHID").
 		Row()
@@ -67,7 +73,7 @@ func (s *KelasKendaraanService) List(c *gin.Context, trxID string, page int, lim
 		_ = row.Scan(&subWhVal)
 	}
 
-	query := s.db.Model(&domain.KelasKendaraan{}).Where("status = ?", true)
+	query := s.db.WithContext(reqCtx).Model(&domain.KelasKendaraan{}).Where("status = ?", true)
 
 	if trxID != "" {
 		if parsedID, err := strconv.Atoi(trxID); err == nil {
@@ -87,13 +93,23 @@ func (s *KelasKendaraanService) List(c *gin.Context, trxID string, page int, lim
 
 	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("failed to count record: %w", err)
+			if errors.Is(err, context.Canceled) {
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("failed to count record: %w", err)
+			}
 		}
 	})
 
 	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Offset(offset).Limit(limit).Find(&items).Error; err != nil {
-			findErr = fmt.Errorf("failed to list records: %w", err)
+			if errors.Is(err, context.Canceled) {
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				findErr = errors.New("kendaraan tidak ditemukan")
+			} else {
+				findErr = fmt.Errorf("failed to list records: %w", err)
+			}
 		}
 	})
 

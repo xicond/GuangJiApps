@@ -9,7 +9,7 @@ const THROTTLE_MS = 5000
 
 export function useQuickStreamSpeedTest() {
     const measureSpeedInOneSecond = async (
-        timeLimitMs = 300, // Batasi tepat 300ms
+        timeLimitMs = 1000, // Batasi tepat 300ms
         fileUrl = 'https://httpbin.org/bytes/1130000?' // Gunakan file besar agar tidak habis duluan
     ) => {
         const now = Date.now()
@@ -27,24 +27,10 @@ export function useQuickStreamSpeedTest() {
         let timer = setTimeout(() => {
             if (receivedBytes > 0) {
                 controller.abort()
-
-                const endTime = performance.now()
-
-                // Hitung durasi aktual (mendekati 1000ms)
-                const durationSeconds = (endTime - startTime) / 1000
-
-                if (durationSeconds > 0) {
-                    // Rumus: (Total Bytes * 8 bit) / Durasi (detik) / 1,000,000
-                    const totalBits = receivedBytes * 8
-                    const mbps = totalBits / durationSeconds / 1000000
-                    speedMbps.value = parseFloat(mbps.toFixed(2))
-                    console.warn(`[Network Monitor] Speed test ${speedMbps.value}`)
-
-                }
             } else {
                 timer = setTimeout(() => {
                     controller.abort()
-                }, timeLimitMs * 3)
+                }, timeLimitMs * 2.5)
             }
         }, timeLimitMs)
 
@@ -53,7 +39,7 @@ export function useQuickStreamSpeedTest() {
                 cache: 'no-store',
                 mode: 'cors',
                 priority: 'high',
-                signal: controller.signal // Menghubungkan pembatalan ke fetch
+                signal: controller.signal
             })
             startTime = performance.now()
 
@@ -79,9 +65,12 @@ export function useQuickStreamSpeedTest() {
             const endTime = performance.now()
 
             // Hitung durasi aktual (mendekati 1000ms)
-            const durationSeconds = (endTime - startTime) / 1000
+            let durationSeconds = (endTime - startTime) / 1000
 
-            if (receivedBytes > 0 && durationSeconds > 0) {
+            if (receivedBytes > 0) {
+                if (durationSeconds <= 0) {
+                    durationSeconds = 0.005
+                }
                 // Rumus: (Total Bytes * 8 bit) / Durasi (detik) / 1,000,000
                 const totalBits = receivedBytes * 8
                 const mbps = totalBits / durationSeconds / 1000000

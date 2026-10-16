@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -36,6 +37,7 @@ func NewActivityService(db *gorm.DB) *ActivityService {
 // List retrieves a paginated list of active activities matching the given filter criteria.
 //
 // Parameters:
+//   - c: Gin context carrying HTTP request metadata.
 //   - page: The target page number (1-based index).
 //   - filters: Key-value map of filter parameters (e.g. "event_name", "event_category").
 //   - limit: Maximum number of records to return per page.
@@ -44,7 +46,7 @@ func NewActivityService(db *gorm.DB) *ActivityService {
 //   - []domain.Activity: Slice of activity records.
 //   - int64: Total count of matching records.
 //   - error: Error if database query fails.
-func (s *ActivityService) List(page int, filters map[string]string, limit int) ([]domain.Activity, int64, error) {
+func (s *ActivityService) List(c *gin.Context, page int, filters map[string]string, limit int) ([]domain.Activity, int64, error) {
 	var items []domain.Activity
 	var total int64
 
@@ -56,7 +58,12 @@ func (s *ActivityService) List(page int, filters map[string]string, limit int) (
 	}
 	offset := (page - 1) * limit
 
-	query := s.db.Table("T_BUS_EVENT").Where("Status = ?", true)
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
+	query := s.db.WithContext(reqCtx).Table("T_BUS_EVENT").Where("Status = ?", true)
 
 	type FilterRule struct {
 		Column string
@@ -90,7 +97,11 @@ func (s *ActivityService) List(page int, filters map[string]string, limit int) (
 
 	wg.Go(func() {
 		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
-			countErr = fmt.Errorf("database count error: %w", err)
+			if errors.Is(err, context.Canceled) {
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("database count error: %w", err)
+			}
 		}
 	})
 
@@ -100,7 +111,9 @@ func (s *ActivityService) List(page int, filters map[string]string, limit int) (
 			Offset(offset).
 			Order("EventCode ASC").
 			Find(&items).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, context.Canceled) {
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				findErr = errors.New("activity tidak ditemukan")
 			} else {
 				findErr = fmt.Errorf("database error: %w", err)

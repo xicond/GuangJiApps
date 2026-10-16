@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -161,17 +162,25 @@ func validatePesertaLookups(db *gorm.DB, payload *domain.KelasPesertaBulkRequest
 //   - []domain.KelasPesertaResponse: list of participant records
 //   - int64: total matching count
 //   - error: query or scan error if failed
-func (s *KelasPesertaService) List(id string, c *gin.Context, page int, limit int) ([]domain.KelasPesertaResponse, int64, error) {
+func (s *KelasPesertaService) List(c *gin.Context, id string, page int, limit int) ([]domain.KelasPesertaResponse, int64, error) {
 	var items []domain.KelasPesertaResponse
+
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
 
 	var subWhId int64
 
-	err := s.db.Model(&domain.AdminMatrix{}).
+	err := s.db.WithContext(reqCtx).Model(&domain.AdminMatrix{}).
 		Where("LOGINID = ?", getUserID(c)).
 		Limit(1).
 		Pluck("SUBWHID", &subWhId).Error
 
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return items, 0, fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+		}
 		return items, 0, fmt.Errorf("database query error: %w", err)
 	}
 
@@ -193,7 +202,7 @@ func (s *KelasPesertaService) List(id string, c *gin.Context, page int, limit in
 
 	// before: SP_TRX_KELAS_GET_PESERTA, now: SP_TRX_KELAS_PESERTA_SEARCH_DATA
 	sortDirection := "ASCENDING"
-	rows, err := s.db.Raw("EXEC [dbo].[SP_TRX_KELAS_PESERTA_SEARCH_DATA] @PageSize = ?, @CurrentPage = ?, @SortDirection = ?, @TrxId = ?, @FotangId = ?",
+	rows, err := s.db.WithContext(reqCtx).Raw("EXEC [dbo].[SP_TRX_KELAS_PESERTA_SEARCH_DATA] @PageSize = ?, @CurrentPage = ?, @SortDirection = ?, @TrxId = ?, @FotangId = ?",
 		limit,
 		page,
 		sortDirection,
@@ -202,13 +211,18 @@ func (s *KelasPesertaService) List(id string, c *gin.Context, page int, limit in
 	).Rows()
 
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return items, 0, fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+		}
 		return items, 0, fmt.Errorf("database query error: %w", err)
 	}
 	defer rows.Close()
 
 	cols, err := rows.Columns()
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, context.Canceled) {
+			findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
 			findErr = errors.New("kelas tidak ditemukan")
 		} else {
 			findErr = fmt.Errorf("database error: %w", err)

@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"guangjiapps/gin/internal/database"
@@ -36,6 +38,7 @@ func NewKelasAbsensiService(db *gorm.DB) *KelasAbsensiService {
 // List queries active attendance records for a class session with pagination.
 //
 // Parameters:
+//   - c: *gin.Context carrying HTTP request metadata
 //   - trxID: string representation of the class transaction ID
 //   - page: page number (1-based)
 //   - limit: page size limit
@@ -44,7 +47,7 @@ func NewKelasAbsensiService(db *gorm.DB) *KelasAbsensiService {
 //   - []domain.KelasAbsensi: list of attendance records
 //   - int64: total matching count
 //   - error: database error if query fails
-func (s *KelasAbsensiService) List(trxID string, page int, limit int) ([]domain.KelasAbsensi, int64, error) {
+func (s *KelasAbsensiService) List(c *gin.Context, trxID string, page int, limit int) ([]domain.KelasAbsensi, int64, error) {
 	var items []domain.KelasAbsensi
 	var total int64
 
@@ -55,7 +58,12 @@ func (s *KelasAbsensiService) List(trxID string, page int, limit int) ([]domain.
 		page = 1
 	}
 
-	query := s.db.Model(&domain.KelasAbsensi{}).Where("Status = ?", true)
+	var reqCtx = context.Background()
+	if c != nil && c.Request != nil {
+		reqCtx = c.Request.Context()
+	}
+
+	query := s.db.WithContext(reqCtx).Model(&domain.KelasAbsensi{}).Where("Status = ?", true)
 
 	if trxID != "" {
 		if parsedID, err := strconv.Atoi(trxID); err == nil {
@@ -63,13 +71,43 @@ func (s *KelasAbsensiService) List(trxID string, page int, limit int) ([]domain.
 		}
 	}
 
-	if err := query.Count(&total).Error; err != nil {
-		return items, 0, fmt.Errorf("failed to count record: %w", err)
-	}
-
 	offset := (page - 1) * limit
-	if err := query.Offset(offset).Limit(limit).Find(&items).Error; err != nil {
-		return items, 0, fmt.Errorf("failed to list records: %w", err)
+
+	var (
+		countErr error
+		findErr  error
+		wg       sync.WaitGroup
+	)
+
+	wg.Go(func() {
+		if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+			if errors.Is(err, context.Canceled) {
+				countErr = fmt.Errorf("Query dibatalkan karena klien memutus koneksi.")
+			} else {
+				countErr = fmt.Errorf("failed to count record: %w", err)
+			}
+		}
+	})
+
+	wg.Go(func() {
+		if err := query.Session(&gorm.Session{}).Offset(offset).Limit(limit).Find(&items).Error; err != nil {
+			if errors.Is(err, context.Canceled) {
+				findErr = errors.New("Query dibatalkan karena klien memutus koneksi.")
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				findErr = errors.New("absensi tidak ditemukan")
+			} else {
+				findErr = fmt.Errorf("failed to list records: %w", err)
+			}
+		}
+	})
+
+	wg.Wait()
+
+	if countErr != nil {
+		return items, 0, countErr
+	}
+	if findErr != nil {
+		return items, 0, findErr
 	}
 
 	return items, total, nil

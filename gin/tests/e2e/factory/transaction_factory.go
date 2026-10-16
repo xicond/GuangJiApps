@@ -209,7 +209,10 @@ func (DonasiSxyFactory) InvalidPayload() map[string]interface{} {
 //   - map[string]interface{}: valid donation update payload.
 func (DonasiSxyFactory) ValidUpdatePayload() map[string]interface{} {
 	return map[string]interface{}{
-		"keterangan": "Donasi Updated E2E",
+		"no_kwitansi": "KW-E2E-UPD",
+		"tanggal":     "2026-03-01",
+		"jumlah":      750000.0,
+		"keterangan":  "Donasi Updated E2E",
 	}
 }
 

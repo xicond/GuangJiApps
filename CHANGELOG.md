@@ -1,6 +1,23 @@
 # Documentation - Completed Tasks
 
-## [Completed] Context Cancellation & Unit Test Coverage for Umat and Donasi SXY Report Methods
+## \[Completed\] Frontend Dependencies Update: Axios 1.20.0 & Package-Lock Flattening / Deduplication
+
+### Summary & Changes Made:
+- **Axios Upgrade**:
+  - In [`vue/package.json`](file:///Users/xicond/Workspace/www/GuangJiApps/vue/package.json): Updated `axios` to `1.20.0`.
+- **Lockfile Prune & Deduplication**:
+  - Executed `npm dedupe` and `npm prune` on [`vue/package-lock.json`](file:///Users/xicond/Workspace/www/GuangJiApps/vue/package-lock.json):
+    - Flattened and deduplicated `brace-expansion` across the dependency tree:
+      - `minimatch@5.1.9` (under `filelist`) and `minimatch@9.0.9` (under `vue-tsc`) now cleanly share `brace-expansion@2.1.7`.
+      - `minimatch@10.2.6` (under `glob@11.1.0` in `workbox-build`) uses `brace-expansion@5.0.12`.
+- **Verification**:
+  - `npm ls brace-expansion`: All subdependencies resolved with zero conflicts.
+  - `npm run type-check` (`vue-tsc --noEmit`): **PASS** (0 errors).
+  - `npm run build` (`vue-tsc --noEmit && vite build`): **PASS** (all chunks and PWA service worker generated cleanly).
+
+---
+
+## \[Completed\] Context Cancellation & Unit Test Coverage for Umat and Donasi SXY Report Methods
 
 ### Summary & Changes Made:
 - **Client Cancellation Handling in Report Services (`.WithContext(ctx)` & `errors.Is(err, context.Canceled)`)**:
@@ -22,7 +39,7 @@
 
 ---
 
-## [Completed] Context Cancellation & Concurrency Propagation Across All List Services
+## \[Completed\] Context Cancellation & Concurrency Propagation Across All List Services
 
 ### Summary & Changes Made:
 - **Client Disconnect Cancellation & Context Propagation (`.WithContext(ctx)` & `errors.Is(err, context.Canceled)`)**:
@@ -65,7 +82,7 @@
 
 ---
 
-## [Completed] Passkey Model Refactor (Credential, Nullable RefreshToken, IP & UserAgent Logging) & POST /login-passkey Endpoint
+## \[Completed\] Passkey Model Refactor (Credential, Nullable RefreshToken, IP & UserAgent Logging) & POST /login-passkey Endpoint
 
 ### Summary & Changes Made:
 - **Database Schema & Docker MSSQL Migration ([`backup/db_export_structure.sql`](file:///Users/xicond/Workspace/www/GuangJiApps/backup/db_export_structure.sql), [`docker mssql_server`](file:///Users/xicond/Workspace/www/GuangJiApps))**:
@@ -102,7 +119,7 @@
 
 ---
 
-## [Completed] Passkey Schema Refactor (LoginId & CredentialId) & POST /login-options Endpoint
+## \[Completed\] Passkey Schema Refactor (LoginId & CredentialId) & POST /login-options Endpoint
 
 ### Summary & Changes Made:
 - **Database Structure & Domain Model Refactor ([`backup/db_export_structure.sql`](file:///Users/xicond/Workspace/www/GuangJiApps/backup/db_export_structure.sql), [`gin/internal/domain/legacy_models.go`](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/domain/legacy_models.go))**:
@@ -135,7 +152,7 @@
 
 ---
 
-## [Completed] Fix "refresh key not found" on Login Renew & Race Condition in Axios Client
+## \[Completed\] Fix "refresh key not found" on Login Renew & Race Condition in Axios Client
 
 ### Summary & Changes Made:
 - **Root Cause Resolution for "refresh key not found" / "refresh token not found or revoked"**:
@@ -169,7 +186,7 @@
 
 ---
 
-## [Completed] Biometric Passkey Remember Me & Auto-Renewal on Vue Frontend
+## \[Completed\] Biometric Passkey Remember Me & Auto-Renewal on Vue Frontend
 
 ### Summary & Changes Made:
 - **Passkey Utility Service ([`vue/src/services/passkey.ts`](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/services/passkey.ts))**:
@@ -196,7 +213,7 @@
 
 ---
 
-## [Completed] Add Renewed Access Token to `/login-renew` Endpoint
+## \[Completed\] Add Renewed Access Token to `/login-renew` Endpoint
 
 ### Summary & Changes Made:
 - **Service Layer ([`gin/internal/service/auth_service.go`](file:///Users/xicond/Workspace/www/GuangJiApps/gin/internal/service/auth_service.go))**:
@@ -218,7 +235,7 @@
 
 ---
 
-## [Completed] Add Sample 200 and 400 Responses in Postman Collection
+## \[Completed\] Add Sample 200 and 400 Responses in Postman Collection
 
 ### Summary & Changes Made:
 - **Postman Collection Update ([`gin/postman/apps-gin.postman_collection.json`](file:///Users/xicond/Workspace/www/GuangJiApps/gin/postman/apps-gin.postman_collection.json))**:
@@ -232,7 +249,7 @@
 
 ---
 
-## [Completed] Refactor Passkey Authentication to `github.com/go-webauthn/webauthn/webauthn`
+## \[Completed\] Refactor Passkey Authentication to `github.com/go-webauthn/webauthn/webauthn`
 
 ### Summary & Changes Made:
 - **Library Integration & Removal of Custom Implementation**:
@@ -260,7 +277,7 @@
 
 ---
 
-## [Completed] Biometric Passkey ("Remember Me") Phase 1 Implementation
+## \[Completed\] Biometric Passkey ("Remember Me") Phase 1 Implementation
 
 ### Summary & Changes Made:
 - **Database Schema**:
@@ -302,7 +319,7 @@
 
 ---
 
-## [Completed] Configure OSV-Scanner False Positive Suppression (`GO-2026-5932`)
+## \[Completed\] Configure OSV-Scanner False Positive Suppression (`GO-2026-5932`)
 
 ### Summary & Changes Made:
 - **Suppression of Unused Subpackage Advisory**:
@@ -312,7 +329,7 @@
 
 ---
 
-## [Completed] Function and Method Docblock Comments in `gin/internal/domain/legacy_models.go`
+## \[Completed\] Function and Method Docblock Comments in `gin/internal/domain/legacy_models.go`
 
 ### Summary & Changes Made:
 - **Comprehensive Method & Function Docblock Comments**:
@@ -325,7 +342,7 @@
 
 ---
 
-## [Completed] Struct and Function Docblock Comments in E2E Testing Suite (`gin/tests/e2e/`)
+## \[Completed\] Struct and Function Docblock Comments in E2E Testing Suite (`gin/tests/e2e/`)
 
 ### Summary & Changes Made:
 - **Comprehensive E2E Factory Docblock Comments**:
@@ -347,7 +364,7 @@
 
 ---
 
-## [Completed] Struct and Function Docblock Comments in Golang Backend (`gin/`)
+## \[Completed\] Struct and Function Docblock Comments in Golang Backend (`gin/`)
 
 ### Summary & Changes Made:
 - **Comprehensive Struct Docblock Comments**:
@@ -364,7 +381,7 @@
 
 ---
 
-## [Completed] Function Docstrings in Postman UAT Generator (`generate_uat.py`)
+## \[Completed\] Function Docstrings in Postman UAT Generator (`generate_uat.py`)
 
 ### Summary & Changes Made:
 - **Standardized Docstrings Across All Functions**:

@@ -87,7 +87,9 @@ apiClient.interceptors.request.use(
 
     const timer = setTimeout(() => {
       // Pastikan speed test tidak sedang berjalan dan sudah melewati throttle 5s
-      if (config.fetchOptions?.priority !== 'low' && canRunTest()) {
+      const url = config.url || ''
+      const isHeavyDataEndpoint = url.includes('/report') || url.includes('/excel') || url.includes('/download') || url.includes('/export')
+      if (!isHeavyDataEndpoint && config.fetchOptions?.priority !== 'low' && canRunTest()) {
         console.warn(`[Network Monitor] Request ke ${config.url} berjalan >= 1s. Memicu speed test...`)
         measureSpeedInOneSecond()
       }

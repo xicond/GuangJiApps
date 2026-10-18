@@ -98,6 +98,9 @@ export const donasiSxyApi = {
 
     const response = await apiClient.get<SxyReportListResponse>('/v1/donasi-sxy/report', {
       params: cleanParams,
+      fetchOptions: {
+        priority: 'low'
+      },
       signal
     })
     return response.data

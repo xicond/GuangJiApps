@@ -24,15 +24,11 @@ export function useQuickStreamSpeedTest() {
         let receivedBytes = 0
 
         // Timer untuk membatalkan fetch tepat setelah timeLimitMs
-        let timer = setTimeout(() => {
-            if (receivedBytes > 0) {
-                controller.abort()
-            } else {
-                timer = setTimeout(() => {
-                    controller.abort()
-                }, timeLimitMs * 2.5)
-            }
+        const timer = setTimeout(() => {
+            controller.abort()
         }, timeLimitMs)
+
+        let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
 
         try {
             const response = await fetch(`${fileUrl}&t=${Date.now()}`, {
@@ -45,7 +41,7 @@ export function useQuickStreamSpeedTest() {
 
             if (!response.body) throw new Error('ReadableStream tidak didukung.')
 
-            const reader = response.body.getReader()
+            reader = response.body.getReader()
 
             // Membaca stream byte per byte / chunk per chunk
             while (true) {
@@ -62,6 +58,18 @@ export function useQuickStreamSpeedTest() {
             }
         } finally {
             clearTimeout(timer)
+            if (reader) {
+                try {
+                    await reader.cancel()
+                } catch {
+                    // Ignore cancel error on aborted stream
+                }
+                try {
+                    reader.releaseLock()
+                } catch {
+                    // Ignore release lock error
+                }
+            }
             const endTime = performance.now()
 
             // Hitung durasi aktual (mendekati 1000ms)

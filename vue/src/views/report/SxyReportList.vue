@@ -70,9 +70,14 @@
 
     <!-- Table Card -->
     <el-card shadow="never" class="table-card">
+      <div v-if="totalJumlah > 0 || pagination.total > 0" class="summary-banner">
+        <span class="summary-label">Total Ringkasan:</span>
+        <span class="summary-value">{{ formatCurrency(totalJumlah) }}</span>
+        <span class="summary-count">({{ pagination.total }} transaksi)</span>
+      </div>
 
-      <el-table v-loading="loading" :data="dataList" stripe border height="500" show-summary
-        :summary-method="getSummaries" style="width: 100%" empty-text="Tidak ada data sxy report yang ditemukan">
+      <el-table v-loading="loading" :data="dataList" stripe border height="500" style="width: 100%"
+        empty-text="Tidak ada data sxy report yang ditemukan">
         <el-table-column prop="no_kwitansi" label="No Kwitansi" width="110" align="center"
           :fixed="!isMobile ? 'left' : false" />
 
@@ -82,7 +87,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="tanggal" label="Tanggal Transfer" width="110" align="center">
+        <el-table-column prop="tanggal_transfer" label="Tanggal Transfer" width="110" align="center">
           <template #default="{ row }">
             <span>{{ row.tanggal_transfer || '-' }}</span>
           </template>
@@ -140,8 +145,7 @@
       <!-- Pagination -->
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]" :total="pagination.total"
-          :layout="(!isMobile ? 'total, ->,' : (Math.ceil(pagination.total / pagination.limit) < 6 ? '-> ,' : '')) + 'prev, pager, next, jumper'"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total" :layout="paginationLayout"
           :pager-count="isMobile ? 5 : 7" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
@@ -174,17 +178,18 @@ const getDeviceType = (): string => {
 
   // 2. Deteksi Tablet umum (Android tablet, Playbook, Silk, atau iPadOS)
   if (/tablet|playbook|silk/i.test(ua) || isIPadOS) {
+    deviceType = 'tablet'
     return 'tablet'
   }
 
   // 3. Deteksi Mobile (Android Phone, iPhone, iPod, dll)
   if (/mobi|android|iphone|ipod/i.test(ua)) {
-    // ElMessage.warning('Mobile detected')
+    deviceType = 'mobile'
     return 'mobile'
   }
 
   // 4. Selebihnya dianggap Desktop (termasuk Mac asli yang maxTouchPoints-nya 0)
-  // ElMessage.warning('Desktop detected')
+  deviceType = 'desktop'
   return 'desktop'
 }
 
@@ -212,7 +217,8 @@ const onMouseLeave = () => {
 // 3. Handler untuk Mobile / Touch (Click/Tap)
 const onClick = () => {
   if (!canHover()) {
-    if (isVisible.value = !isVisible.value) {
+    isVisible.value = !isVisible.value
+    if (isVisible.value) {
       setTimeout(() => {
         isVisible.value = false
       }, 2100)
@@ -228,6 +234,12 @@ onClickOutside(triggerRef, () => {
 // Subscribe to reactive states
 const isMobile = breakpoints.smaller('md')   // True if width < 768px
 const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
+
+const paginationLayout = computed(() => {
+  return isMobile.value
+    ? 'prev, pager, next'
+    : 'total, ->, prev, pager, next, jumper'
+})
 
 const dataList = shallowRef<SxyDonasiReportItem[]>([])
 const loading = ref(false)
@@ -262,12 +274,13 @@ const isDownloadTooltipActive = computed(() => {
   return !hasActiveFilter.value && !isDownloading.value
 })
 
+const emptyDateRange: [string, string] | [] = []
 const dateRange = computed({
   get: () => {
     if (filters.start_date && filters.end_date) {
       return [filters.start_date, filters.end_date]
     }
-    return []
+    return emptyDateRange
   },
   set: (val: [string, string] | null) => {
     if (val && val.length === 2) {
@@ -286,28 +299,6 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null
 function formatCurrency(val?: number) {
   if (val == null || isNaN(val)) return 'Rp 0'
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
-}
-
-function getSummaries(param: { columns: any[]; data: any[] }) {
-  const { columns } = param
-  const sums: string[] = []
-  columns.forEach((column, index) => {
-    let seq = 0
-    if (isMobile.value && column.property === 'tipe_sumbangan') {
-      sums[index] = 'Total'
-      return
-    }
-    if (!isMobile.value && index === 0) {
-      sums[index] = 'Total'
-      return
-    }
-    if (column.property === 'jumlah') {
-      sums[index] = formatCurrency(totalJumlah.value)
-      return
-    }
-    sums[index] = ''
-  })
-  return sums
 }
 
 async function fetchData() {
@@ -332,8 +323,15 @@ async function fetchData() {
       controller.signal
     )
     if (currentAbortController === controller) {
-      dataList.value = res.data || []
-      pagination.total = res.meta?.total || 0
+      const rawData = Array.isArray(res.data) ? res.data : []
+      if (rawData.length > pagination.limit) {
+        // Backend returned unpaginated full dataset: defensively slice client-side
+        const start = (pagination.page - 1) * pagination.limit
+        dataList.value = rawData.slice(start, start + pagination.limit)
+      } else {
+        dataList.value = rawData
+      }
+      pagination.total = res.meta?.total || (rawData.length > 0 ? (res.meta?.total || rawData.length) : 0)
       totalJumlah.value = res.meta?.total_jumlah || 0
     }
   } catch (err: any) {

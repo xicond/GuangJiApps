@@ -73,7 +73,6 @@
       <div v-if="totalJumlah > 0 || pagination.total > 0" class="summary-banner">
         <span class="summary-label">Total Ringkasan:</span>
         <span class="summary-value">{{ formatCurrency(totalJumlah) }}</span>
-        <span class="summary-count">({{ pagination.total }} transaksi)</span>
       </div>
 
       <el-table v-loading="loading" :data="dataList" stripe border height="500" style="width: 100%"

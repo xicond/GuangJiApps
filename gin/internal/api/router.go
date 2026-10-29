@@ -2410,6 +2410,13 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 			respondValidationError(c, err)
 			return
 		}
+		if payload.TrxId == 0 {
+			payload.TrxId = service.ToInt32(c.Param("id"))
+		}
+		if err := service.ValidateStruct(payload); err != nil {
+			respondValidationError(c, err)
+			return
+		}
 		updated, err := kelasDonasiService.Update(c.Param("detail_id"), payload, c)
 		if err != nil {
 			respondError(c, err)
@@ -2603,6 +2610,13 @@ func NewRouter(authService *service.AuthService, db *gorm.DB, cfg config.Config)
 		}
 		var payload domain.KelasPengeluaran
 		if err := c.ShouldBindJSON(&payload); err != nil {
+			respondValidationError(c, err)
+			return
+		}
+		if payload.TrxId == 0 {
+			payload.TrxId = service.ToInt32(c.Param("id"))
+		}
+		if err := service.ValidateStruct(payload); err != nil {
 			respondValidationError(c, err)
 			return
 		}

@@ -1543,7 +1543,7 @@ type KelasDonasi struct {
 	DetailId int32     `gorm:"primaryKey;autoIncrement:false;column:DetailId;type:int;not null" json:"detail_id"`
 	TrxId    int32     `gorm:"column:TrxId;type:int;not null" json:"trx_id" validate:"required"`
 	Donatur  string    `gorm:"column:Donatur;type:nvarchar(100);not null" json:"donatur" validate:"required,max=100"`
-	Donasi   float64   `gorm:"column:Donasi;type:decimal(15,2);not null" json:"donasi" validate:"required"`
+	Donasi   float64   `gorm:"column:Donasi;type:decimal(15,2);not null" json:"donasi" validate:"required,gt=0"`
 	Status   *bool     `gorm:"column:Status;type:bit" json:"status" validate:"omitempty"`
 	ModAct   *string   `gorm:"column:ModAct;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
 	ModBy    *string   `gorm:"column:ModBy;type:varchar(25)" json:"mod_by" validate:"omitempty,max=25"`
@@ -1588,7 +1588,7 @@ type KelasPengeluaran struct {
 	TrxId      int32     `gorm:"column:trxid;type:int;not null" json:"trx_id" validate:"required"`
 	TimKerja   *string   `gorm:"column:timkerja;type:varchar(3)" json:"tim_kerja" validate:"omitempty,max=3"`
 	Keterangan *string   `gorm:"column:keterangan;type:varchar(200)" json:"keterangan" validate:"omitempty,max=200"`
-	Biaya      *float64  `gorm:"column:biaya;type:decimal(13,2)" json:"biaya" validate:"omitempty"`
+	Biaya      *float64  `gorm:"column:biaya;type:decimal(13,2)" json:"biaya" validate:"omitempty,gt=0"`
 	Status     *bool     `gorm:"column:status;type:bit" json:"status" validate:"omitempty"`
 	ModAct     *string   `gorm:"column:modact;type:char(1)" json:"mod_act" validate:"omitempty,len=1"`
 	ModBy      *int32    `gorm:"column:modby;type:int" json:"mod_by" validate:"omitempty"`

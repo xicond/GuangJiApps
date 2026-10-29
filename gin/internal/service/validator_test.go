@@ -137,6 +137,80 @@ func TestValidateStruct(t *testing.T) {
 		}
 	})
 
+	t.Run("validation failure on negative KelasDonasi donasi gt=0", func(t *testing.T) {
+		payload := domain.KelasDonasi{
+			TrxId:   26160003,
+			Donatur: "Budi Santoso",
+			Donasi:  -500000.0,
+		}
+		err := ValidateStruct(payload)
+		if err == nil {
+			t.Fatalf("expected gt validation error for negative donasi, got nil")
+		}
+		if !strings.Contains(err.Error(), "harus lebih besar dari 0") {
+			t.Errorf("expected error message to contain 'harus lebih besar dari 0', got: %v", err)
+		}
+	})
+
+	t.Run("validation failure on zero KelasDonasi donasi gt=0", func(t *testing.T) {
+		payload := domain.KelasDonasi{
+			TrxId:   26160003,
+			Donatur: "Budi Santoso",
+			Donasi:  0,
+		}
+		err := ValidateStruct(payload)
+		if err == nil {
+			t.Fatalf("expected validation error for zero donasi, got nil")
+		}
+	})
+
+	t.Run("validation failure on negative KelasPengeluaran biaya gt=0", func(t *testing.T) {
+		negBiaya := -150000.0
+		payload := domain.KelasPengeluaran{
+			TrxId: 26160003,
+			Biaya: &negBiaya,
+		}
+		err := ValidateStruct(payload)
+		if err == nil {
+			t.Fatalf("expected gt validation error for negative biaya, got nil")
+		}
+		if !strings.Contains(err.Error(), "harus lebih besar dari 0") {
+			t.Errorf("expected error message to contain 'harus lebih besar dari 0', got: %v", err)
+		}
+	})
+
+	t.Run("validation failure on zero KelasPengeluaran biaya gt=0", func(t *testing.T) {
+		zeroBiaya := 0.0
+		payload := domain.KelasPengeluaran{
+			TrxId: 26160003,
+			Biaya: &zeroBiaya,
+		}
+		err := ValidateStruct(payload)
+		if err == nil {
+			t.Fatalf("expected validation error for zero biaya, got nil")
+		}
+	})
+
+	t.Run("validation success on positive KelasDonasi and KelasPengeluaran", func(t *testing.T) {
+		donasiPayload := domain.KelasDonasi{
+			TrxId:   26160003,
+			Donatur: "Budi Santoso",
+			Donasi:  500000.0,
+		}
+		if err := ValidateStruct(donasiPayload); err != nil {
+			t.Fatalf("expected valid KelasDonasi, got: %v", err)
+		}
+
+		posBiaya := 150000.0
+		pengeluaranPayload := domain.KelasPengeluaran{
+			TrxId: 26160003,
+			Biaya: &posBiaya,
+		}
+		if err := ValidateStruct(pengeluaranPayload); err != nil {
+			t.Fatalf("expected valid KelasPengeluaran, got: %v", err)
+		}
+	})
+
 	t.Run("DateOnly JSON unmarshaling", func(t *testing.T) {
 		var d domain.DateOnly
 		err := d.UnmarshalJSON([]byte(`"2026-07-27"`))

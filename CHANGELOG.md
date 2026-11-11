@@ -1,6 +1,170 @@
 # Documentation - Completed Tasks
 
-## \[Completed\] Frontend Dependencies Update: Axios 1.20.0 & Package-Lock Flattening / Deduplication
+## [Completed] Dependency Upgrade: golang.org/x/net to v0.62.0 (gin/go.mod)
+
+### Summary & Changes Made:
+- **Dependency Upgrade**:
+  - Upgraded `golang.org/x/net` from `v0.59.0` to `v0.62.0` (along with its aligned companion packages `golang.org/x/crypto` to `v0.58.0`, `golang.org/x/sys` to `v0.49.0`, and `golang.org/x/text` to `v0.43.0`) in [gin/go.mod](file:///Users/xicond/Workspace/www/GuangJiApps/gin/go.mod) and updated `gin/go.sum`.
+- **Verification**:
+  - Ran `go test -v ./internal/service -run "TestValidateStruct"` in Docker container: **PASS**.
+  - Ran `go build -v ./...` in Docker container: **PASS** (compilation succeeded with zero errors).
+
+---
+
+## [Completed] Dependency Upgrade: github.com/klauspost/compress to v1.20.2 (gin/go.mod)
+
+### Summary & Changes Made:
+- **Dependency Upgrade**:
+  - Upgraded `github.com/klauspost/compress` from `v1.20.0` to `v1.20.2` in [gin/go.mod](file:///Users/xicond/Workspace/www/GuangJiApps/gin/go.mod) and updated `gin/go.sum`.
+- **Verification**:
+  - Ran `go test -v ./internal/service -run "TestValidateStruct"` in Docker container: **PASS**.
+  - Ran `go build -v ./...` in Docker container: **PASS** (compilation succeeded with zero errors).
+
+---
+
+## [Completed] Centralize Client localStorage in Dedicated Pinia Stores (vue/src)
+
+### Summary & Changes Made:
+- **Pinia Theme Store ([stores/theme.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/stores/theme.ts))**:
+  - Created a dedicated `useThemeStore` managing `currentMode` (`system` | `dark` | `light`), `isDark`, `initTheme()`, and `setMode()`.
+  - Centralized all `localStorage` access for `theme_mode` inside `useThemeStore`.
+  - Refactored `src/theme.ts` into a lightweight delegation layer to `useThemeStore` ensuring backwards compatibility.
+- **Pinia Auth Store ([stores/auth.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/stores/auth.ts))**:
+  - Centralized `token`, `refresh_token`, `user`, and `main_menu` persistence entirely inside `useAuthStore`.
+  - Added reactive `refreshToken` state, along with explicit mutations: `setToken()`, `setRefreshToken()`, `setTokens()`, `setUser()`, and `setMainMenus()`.
+  - Added storage watchers to guarantee automatic state-to-`localStorage` synchronization.
+- **Removed Ad-Hoc Calls**:
+  - Eliminated direct `localStorage.setItem('refresh_token', ...)` in [Login.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/Login.vue) by routing through `authStore.setRefreshToken()`.
+  - Migrated [Login.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/Login.vue), [MainLayout.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/layouts/MainLayout.vue), and [App.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/App.vue) to consume `useThemeStore` directly.
+  - Eliminated fallback `localStorage.getItem()` and direct `localStorage.setItem()` calls in [api/client.ts](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/api/client.ts), routing token retrieval and session updates entirely through `useAuthStore`.
+- **Verification**:
+  - Confirmed 0 ad-hoc `localStorage` calls across all views, components, and HTTP client modules in `vue/src`.
+  - `npm run type-check` (`vue-tsc --noEmit`): **PASS** (0 errors).
+  - `npm run build` (`vue-tsc --noEmit && vite build`): **PASS** (clean production build).
+
+---
+
+## [Completed] System-wide Pagination Standards Across All Views and Components (min 10, max 50, single-page auto-hide)
+
+### Summary & Changes Made:
+- **Pagination Standards Across All Views ([vue/src/views/](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views))**:
+  - Enforced `:page-sizes="[10, 20, 50]"` (min 10/page, max 50/page) across all 17 view list/report pages. Removed `100`.
+  - Added `sizes` to layout on desktop (`total, sizes, ->,`) to enable changing page sizes between 10, 20, and 50.
+  - Implemented dynamic layout logic: when total items <= page size (single page), all navigation controls (page numbers `pager`, Goto `jumper`, as well as `first`, `prev`, `next`, `last`) are completely hidden, leaving only `total` and `sizes` on desktop (and empty on mobile).
+  - Updated views:
+    - Master Data: [ActivityList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/ActivityList.vue), [KelasMasterList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/KelasMasterList.vue), [PenggalangDanaList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/PenggalangDanaList.vue), [SxyDonaturList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/SxyDonaturList.vue), [TahunCiuTaoList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/TahunCiuTaoList.vue), [TimKerjaList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/TimKerjaList.vue), [TopicList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/TopicList.vue), [UmatList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/master-data/UmatList.vue)
+    - Transactions: [DonasiSxyList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/transaction/DonasiSxyList.vue), [KelasList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/transaction/KelasList.vue)
+    - Reports: [MasterReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/MasterReportList.vue), [SxyReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue), [UmatReportList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/UmatReportList.vue)
+    - User Management: [AdminGroupList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/user-management/AdminGroupList.vue), [AdminList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/user-management/AdminList.vue), [AdminSubWarehouseList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/user-management/AdminSubWarehouseList.vue), [GroupMenuMappingList.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/user-management/GroupMenuMappingList.vue)
+- **Table Components ([vue/src/components/](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components))**:
+  - Applied the exact same standard to all embedded table components: [UmatPopupSelector.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/common/UmatPopupSelector.vue), [KelasPengeluaranTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPengeluaranTable.vue), [KelasDonasiBarangTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiBarangTable.vue), [KelasDonasiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasDonasiTable.vue), [KelasTopikTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasTopikTable.vue), [KelasKendaraanTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasKendaraanTable.vue), [KelasPesertaTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPesertaTable.vue), [KelasPengabdiTable.vue](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/components/kelas/KelasPengabdiTable.vue).
+- **Verification**:
+  - `npm run type-check` (`vue-tsc --noEmit`): **PASS** (0 errors).
+  - `npm run build` (`vue-tsc --noEmit && vite build`): **PASS** (Vite production bundle built cleanly).
+
+---
+
+## [Completed] Frontend Dependencies: Security Patches Update (vue/package.json, vue/package-lock.json)
+
+### Summary & Changes Made:
+- **Updated and Flattened Dependencies**:
+  - `vite`: `8.3.5`
+  - `follow-redirects`: `1.16.1`
+  - `fast-uri`: `3.1.9`
+  - `serialize-javascript`: `7.1.3`
+  - Non-breaking dependencies: `@sentry/vue` (`^10.77.1`), `axios` (`^1.21.0`), `dayjs` (`^1.11.23`), `element-plus` (`^2.14.7`), `pinia` (`^2.3.1`), `vue` (`^3.5.44`), `vue-router` (`^4.6.4`), `@types/node` (`^26.6.5`), `typescript` (`^5.9.3`), and `vue-tsc` (`^2.2.12`).
+- **Removed Deprecated Overrides**:
+  - Removed `"overrides": { "esbuild": "^0.25.0" }` from `vue/package.json` as Vite 8 now natively uses Rolldown/LightningCSS without vulnerable esbuild dependencies.
+  - Upgraded `@vitejs/plugin-vue` to `^6.0.10` and `vite-plugin-pwa` to `^2.0.0` for full Vite 8 peer compatibility.
+- Resolved and flattened dependency tree directly in `vue/package-lock.json` at root `node_modules` without nested packages.
+- Audited with 0 vulnerabilities and verified production build (`vue-tsc --noEmit && vite build`).
+
+
+
+### Summary & Changes Made:
+- **Cleaned Residual Ransom Notes**:
+  - Executed full recursive sweep across all root directories of `C:\`. Confirmed 0 `.MG0EB5` files remaining anywhere on the filesystem.
+- **Identified Server Bottleneck & Cause of Unexpected Reboot**:
+  - Discovered VM has only **2048 MB (2 GB) Total RAM**, running Windows Server 2022, SQL Server 2022, IIS, Go Gin API, Memurai (Redis), IPBan, and ESET.
+  - Previous unexpected reboot (Event 6008/41) was caused by severe memory pressure and hypervisor-level reset.
+- **SQL Server Memory & Engine Tuning**:
+  - Configured `max server memory (MB)` = `768 MB` (prevents SQL buffer pool from causing OS memory starvation and OOM restarts).
+  - Configured `min server memory (MB)` = `256 MB` (preserves baseline operational buffer for queries).
+  - Enabled `optimize for ad hoc workloads` = `1` (stores plan stubs for single-use queries to eliminate plan cache bloat).
+  - Configured `cost threshold for parallelism` = `40` and `max degree of parallelism` = `2` (matches 2 vCPU cores).
+  - Enabled `backup compression default` = `1` (cuts backup I/O and RAM cache churn by ~70%).
+  - Enabled `AUTO_UPDATE_STATISTICS_ASYNC` on `guangji` database (prevents query stalls during statistics updates).
+  - Cleared stale plan cache (`DBCC FREEPROCCACHE`). Free RAM improved from 226 MB to ~400 MB (~20% headroom).
+- **Verification**:
+  - `http://localhost/guangji`: **Status 200** OK.
+  - `http://localhost/api/ping`: **Status 200** OK.
+
+---
+
+## [Completed] Secure SQL Server, Isolate Database User, Hardened Firewall, and Cleaned STOP/Djvu Ransomware
+
+### Summary & Changes Made:
+- **Ransomware Cleaned & Forensics Verified**:
+  - Successfully quarantined `.mode` and key marker `MG0EB5.txt`.
+  - Removed 3,700+ zero-byte ransom note files (`READ ME.MG0EB5.txt`) across the filesystem.
+  - Performed deep scans via ESET Command-Line Scanner (`ecls.exe`) on RAM, Boot Sectors, Users, ProgramData, Scripts, and Tasks (Exit Code: 0 / No threat found).
+- **Hardened Firewall & Access Perimeter**:
+  - Blocked external TCP port 1433 (MSSQL) and default RDP port 3389 via Windows Firewall.
+  - Allowed custom RDP port 3399, SSH port 22, and Web ports 80/443, actively defended by DigitalRuby IPBan.
+- **SQL Server Database Isolation**:
+  - Restored `MSSQLSERVER` Windows service (`Automatic`, `Running`).
+  - Created isolated SQL login/user `guangji_app` with `db_owner` role on database `guangji` (permits CREATE, ALTER, DDL, DML without sysadmin / xp_cmdshell privileges).
+  - Backed up and updated connection strings in:
+    - `C:\Users\Administrator\Documents\GuangJiApps\GuangJiWeb\Web.config`
+    - `C:\Users\Administrator\Documents\GoAPI\web.config`
+    - `C:\Users\Administrator\Documents\GoAPI\.env`
+  - Restarted IIS (`iisreset`).
+- **Verification**:
+  - `http://localhost/guangji`: **Status 200** OK.
+  - `http://localhost/api/ping`: **Status 200** OK (Gin backend connected to database via `guangji_app`).
+  - External port scan confirmed ports 1433, 3389, and 445 are blocked; ports 22 and 3399 are open.
+
+---
+
+## [Completed] Fix Browser Hang and Speed Test Network Contention on SxyReportList
+
+### Summary & Changes Made:
+- **Root Cause Analysis**:
+  - **Unbounded DOM Node Creation**: When opening `/client/report/sxy`, the production backend returned all 45,439 donation records unpaginated in `res.data`. Directly assigning `dataList.value = res.data` caused `<el-table>` to synchronously mount ~500,000 DOM elements (45,439 rows $\times$ 11 columns), freezing the main JavaScript thread on desktop and crashing Mobile Safari.
+  - **Speed Test Contention (`useQuickStreamSpeedTest.ts`)**: In `client.ts`, any request exceeding 1000ms automatically invoked `measureSpeedInOneSecond()`, fetching 1.13 MB from `httpbin.org`. On slow or heavy report queries, this triggered a competing high-bandwidth stream download. Furthermore, `useQuickStreamSpeedTest.ts` had a loose double-timeout and did not safely cancel/release reader locks on abort.
+- **Fixes Applied**:
+  - **Defensive Client-Side Slicing in [`SxyReportList.vue`](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue)**:
+    - Guaranteed `dataList.value` never mounts more than `pagination.limit` (e.g. 10 items) by slicing the array client-side (`rawData.slice(start, start + pagination.limit)`). Even if the backend emits tens of thousands of rows, DOM rendering is strictly capped to 10 rows (~110 DOM elements), completely preventing freezes and crashes.
+  - **Excluded Reports & Exports from Speed Test in [`client.ts`](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/api/client.ts)**:
+    - Added filter `!url.includes('/report') && !url.includes('/excel') && !url.includes('/download') && !url.includes('/export')` before initiating background network speed measurement.
+  - **Added `fetchOptions: { priority: 'low' }` to [`donasiSxyApi.getSxyReport`](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/api/donasiSxy.ts)**.
+  - **Hardened Stream Reader Lifecycle in [`useQuickStreamSpeedTest.ts`](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/api/useQuickStreamSpeedTest.ts)**:
+    - Added strict abort timeout and guaranteed `reader.cancel()` and `reader.releaseLock()` in the `finally` block to prevent lingering socket streams and microtask stalls.
+- **Verification**:
+  - `npm run type-check`: **PASS** (0 errors).
+  - `npm run build`: **PASS** (compiled in 19.37s).
+  - **Live Chrome DevTools Verification**: Successfully navigated to `http://localhost:5173/report/sxy`, verified `rowCount: 10`, verified pagination to Page 2 rendered without delay, zero console errors, zero tab hangs.
+
+---
+
+### Summary & Changes Made:
+- **Root Cause Analysis**:
+  - In [`vue/src/views/report/SxyReportList.vue`](file:///Users/xicond/Workspace/www/GuangJiApps/vue/src/views/report/SxyReportList.vue), `<el-table>` was configured with `height="500"`, `show-summary`, `:summary-method="getSummaries"`, and `:fixed="!isMobile ? 'left' : false"`.
+  - When the table initialized with empty data (`dataList = []`) while loading, Element Plus's internal `useStyle` / `TableLayout` calculated `.el-table__empty-block` height using `bodyScrollHeight = tableScrollHeight - headerScrollHeight - footerScrollHeight`.
+  - Because `footerWrapper` is hidden (`v-show="!isEmpty"`) when data is empty, the empty block's dynamic height continuously triggered the `ResizeObserver` on `tableInnerWrapper`, which re-invoked `resizeListener()`, recalculating `bodyScrollHeight` and mutating DOM styles in an endless microtask cycle.
+  - Furthermore, `getSummaries` accessed reactive properties (`isMobile.value`, `totalJumlah.value`), creating an infinite reactivity/layout feedback loop. On desktop, this caused a 100% CPU UI freeze; on Mobile Safari (WebKit), it starved the runloop and triggered an immediate WebProcess memory/watchdog crash.
+- **Fixes Applied**:
+  - **Removed `show-summary` & `:summary-method="getSummaries"` from `<el-table>`**: Replaced the table footer summary with the pre-styled top summary banner (`.summary-banner`), displaying `Total Ringkasan` and transaction count without interfering with the table's internal layout engine.
+  - **Fixed Duplicate Column `prop`**: Corrected line 85 from `prop="tanggal"` to `prop="tanggal_transfer"`.
+  - **Stabilized Pagination Layout**: Replaced dynamic inline concatenation with a computed `paginationLayout` (`prev, pager, next` on mobile; `total, ->, prev, pager, next, jumper` on desktop) without malformed tokens.
+  - **Fixed Touch Handlers & Device Detection**: Assigned `deviceType` in `getDeviceType()`, cleaned up `onClick` handler toggle, and returned a stable empty array reference for `dateRange`.
+- **Verification**:
+  - `npm run type-check`: **PASS** (0 errors).
+  - `npm run build`: **PASS** (All chunks and service worker compiled successfully).
+
+---
+
+## [Completed] Frontend Dependencies Update: Axios 1.20.0 & Package-Lock Flattening / Deduplication
 
 ### Summary & Changes Made:
 - **Axios Upgrade**:

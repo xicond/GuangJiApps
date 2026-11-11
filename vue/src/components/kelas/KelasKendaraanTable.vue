@@ -79,8 +79,8 @@
           <!-- Pagination -->
           <div class="pagination-container">
             <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :layout="(!isMobile ? 'total, ->,' : (Math.ceil(total / pageSize) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : '')"
+              :page-sizes="[10, 20, 50]"
+              :layout="Math.ceil((total || 0) / (pageSize || 10)) <= 1 ? (!isMobile ? 'total, sizes' : '') : ((!isMobile ? 'total, sizes, ->,' : (Math.ceil(total / pageSize) < 6 ? '-> ,' : '')) + 'prev, pager, next' + (isDesktop ? ', jumper' : ''))"
               :pager-count="5" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
           </div>
         </div>

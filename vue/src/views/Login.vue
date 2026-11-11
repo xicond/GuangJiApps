@@ -72,7 +72,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore, type LoginErrorResult } from '../stores/auth'
-import { setMode, currentMode, isDark, type ThemeMode } from '../theme'
+import { useThemeStore, type ThemeMode } from '../stores/theme'
 import { User, Lock, Sunny, Moon, Monitor } from '@element-plus/icons-vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import axios from 'axios'
@@ -80,6 +80,7 @@ import { registerBiometricPasskey } from '../services/passkey'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 
 const loginFormRef = ref<FormInstance>()
 const form = ref({
@@ -158,12 +159,12 @@ onUnmounted(() => {
 })
 
 const currentIcon = computed(() => {
-  if (currentMode.value === 'system') return Monitor
-  return isDark.value ? Moon : Sunny
+  if (themeStore.currentMode === 'system') return Monitor
+  return themeStore.isDark ? Moon : Sunny
 })
 
 const handleThemeChange = (mode: ThemeMode) => {
-  setMode(mode)
+  themeStore.setMode(mode)
 }
 
 const handleLogin = async () => {
@@ -185,7 +186,7 @@ const handleLogin = async () => {
           }
           const refreshToken = await registerBiometricPasskey(authStore.token, userObj)
           if (refreshToken) {
-            localStorage.setItem('refresh_token', refreshToken)
+            authStore.setRefreshToken(refreshToken)
           }
         } catch (passkeyErr: unknown) {
           console.error('Biometric passkey registration failed:', passkeyErr)

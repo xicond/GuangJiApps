@@ -144,7 +144,7 @@
       <!-- Pagination -->
       <div class="pagination-container">
         <el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.limit"
-          :page-sizes="[10, 20, 50, 100]" :total="pagination.total" :layout="paginationLayout"
+          :page-sizes="[10, 20, 50]" :total="pagination.total" :layout="paginationLayout"
           :pager-count="isMobile ? 5 : 7" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </el-card>
@@ -235,9 +235,13 @@ const isMobile = breakpoints.smaller('md')   // True if width < 768px
 const isDesktop = breakpoints.greaterOrEqual('lg')  // True if width >= 1024px
 
 const paginationLayout = computed(() => {
+  const isSingle = Math.ceil((pagination.total || 0) / (pagination.limit || 10)) <= 1
+  if (isSingle) {
+    return isMobile.value ? '' : 'total, sizes'
+  }
   return isMobile.value
     ? 'prev, pager, next'
-    : 'total, ->, prev, pager, next, jumper'
+    : 'total, sizes, ->, prev, pager, next, jumper'
 })
 
 const dataList = shallowRef<SxyDonasiReportItem[]>([])

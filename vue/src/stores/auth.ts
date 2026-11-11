@@ -1,17 +1,17 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import axios from 'axios'
 
 export interface MainMenuItem {
   menu_id: number
-  main_menu: string,
+  main_menu: string
   sub_menu: SubMenuItem[]
 }
 
 export interface SubMenuItem {
   menu_id: number
   parent_id: number
-  level2: string,
+  level2: string
   sequence?: string
 }
 
@@ -27,10 +27,21 @@ export interface LoginErrorResult extends Error {
   status?: number
 }
 
+const STORAGE_KEYS = {
+  TOKEN: 'token',
+  REFRESH_TOKEN: 'refresh_token',
+  USER: 'user',
+  MAIN_MENU: 'main_menu'
+} as const
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string>(localStorage.getItem('token') || '')
+  const getStorageItem = (key: string): string => {
+    if (typeof localStorage === 'undefined') return ''
+    return localStorage.getItem(key) || ''
+  }
+
   const safeParse = <T>(raw: string | null, fallback: T): T => {
     if (!raw) return fallback
     try {
@@ -40,10 +51,85 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const user = ref<User | null>(safeParse<User | null>(localStorage.getItem('user')!, null))
-  const mainMenus = ref<MainMenuItem[]>(safeParse<MainMenuItem[]>(localStorage.getItem('main_menu')!, []))
+  const token = ref<string>(getStorageItem(STORAGE_KEYS.TOKEN))
+  const refreshToken = ref<string>(getStorageItem(STORAGE_KEYS.REFRESH_TOKEN))
+  const user = ref<User | null>(safeParse<User | null>(getStorageItem(STORAGE_KEYS.USER) || null, null))
+  const mainMenus = ref<MainMenuItem[]>(safeParse<MainMenuItem[]>(getStorageItem(STORAGE_KEYS.MAIN_MENU) || null, []))
 
   const isAuthenticated = computed(() => !!token.value)
+
+  function setToken(newToken: string) {
+    token.value = newToken
+    if (typeof localStorage !== 'undefined') {
+      if (newToken) {
+        localStorage.setItem(STORAGE_KEYS.TOKEN, newToken)
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.TOKEN)
+      }
+    }
+  }
+
+  function setRefreshToken(newRefreshToken: string) {
+    refreshToken.value = newRefreshToken
+    if (typeof localStorage !== 'undefined') {
+      if (newRefreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+      }
+    }
+  }
+
+  function setTokens(newToken: string, newRefreshToken?: string) {
+    setToken(newToken)
+    if (newRefreshToken !== undefined) {
+      setRefreshToken(newRefreshToken)
+    }
+  }
+
+  function setUser(newUser: User | null) {
+    user.value = newUser
+    if (typeof localStorage !== 'undefined') {
+      if (newUser) {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser))
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.USER)
+      }
+    }
+  }
+
+  function setMainMenus(menus: MainMenuItem[]) {
+    mainMenus.value = menus
+    if (typeof localStorage !== 'undefined') {
+      if (menus && menus.length > 0) {
+        localStorage.setItem(STORAGE_KEYS.MAIN_MENU, JSON.stringify(menus))
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.MAIN_MENU)
+      }
+    }
+  }
+
+  watch(token, (val) => {
+    if (typeof localStorage === 'undefined') return
+    if (val) {
+      if (localStorage.getItem(STORAGE_KEYS.TOKEN) !== val) {
+        localStorage.setItem(STORAGE_KEYS.TOKEN, val)
+      }
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.TOKEN)
+    }
+  })
+
+  watch(refreshToken, (val) => {
+    if (typeof localStorage === 'undefined') return
+    if (val) {
+      if (localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN) !== val) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, val)
+      }
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+    }
+  })
 
   function hasMenu(menuName: string): boolean {
     if (!mainMenus.value || mainMenus.value.length === 0) return false
@@ -74,16 +160,16 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (response.data && response.data.token) {
-        token.value = response.data.token
+        setToken(response.data.token)
+        if (response.data.refresh_token) {
+          setRefreshToken(response.data.refresh_token)
+        }
         const userData = response.data.user || {}
-        user.value = {
+        setUser({
           ...userData,
           username: userData.username || userData.Username || username
-        }
-        mainMenus.value = response.data.main_menu || []
-        localStorage.setItem('token', token.value)
-        localStorage.setItem('user', JSON.stringify(user.value))
-        localStorage.setItem('main_menu', JSON.stringify(mainMenus.value))
+        })
+        setMainMenus(response.data.main_menu || [])
         return true
       }
       return false
@@ -131,21 +217,30 @@ export const useAuthStore = defineStore('auth', () => {
 
   function logout() {
     token.value = ''
+    refreshToken.value = ''
     user.value = null
     mainMenus.value = []
-    localStorage.removeItem('token')
-    localStorage.removeItem('refresh_token')
-    localStorage.removeItem('user')
-    localStorage.removeItem('main_menu')
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEYS.TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.USER)
+      localStorage.removeItem(STORAGE_KEYS.MAIN_MENU)
+    }
   }
 
   return {
     token,
+    refreshToken,
     user,
     mainMenus,
     isAuthenticated,
     hasMenu,
     hasSubMenu,
+    setToken,
+    setRefreshToken,
+    setTokens,
+    setUser,
+    setMainMenus,
     login,
     changePassword,
     logout

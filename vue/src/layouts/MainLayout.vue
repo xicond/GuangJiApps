@@ -174,7 +174,7 @@ import { useBreakpoints, breakpointsTailwind, useOnline } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { ElNotification } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
-import { setMode, currentMode, isDark, type ThemeMode } from '../theme'
+import { useThemeStore, type ThemeMode } from '../stores/theme'
 import ChangePasswordModal from '../components/ChangePasswordModal.vue'
 import { useQuickStreamSpeedTest } from '../api/useQuickStreamSpeedTest'
 import {
@@ -197,6 +197,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMobile = breakpoints.smaller('md')   // True if width < 768px
@@ -390,12 +391,12 @@ const hasMenu = (menuName: string) => authStore.hasMenu(menuName)
 const hasSubMenu = (parentMenuName: string, subMenuName: string) => authStore.hasSubMenu(parentMenuName, subMenuName)
 
 const currentIcon = computed(() => {
-  if (currentMode.value === 'system') return Monitor
-  return isDark.value ? Moon : Sunny
+  if (themeStore.currentMode === 'system') return Monitor
+  return themeStore.isDark ? Moon : Sunny
 })
 
 const handleThemeChange = (mode: ThemeMode) => {
-  setMode(mode)
+  themeStore.setMode(mode)
 }
 
 const handleUserMenuCommand = (command: string) => {

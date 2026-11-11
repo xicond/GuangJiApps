@@ -5282,7 +5282,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"data\": [\n    {\n      \"id\": 26370017,\n      \"kode\": \"-26370017\",\n      \"marga\": null,\n      \"alias\": \"Budi\",\n      \"nama_indonesia\": \"Budi Santoso\",\n      \"nama_mandarin\": \"武帝\",\n      \"alamat\": null,\n      \"fotang_aktif_desc\": null,\n      \"fotang_ciu_tao_desc\": null,\n      \"pengajak\": null,\n      \"penanggung\": null\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 1\n  },\n  \"resource\": \"UmatPopUp\"\n}",
+                  "body": "{\n  \"data\": [\n    {\n      \"id\": 26370017,\n      \"kode\": \"-26370017\",\n      \"marga\": null,\n      \"alias\": \"Budi\",\n      \"nama_indonesia\": \"Budi Santoso\",\n      \"nama_mandarin\": \"\u6b66\u5e1d\",\n      \"alamat\": null,\n      \"fotang_aktif_desc\": null,\n      \"fotang_ciu_tao_desc\": null,\n      \"pengajak\": null,\n      \"penanggung\": null\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 1\n  },\n  \"resource\": \"UmatPopUp\"\n}",
                   "_postman_previewlanguage": "json"
                 }
               ]
@@ -16180,7 +16180,7 @@
                     }
                   ],
                   "cookie": [],
-                  "body": "{\n  \"resource\": \"KelasPesertaPrevious\",\n  \"data\": [\n    {\n      \"id_peserta\": 24090003,\n      \"id\": 24090003,\n      \"kode\": \"KHANG-24090003\",\n      \"nama_indonesia\": \"Liu Hao Zhen\",\n      \"nama_mandarin\": \"Diezie\",\n      \"alias\": \"\",\n      \"marga\": \"\",\n      \"alamat\": \"Binus\",\n      \"fotang_aktif\": \"12\",\n      \"fotang_aktif_desc\": \"Guang Hang - Palmerah 廣航\",\n      \"fotang_ciu_tao\": \"12\",\n      \"fotang_ciu_tao_desc\": \"Guang Hang - Palmerah 廣航\",\n      \"pengajak\": \"\",\n      \"penanggung\": \"\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 6\n  }\n}",
+                  "body": "{\n  \"resource\": \"KelasPesertaPrevious\",\n  \"data\": [\n    {\n      \"id_peserta\": 24090003,\n      \"id\": 24090003,\n      \"kode\": \"KHANG-24090003\",\n      \"nama_indonesia\": \"Liu Hao Zhen\",\n      \"nama_mandarin\": \"Diezie\",\n      \"alias\": \"\",\n      \"marga\": \"\",\n      \"alamat\": \"Binus\",\n      \"fotang_aktif\": \"12\",\n      \"fotang_aktif_desc\": \"Guang Hang - Palmerah \u5ee3\u822a\",\n      \"fotang_ciu_tao\": \"12\",\n      \"fotang_ciu_tao_desc\": \"Guang Hang - Palmerah \u5ee3\u822a\",\n      \"pengajak\": \"\",\n      \"penanggung\": \"\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 6\n  }\n}",
                   "_postman_previewlanguage": "json"
                 }
               ]
@@ -19174,6 +19174,233 @@
                   "_postman_previewlanguage": "json"
                 }
               ]
+            },
+            {
+              "name": "Kelas Donasi - Update",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "auth": {
+                  "type": "noauth"
+                },
+                "description": "",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kelas/:trx_id/donasi/:resourceId",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kelas",
+                    ":trx_id",
+                    "donasi",
+                    ":resourceId"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "trx_id",
+                      "value": "26160003"
+                    },
+                    {
+                      "key": "resourceId",
+                      "value": "1"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"donasi\": 500000,\n  \"keterangan\": \"Donasi Sukarela Updated\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"UAT - Status code is 200 OK\", function () {",
+                      "    pm.expect(pm.response.code).to.equal(200);",
+                      "});",
+                      "",
+                      "pm.test(\"UAT - Response time is acceptable (< 3000ms)\", function () {",
+                      "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                      "});",
+                      "",
+                      "pm.test(\"UAT - Updated KelasDonasi record returned in data object\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData).to.have.property(\"data\");",
+                      "    pm.expect(jsonData.data).to.be.an(\"object\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "response": [
+                {
+                  "name": "200 OK - Updated",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{authToken}}",
+                        "description": "",
+                        "disabled": false,
+                        "type": "default"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "description": "",
+                        "disabled": false,
+                        "type": "default"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/v1/kelas/:trx_id/donasi/:resourceId",
+                      "protocol": "",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "kelas",
+                        ":trx_id",
+                        "donasi",
+                        ":resourceId"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "trx_id",
+                          "value": "26160003"
+                        },
+                        {
+                          "key": "resourceId",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"donasi\": 500000,\n  \"keterangan\": \"Donasi Sukarela Updated\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8",
+                      "name": "Content-Type",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"resource\": \"KelasDonasi\",\n  \"data\": {\n    \"id\": 1,\n    \"trx_id\": 26160003,\n    \"id_donatur\": 101,\n    \"nama_donatur\": \"Budi Santoso\",\n    \"donasi\": 500000,\n    \"keterangan\": \"Donasi Sukarela Updated\"\n  }\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "400 Bad Request - Validation Error",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{authToken}}",
+                        "description": "",
+                        "disabled": false,
+                        "type": "default"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "description": "",
+                        "disabled": false,
+                        "type": "default"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/v1/kelas/:trx_id/donasi/:resourceId",
+                      "protocol": "",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "kelas",
+                        ":trx_id",
+                        "donasi",
+                        ":resourceId"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "trx_id",
+                          "value": "26160003"
+                        },
+                        {
+                          "key": "resourceId",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"donasi\": -50000\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8",
+                      "name": "Content-Type",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"error\": \"Validation failed: Key: 'KelasDonasi.Donasi' Error:Field validation for 'Donasi' failed on the 'gt' tag\",\n  \"details\": {\n    \"donasi\": [\n      \"Key: 'KelasDonasi.Donasi' Error:Field validation for 'Donasi' failed on the 'gt' tag\"\n    ]\n  }\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
             }
           ]
         },
@@ -19465,6 +19692,233 @@
                   ],
                   "cookie": [],
                   "body": "{\n  \"resource\": \"KelasPengeluaran\",\n  \"items\": [\n    {\n      \"id\": 1,\n      \"trx_id\": 1,\n      \"keterangan\": \"Konsumsi Peserta Hari 1\",\n      \"nominal\": 750000,\n      \"tgl_pengeluaran\": \"2026-03-01\",\n      \"status\": true\n    }\n  ]\n}",
+                  "_postman_previewlanguage": "json"
+                }
+              ]
+            },
+            {
+              "name": "Kelas Pengeluaran - Update",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{authToken}}",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "description": "",
+                    "disabled": false,
+                    "type": "default"
+                  }
+                ],
+                "auth": {
+                  "type": "noauth"
+                },
+                "description": "",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/kelas/:trx_id/pengeluaran/:resourceId",
+                  "protocol": "",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "kelas",
+                    ":trx_id",
+                    "pengeluaran",
+                    ":resourceId"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "key": "trx_id",
+                      "value": "26160003"
+                    },
+                    {
+                      "key": "resourceId",
+                      "value": "1"
+                    }
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"biaya\": 150000,\n  \"keterangan\": \"Konsumsi Kelas Updated\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {},
+                    "exec": [
+                      "pm.test(\"UAT - Status code is 200 OK\", function () {",
+                      "    pm.expect(pm.response.code).to.equal(200);",
+                      "});",
+                      "",
+                      "pm.test(\"UAT - Response time is acceptable (< 3000ms)\", function () {",
+                      "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                      "});",
+                      "",
+                      "pm.test(\"UAT - Updated KelasPengeluaran record returned in data object\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData).to.have.property(\"data\");",
+                      "    pm.expect(jsonData.data).to.be.an(\"object\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "response": [
+                {
+                  "name": "200 OK - Updated",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{authToken}}",
+                        "description": "",
+                        "disabled": false,
+                        "type": "default"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "description": "",
+                        "disabled": false,
+                        "type": "default"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/v1/kelas/:trx_id/pengeluaran/:resourceId",
+                      "protocol": "",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "kelas",
+                        ":trx_id",
+                        "pengeluaran",
+                        ":resourceId"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "trx_id",
+                          "value": "26160003"
+                        },
+                        {
+                          "key": "resourceId",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"biaya\": 150000,\n  \"keterangan\": \"Konsumsi Kelas Updated\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8",
+                      "name": "Content-Type",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"resource\": \"KelasPengeluaran\",\n  \"data\": {\n    \"id\": 1,\n    \"trx_id\": 26160003,\n    \"nama\": \"Konsumsi\",\n    \"biaya\": 150000,\n    \"keterangan\": \"Konsumsi Kelas Updated\"\n  }\n}",
+                  "_postman_previewlanguage": "json"
+                },
+                {
+                  "name": "400 Bad Request - Validation Error",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{authToken}}",
+                        "description": "",
+                        "disabled": false,
+                        "type": "default"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "description": "",
+                        "disabled": false,
+                        "type": "default"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/v1/kelas/:trx_id/pengeluaran/:resourceId",
+                      "protocol": "",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "v1",
+                        "kelas",
+                        ":trx_id",
+                        "pengeluaran",
+                        ":resourceId"
+                      ],
+                      "query": [],
+                      "variable": [
+                        {
+                          "key": "trx_id",
+                          "value": "26160003"
+                        },
+                        {
+                          "key": "resourceId",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"biaya\": -15000\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8",
+                      "name": "Content-Type",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n  \"error\": \"Validation failed: Key: 'KelasPengeluaran.Biaya' Error:Field validation for 'Biaya' failed on the 'gt' tag\",\n  \"details\": {\n    \"biaya\": [\n      \"Key: 'KelasPengeluaran.Biaya' Error:Field validation for 'Biaya' failed on the 'gt' tag\"\n    ]\n  }\n}",
                   "_postman_previewlanguage": "json"
                 }
               ]

@@ -6,9 +6,11 @@
 
 <script setup vapor lang="ts">
 import { onMounted } from 'vue'
-import { initTheme } from './theme'
+import { useThemeStore } from './stores/theme'
+
+const themeStore = useThemeStore()
 
 onMounted(() => {
-  initTheme()
+  themeStore.initTheme()
 })
 </script>

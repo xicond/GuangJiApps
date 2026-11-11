@@ -50,7 +50,7 @@ apiClient.interceptors.request.use(
     }
 
     const authStore = useAuthStore()
-    const token = (authStore.token || localStorage.getItem('token') || '').trim()
+    const token = (authStore.token || '').trim()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     } else if (config.headers.Authorization) {
@@ -138,15 +138,15 @@ apiClient.interceptors.response.use(
         }
       }
 
-      const refreshToken = (localStorage.getItem('refresh_token') || '').trim()
+      const authStore = useAuthStore()
+      const refreshToken = (authStore.refreshToken || '').trim()
 
       // 2. Jika bukan endpoint auth, belum pernah di-retry, dan ada simpanan refresh token:
       // jalankan renewal biometrik secara atomik (single flight)
       if (originalRequest && !originalRequest._retry && !isAuthEndpoint && refreshToken) {
         originalRequest._retry = true
 
-        const authStore = useAuthStore()
-        const currentActiveToken = (authStore.token || localStorage.getItem('token') || '').trim()
+        const currentActiveToken = (authStore.token || '').trim()
         const requestToken = originalRequest.headers.Authorization?.toString().replace(/^Bearer\s+/i, '').trim() || ''
 
         // Cek jika token sudah diperbarui sebelumnya oleh request lain
@@ -164,10 +164,9 @@ apiClient.interceptors.response.use(
             if (!freshToken) {
               throw new Error('Access token baru kosong dari server.')
             }
-            authStore.token = freshToken
-            localStorage.setItem('token', freshToken)
+            authStore.setToken(freshToken)
             if (result.refresh_token && result.refresh_token.trim()) {
-              localStorage.setItem('refresh_token', result.refresh_token.trim())
+              authStore.setRefreshToken(result.refresh_token.trim())
             }
             return freshToken
           } catch (renewErr) {

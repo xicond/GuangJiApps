@@ -78,8 +78,8 @@
     <!-- Pagination Footer -->
     <div class="pagination-footer">
       <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSizeInternal"
-        :page-sizes="[10, 20, 50, 100]"
-        :layout="(!isMobile ? 'total,' : '->,') + 'prev, pager, next' + (isDesktop ? ', jumper' : '')" :total="total"
+        :page-sizes="[10, 20, 50]"
+        :layout="Math.ceil((total || 0) / (pageSizeInternal || 10)) <= 1 ? (!isMobile ? 'total, sizes' : '') : ((!isMobile ? 'total, sizes,' : '->,') + 'prev, pager, next' + (isDesktop ? ', jumper' : ''))" :total="total"
         :pager-count="5" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
     </div>
 
